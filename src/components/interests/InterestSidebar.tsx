@@ -6,6 +6,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { useAppContext } from "@/contexts/AppContext";
 import { Icons } from "@/components/icons";
@@ -14,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export function InterestSidebar() {
-  const { interests, selectedInterestId, selectInterest, deleteInterest } = useAppContext();
+  const { interests, selectedInterestId, selectInterest, deleteInterest, viewMode, setViewMode } = useAppContext();
 
   return (
     <>
@@ -26,11 +27,24 @@ export function InterestSidebar() {
       </SidebarHeader>
       <SidebarContent className="p-2">
         <SidebarMenu>
+           <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => setViewMode('global-schedule')}
+                isActive={viewMode === 'global-schedule'}
+                tooltip="Lịch"
+              >
+                <Icons.calendar />
+                <span>Lịch</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+        </SidebarMenu>
+        <SidebarSeparator />
+        <SidebarMenu>
           {interests.map((interest) => (
             <SidebarMenuItem key={interest.id}>
               <SidebarMenuButton
                 onClick={() => selectInterest(interest.id)}
-                isActive={selectedInterestId === interest.id}
+                isActive={selectedInterestId === interest.id && viewMode === 'interests'}
                 tooltip={interest.name}
               >
                 <Icons.interest />

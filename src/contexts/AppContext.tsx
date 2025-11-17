@@ -6,9 +6,13 @@ import { initialData, type DataType, type Interest, type Topic, type Goal, type 
 import { generateId } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
+type ViewMode = 'interests' | 'global-schedule';
+
 interface AppContextType extends DataType {
   selectedInterestId: string | null;
   selectedTopicId: string | null;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
   selectInterest: (id: string | null) => void;
   selectTopic: (id: string | null) => void;
   addInterest: (name: string) => void;
@@ -30,11 +34,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<DataType>(initialData);
   const [selectedInterestId, setSelectedInterestId] = useState<string | null>(null);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('interests');
   const { toast } = useToast();
 
   const selectInterest = (id: string | null) => {
     setSelectedInterestId(id);
     setSelectedTopicId(null);
+    if (id !== null) {
+      setViewMode('interests');
+    }
   };
 
   const selectTopic = (id: string | null) => {
@@ -154,6 +162,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ...data,
     selectedInterestId,
     selectedTopicId,
+    viewMode,
+    setViewMode,
     selectInterest,
     selectTopic,
     addInterest,

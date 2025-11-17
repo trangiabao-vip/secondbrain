@@ -6,11 +6,15 @@ import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { TopicGrid } from "@/components/topics/TopicGrid";
 import { TopicDetailView } from "@/components/details/TopicDetailView";
 import { Header } from "./Header";
+import { GlobalScheduleView } from "../details/GlobalScheduleView";
 
 export function AppLayout() {
-  const { selectedInterestId, selectedTopicId } = useAppContext();
+  const { selectedInterestId, selectedTopicId, viewMode } = useAppContext();
 
   const renderContent = () => {
+    if (viewMode === 'global-schedule') {
+      return <GlobalScheduleView />;
+    }
     if (selectedTopicId) {
       return <TopicDetailView key={selectedTopicId} />;
     }

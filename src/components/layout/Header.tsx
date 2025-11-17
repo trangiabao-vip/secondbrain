@@ -5,7 +5,7 @@ import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 
 export function Header() {
-  const { selectedInterest, selectedTopic, selectInterest, selectTopic } = useAppContext();
+  const { selectedInterest, selectedTopic, selectInterest, selectTopic, viewMode, setViewMode } = useAppContext();
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
@@ -29,6 +29,14 @@ export function Header() {
               <Icons.right className="h-4 w-4" />
               <Button variant="ghost" size="sm" className="text-foreground">
                 {selectedTopic.name}
+              </Button>
+            </>
+          )}
+           {viewMode === 'global-schedule' && (
+            <>
+              <Icons.right className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="text-foreground">
+                Lịch toàn cục
               </Button>
             </>
           )}
