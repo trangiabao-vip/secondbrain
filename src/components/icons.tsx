@@ -1,0 +1,36 @@
+import {
+  BookOpen,
+  Calendar,
+  CheckSquare,
+  ChevronDown,
+  ChevronRight,
+  Home,
+  LayoutGrid,
+  Lightbulb,
+  MoreHorizontal,
+  Plus,
+  Sparkles,
+  Target,
+  Trash2,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
+
+export type Icon = LucideIcon;
+
+export const Icons = {
+  logo: Lightbulb,
+  home: Home,
+  interest: Lightbulb,
+  topic: BookOpen,
+  goal: Target,
+  task: CheckSquare,
+  add: Plus,
+  close: X,
+  calendar: Calendar,
+  ai: Sparkles,
+  delete: Trash2,
+  down: ChevronDown,
+  right: ChevronRight,
+  ellipsis: MoreHorizontal,
+};
