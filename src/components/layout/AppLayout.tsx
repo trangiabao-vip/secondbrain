@@ -31,7 +31,7 @@ export function AppLayout() {
       </Sidebar>
       <SidebarInset className="flex flex-col @container/main">
         <Header />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto bg-background text-foreground">
           {renderContent()}
         </main>
       </SidebarInset>

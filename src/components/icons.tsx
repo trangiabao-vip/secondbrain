@@ -3,6 +3,7 @@ import {
   Calendar,
   CheckSquare,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Home,
   LayoutGrid,
@@ -32,5 +33,6 @@ export const Icons = {
   delete: Trash2,
   down: ChevronDown,
   right: ChevronRight,
+  left: ChevronLeft,
   ellipsis: MoreHorizontal,
 };
