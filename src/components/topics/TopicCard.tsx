@@ -7,6 +7,8 @@ import type { Topic } from "@/lib/data";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Icons } from "../icons";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 
 interface TopicCardProps {
   topic: Topic;
@@ -52,6 +54,9 @@ export function TopicCard({ topic }: TopicCardProps) {
       </CardHeader>
       <CardContent className="p-4 flex-grow">
         <CardTitle className="text-lg font-bold line-clamp-2">{topic.name}</CardTitle>
+        <p className="text-xs text-muted-foreground mt-1">
+            Tạo lúc: {format(new Date(topic.createdAt), "HH:mm, dd/MM/yyyy", { locale: vi })}
+        </p>
         <div className="text-sm text-muted-foreground mt-2 flex items-center gap-4">
             <div className="flex items-center gap-1">
                 <Icons.goal className="h-4 w-4"/>

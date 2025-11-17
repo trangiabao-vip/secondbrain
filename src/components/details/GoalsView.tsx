@@ -45,11 +45,16 @@ export function GoalsView() {
                     <AccordionTrigger className="flex-1 text-left p-0 hover:no-underline">
                         <div className="flex flex-col gap-2">
                             <span className="font-semibold text-base">{goal.title}</span>
-                            {goal.dueDate && (
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                                {goal.dueDate && (
+                                    <span className="text-xs text-muted-foreground">
+                                    Hết hạn {formatDistanceToNow(new Date(goal.dueDate), { addSuffix: true, locale: vi })} ({format(new Date(goal.dueDate), 'd MMM, yyyy', { locale: vi })})
+                                    </span>
+                                )}
                                 <span className="text-xs text-muted-foreground">
-                                Hết hạn {formatDistanceToNow(new Date(goal.dueDate), { addSuffix: true, locale: vi })} ({format(new Date(goal.dueDate), 'd MMM, yyyy', { locale: vi })})
+                                    Tạo lúc: {format(new Date(goal.createdAt), "HH:mm, dd/MM/yyyy", { locale: vi })}
                                 </span>
-                            )}
+                            </div>
                             <Progress value={calculateProgress(goal.id)} className="h-2 w-full max-w-sm mt-1" />
                         </div>
                     </AccordionTrigger>

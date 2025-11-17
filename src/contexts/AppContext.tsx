@@ -42,27 +42,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const addInterest = (name: string) => {
-    const newInterest: Interest = { id: generateId(), name };
+    const newInterest: Interest = { id: generateId(), name, createdAt: new Date().toISOString() };
     setData((prev) => ({ ...prev, interests: [...prev.interests, newInterest] }));
     toast({ title: "Đã thêm sở thích", description: `"${name}" đã được thêm.` });
   };
   
   const addTopic = (name: string, imageId: string) => {
     if (!selectedInterestId) return;
-    const newTopic: Topic = { id: generateId(), name, interestId: selectedInterestId, imageId };
+    const newTopic: Topic = { id: generateId(), name, interestId: selectedInterestId, imageId, createdAt: new Date().toISOString() };
     setData((prev) => ({ ...prev, topics: [...prev.topics, newTopic] }));
     toast({ title: "Đã thêm chủ đề", description: `"${name}" đã được thêm.` });
   };
   
   const addGoal = (title: string, dueDate?: Date) => {
     if (!selectedTopicId) return;
-    const newGoal: Goal = { id: generateId(), title, topicId: selectedTopicId, dueDate: dueDate?.toISOString() };
+    const newGoal: Goal = { id: generateId(), title, topicId: selectedTopicId, dueDate: dueDate?.toISOString(), createdAt: new Date().toISOString() };
     setData((prev) => ({ ...prev, goals: [...prev.goals, newGoal] }));
     toast({ title: "Đã thêm mục tiêu", description: `"${title}" đã được thêm.` });
   };
 
   const addTask = (text: string, goalId: string, scheduledDate?: Date) => {
-    const newTask: Task = { id: generateId(), text, goalId, completed: false, scheduledDate: scheduledDate?.toISOString() };
+    const newTask: Task = { id: generateId(), text, goalId, completed: false, scheduledDate: scheduledDate?.toISOString(), createdAt: new Date().toISOString() };
     setData((prev) => ({ ...prev, tasks: [...prev.tasks, newTask] }));
   };
 
