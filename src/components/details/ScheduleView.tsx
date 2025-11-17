@@ -5,6 +5,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from "@/contexts/AppContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, isSameDay } from "date-fns";
+import { vi } from 'date-fns/locale';
 import { Icons } from "../icons";
 import { Badge } from "../ui/badge";
 
@@ -27,6 +28,7 @@ export function ScheduleView() {
       <Card className="h-fit">
         <CardContent className="p-1">
           <Calendar
+            locale={vi}
             mode="single"
             selected={date}
             onSelect={setDate}
@@ -47,7 +49,7 @@ export function ScheduleView() {
         <Card>
             <CardContent className="p-6">
                 <h3 className="font-semibold text-lg mb-4">
-                    {date ? `Schedule for ${format(date, 'MMMM d, yyyy')}` : 'Select a date'}
+                    {date ? `Lịch trình cho ${format(date, 'd MMMM, yyyy', { locale: vi })}` : 'Chọn một ngày'}
                 </h3>
                 {date && itemsForSelectedDate.length > 0 ? (
                     <ul className="space-y-3">
@@ -56,7 +58,7 @@ export function ScheduleView() {
                                 {item.type === 'goal' ? <Icons.goal className="h-5 w-5 text-primary"/> : <Icons.task className="h-5 w-5 text-primary"/>}
                                 <span className="flex-grow font-medium">{item.type === 'goal' ? item.title : item.text}</span>
                                 <Badge variant={item.type === 'goal' ? 'destructive' : 'secondary'}>
-                                    {item.type === 'goal' ? 'Due Date' : 'Task'}
+                                    {item.type === 'goal' ? 'Hạn chót' : 'Nhiệm vụ'}
                                 </Badge>
                             </li>
                         ))}
@@ -64,7 +66,7 @@ export function ScheduleView() {
                 ) : (
                     <div className="text-center text-muted-foreground py-10">
                         <Icons.calendar className="mx-auto h-12 w-12" />
-                        <p className="mt-4">No scheduled items for this day.</p>
+                        <p className="mt-4">Không có mục nào được lên lịch cho ngày này.</p>
                     </div>
                 )}
             </CardContent>

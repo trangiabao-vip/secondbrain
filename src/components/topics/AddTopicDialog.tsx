@@ -40,30 +40,30 @@ export function AddTopicDialog({ children }: { children: ReactNode }) {
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New Topic</DialogTitle>
+          <DialogTitle>Thêm chủ đề mới</DialogTitle>
           <DialogDescription>
-            Add a new topic to your interest: "{selectedInterest?.name}"
+            Thêm một chủ đề mới vào sở thích của bạn: "{selectedInterest?.name}"
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label htmlFor="topic-name">Topic Name</Label>
+            <Label htmlFor="topic-name">Tên chủ đề</Label>
             <Input
               id="topic-name"
               value={topicName}
               onChange={(e) => setTopicName(e.target.value)}
-              placeholder="e.g., 'Advanced CSS Techniques'"
+              placeholder="ví dụ: 'Kỹ thuật CSS nâng cao'"
               onKeyDown={(e) => e.key === 'Enter' && handleAddTopic()}
             />
           </div>
           <div className="flex justify-end">
             <Button type="submit" onClick={handleAddTopic}>
-                Add Topic
+                Thêm chủ đề
             </Button>
           </div>
           <div className="relative">
             <Separator />
-            <span className="absolute left-1/2 -top-3 -translate-x-1/2 bg-background px-2 text-xs text-muted-foreground">OR</span>
+            <span className="absolute left-1/2 -top-3 -translate-x-1/2 bg-background px-2 text-xs text-muted-foreground">HOẶC</span>
           </div>
           <AITopicSuggester onSuggestionClick={handleSuggestion} />
         </div>

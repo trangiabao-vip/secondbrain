@@ -44,21 +44,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addInterest = (name: string) => {
     const newInterest: Interest = { id: generateId(), name };
     setData((prev) => ({ ...prev, interests: [...prev.interests, newInterest] }));
-    toast({ title: "Interest added", description: `"${name}" has been added.` });
+    toast({ title: "Đã thêm sở thích", description: `"${name}" đã được thêm.` });
   };
   
   const addTopic = (name: string, imageId: string) => {
     if (!selectedInterestId) return;
     const newTopic: Topic = { id: generateId(), name, interestId: selectedInterestId, imageId };
     setData((prev) => ({ ...prev, topics: [...prev.topics, newTopic] }));
-    toast({ title: "Topic added", description: `"${name}" has been added.` });
+    toast({ title: "Đã thêm chủ đề", description: `"${name}" đã được thêm.` });
   };
   
   const addGoal = (title: string, dueDate?: Date) => {
     if (!selectedTopicId) return;
     const newGoal: Goal = { id: generateId(), title, topicId: selectedTopicId, dueDate: dueDate?.toISOString() };
     setData((prev) => ({ ...prev, goals: [...prev.goals, newGoal] }));
-    toast({ title: "Goal added", description: `"${title}" has been added.` });
+    toast({ title: "Đã thêm mục tiêu", description: `"${title}" đã được thêm.` });
   };
 
   const addTask = (text: string, goalId: string, scheduledDate?: Date) => {
@@ -80,7 +80,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const newData = { ...prev, [itemType]: items.filter(item => item.id !== id) };
         
         if (itemToDelete) {
-          toast({ title: `${itemType.slice(0, -1)} deleted`, description: `"${itemToDelete.name || itemToDelete.title || itemToDelete.text}" has been removed.`});
+          toast({ title: `${itemType.slice(0, -1)} đã xóa`, description: `"${itemToDelete.name || itemToDelete.title || itemToDelete.text}" đã bị xóa.`});
         }
         
         return newData;
@@ -99,7 +99,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         selectInterest(null);
       }
 
-      toast({ title: `Interest deleted`, description: `"${interestName}" and all its content have been removed.`});
+      toast({ title: `Sở thích đã bị xóa`, description: `"${interestName}" và tất cả nội dung của nó đã bị xóa.`});
 
       return {
         interests: prev.interests.filter(i => i.id !== id),
@@ -121,7 +121,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         selectTopic(null);
       }
 
-      toast({ title: `Topic deleted`, description: `"${topicName}" and all its content have been removed.`});
+      toast({ title: `Chủ đề đã bị xóa`, description: `"${topicName}" và tất cả nội dung của nó đã bị xóa.`});
 
       return {
         ...prev,
@@ -135,7 +135,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const deleteGoal = (id: string) => {
     setData(prev => {
       const goalName = prev.goals.find(g => g.id === id)?.title;
-      toast({ title: `Goal deleted`, description: `"${goalName}" and all its tasks have been removed.`});
+      toast({ title: `Mục tiêu đã bị xóa`, description: `"${goalName}" và tất cả các nhiệm vụ của nó đã bị xóa.`});
       return {
         ...prev,
         goals: prev.goals.filter(g => g.id !== id),

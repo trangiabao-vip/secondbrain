@@ -34,21 +34,21 @@ export type DataType = {
 
 export const initialData: DataType = {
   interests: [
-    { id: 'interest-1', name: 'Web Development' },
-    { id: 'interest-2', name: 'Gardening' },
+    { id: 'interest-1', name: 'Phát triển web' },
+    { id: 'interest-2', name: 'Làm vườn' },
   ],
   topics: [
-    { id: 'topic-1', name: 'React Frameworks', interestId: 'interest-1', imageId: '1' },
-    { id: 'topic-2', name: 'Vegetable Patch', interestId: 'interest-2', imageId: '2' },
+    { id: 'topic-1', name: 'Framework React', interestId: 'interest-1', imageId: '1' },
+    { id: 'topic-2', name: 'Vườn rau', interestId: 'interest-2', imageId: '2' },
   ],
   goals: [
-    { id: 'goal-1', title: 'Learn Next.js', topicId: 'topic-1', dueDate: new Date(new Date().setDate(new Date().getDate() + 14)).toISOString() },
-    { id: 'goal-2', title: 'Prepare soil', topicId: 'topic-2', dueDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString() },
+    { id: 'goal-1', title: 'Học Next.js', topicId: 'topic-1', dueDate: new Date(new Date().setDate(new Date().getDate() + 14)).toISOString() },
+    { id: 'goal-2', title: 'Chuẩn bị đất', topicId: 'topic-2', dueDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString() },
   ],
   tasks: [
-    { id: 'task-1', text: 'Complete Next.js tutorial', goalId: 'goal-1', completed: true, scheduledDate: new Date().toISOString() },
-    { id: 'task-2', text: 'Build a small project', goalId: 'goal-1', completed: false, scheduledDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString() },
-    { id: 'task-3', text: 'Buy compost', goalId: 'goal-2', completed: false },
-    { id: 'task-4', text: 'Till the garden bed', goalId: 'goal-2', completed: false, scheduledDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString() },
+    { id: 'task-1', text: 'Hoàn thành hướng dẫn Next.js', goalId: 'goal-1', completed: true, scheduledDate: new Date().toISOString() },
+    { id: 'task-2', text: 'Xây dựng một dự án nhỏ', goalId: 'goal-1', completed: false, scheduledDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString() },
+    { id: 'task-3', text: 'Mua phân compost', goalId: 'goal-2', completed: false },
+    { id: 'task-4', text: 'Xới luống vườn', goalId: 'goal-2', completed: false, scheduledDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString() },
   ],
 };

@@ -14,7 +14,7 @@ export function Header() {
         <nav className="hidden md:flex items-center text-sm font-medium text-muted-foreground">
           <Button variant="ghost" size="sm" className="gap-1" onClick={() => { selectInterest(null)}}>
             <Icons.home className="h-4 w-4" />
-            Home
+            Trang chủ
           </Button>
           {selectedInterest && (
             <>

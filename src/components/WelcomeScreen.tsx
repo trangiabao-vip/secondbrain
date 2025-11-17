@@ -9,18 +9,18 @@ export function WelcomeScreen() {
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
         <Icons.logo className="h-8 w-8" />
       </div>
-      <h2 className="text-2xl font-bold tracking-tight">Welcome to Interest Hub</h2>
+      <h2 className="text-2xl font-bold tracking-tight">Chào mừng đến với Trung tâm Sở thích</h2>
       <p className="mt-2 text-muted-foreground">
-        Organize your passions. Achieve your goals.
+        Sắp xếp đam mê của bạn. Đạt được mục tiêu của bạn.
       </p>
       <p className="mt-1 text-muted-foreground">
-        Get started by adding your first interest.
+        Bắt đầu bằng cách thêm sở thích đầu tiên của bạn.
       </p>
       <div className="mt-6">
         <AddInterestDialog>
           <Button>
             <Icons.add className="mr-2 h-4 w-4" />
-            Add Interest
+            Thêm sở thích
           </Button>
         </AddInterestDialog>
       </div>

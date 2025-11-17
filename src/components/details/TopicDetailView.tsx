@@ -11,11 +11,11 @@ export function TopicDetailView() {
       <TabsList className="w-full sm:w-auto self-start">
         <TabsTrigger value="goals" className="gap-2">
             <Icons.goal className="h-4 w-4" />
-            Goals & Tasks
+            Mục tiêu & Nhiệm vụ
         </TabsTrigger>
         <TabsTrigger value="schedule" className="gap-2">
             <Icons.calendar className="h-4 w-4" />
-            Schedule
+            Lịch trình
         </TabsTrigger>
       </TabsList>
       <TabsContent value="goals" className="mt-4 flex-grow">

@@ -5,6 +5,7 @@ import { AddTaskForm } from "./AddTaskForm";
 import { Button } from "../ui/button";
 import { Icons } from "../icons";
 import { format } from "date-fns";
+import { vi } from 'date-fns/locale';
 
 export function TaskList({ goalId }: { goalId: string }) {
   const { tasks, updateTask, deleteTask } = useAppContext();
@@ -12,7 +13,7 @@ export function TaskList({ goalId }: { goalId: string }) {
 
   return (
     <div className="space-y-4">
-      <h4 className="font-semibold">Tasks</h4>
+      <h4 className="font-semibold">Công việc</h4>
       <div className="space-y-2">
         {goalTasks.map(task => (
           <div key={task.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-secondary/50 group">
@@ -30,7 +31,7 @@ export function TaskList({ goalId }: { goalId: string }) {
             {task.scheduledDate && (
                 <div className="text-xs text-muted-foreground flex items-center gap-1">
                     <Icons.calendar className="h-3 w-3" />
-                    {format(new Date(task.scheduledDate), "MMM d")}
+                    {format(new Date(task.scheduledDate), "d MMM", { locale: vi })}
                 </div>
             )}
             <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => deleteTask(task.id)}>

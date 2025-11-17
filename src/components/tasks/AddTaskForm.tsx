@@ -20,14 +20,14 @@ export function AddTaskForm({ goalId }: { goalId: string }) {
     <div className="flex gap-2">
       <Input
         type="text"
-        placeholder="Add a new task..."
+        placeholder="Thêm một công việc mới..."
         value={taskText}
         onChange={(e) => setTaskText(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
       />
       <Button onClick={handleAddTask} variant="secondary">
         <Icons.add className="h-4 w-4 mr-2" />
-        Add Task
+        Thêm công việc
       </Button>
     </div>
   );

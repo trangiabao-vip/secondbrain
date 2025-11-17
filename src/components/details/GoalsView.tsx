@@ -8,6 +8,8 @@ import { Icons } from "../icons";
 import { format, formatDistanceToNow } from "date-fns";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Progress } from "../ui/progress";
+import { vi } from 'date-fns/locale';
+import { Card } from "../ui/card";
 
 export function GoalsView() {
   const { goals, tasks, selectedTopic, deleteGoal } = useAppContext();
@@ -25,11 +27,11 @@ export function GoalsView() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold">Goals</h3>
+        <h3 className="text-xl font-bold">Mục tiêu</h3>
         <AddGoalDialog>
           <Button>
             <Icons.add className="mr-2 h-4 w-4" />
-            New Goal
+            Mục tiêu mới
           </Button>
         </AddGoalDialog>
       </div>
@@ -45,7 +47,7 @@ export function GoalsView() {
                             <span className="font-semibold text-base">{goal.title}</span>
                             {goal.dueDate && (
                                 <span className="text-xs text-muted-foreground">
-                                Due {formatDistanceToNow(new Date(goal.dueDate), { addSuffix: true })} ({format(new Date(goal.dueDate), 'MMM d, yyyy')})
+                                Hết hạn {formatDistanceToNow(new Date(goal.dueDate), { addSuffix: true, locale: vi })} ({format(new Date(goal.dueDate), 'd MMM, yyyy', { locale: vi })})
                                 </span>
                             )}
                             <Progress value={calculateProgress(goal.id)} className="h-2 w-full max-w-sm mt-1" />
@@ -60,7 +62,7 @@ export function GoalsView() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem className="text-destructive" onClick={() => deleteGoal(goal.id)}>
                           <Icons.delete className="mr-2 h-4 w-4" />
-                          Delete Goal
+                          Xóa mục tiêu
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -77,15 +79,15 @@ export function GoalsView() {
       ) : (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-card p-12 text-center">
             <Icons.goal className="h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">No Goals Yet</h3>
+            <h3 className="mt-4 text-lg font-semibold">Chưa có mục tiêu nào</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-                Set a goal to start making progress on this topic.
+                Đặt mục tiêu để bắt đầu tiến bộ về chủ đề này.
             </p>
             <div className="mt-6">
                 <AddGoalDialog>
                     <Button>
                         <Icons.add className="mr-2 h-4 w-4" />
-                        New Goal
+                        Mục tiêu mới
                     </Button>
                 </AddGoalDialog>
             </div>

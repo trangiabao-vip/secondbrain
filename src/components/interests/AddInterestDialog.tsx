@@ -32,29 +32,29 @@ export function AddInterestDialog({ children }: { children: ReactNode }) {
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Interest</DialogTitle>
+          <DialogTitle>Thêm sở thích mới</DialogTitle>
           <DialogDescription>
-            What's a passion or hobby you want to focus on?
+            Đam mê hoặc sở thích bạn muốn tập trung vào là gì?
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="interest-name" className="text-right">
-              Name
+              Tên
             </Label>
             <Input
               id="interest-name"
               value={interestName}
               onChange={(e) => setInterestName(e.target.value)}
               className="col-span-3"
-              placeholder="e.g., 'Creative Writing'"
+              placeholder="ví dụ: 'Viết sáng tạo'"
               onKeyDown={(e) => e.key === 'Enter' && handleAddInterest()}
             />
           </div>
         </div>
         <DialogFooter>
           <Button type="submit" onClick={handleAddInterest}>
-            Add Interest
+            Thêm sở thích
           </Button>
         </DialogFooter>
       </DialogContent>

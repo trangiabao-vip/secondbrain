@@ -30,8 +30,8 @@ export function AIGoalSuggester({ onSuggestionClick }: AIGoalSuggesterProps) {
       console.error('AI goal suggestion failed:', error);
       toast({
         variant: "destructive",
-        title: "AI Suggestion Failed",
-        description: "Could not fetch goal suggestions. Please try again later.",
+        title: "Gợi ý của AI thất bại",
+        description: "Không thể tìm nạp các gợi ý mục tiêu. Vui lòng thử lại sau.",
       })
     } finally {
       setLoading(false);
@@ -41,13 +41,13 @@ export function AIGoalSuggester({ onSuggestionClick }: AIGoalSuggesterProps) {
   return (
     <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
       <div className='flex flex-col items-center text-center'>
-        <p className="text-sm font-medium">Get AI-powered goal ideas</p>
-        <p className='text-xs text-muted-foreground'>Based on your topic: "{selectedTopic?.name}"</p>
+        <p className="text-sm font-medium">Nhận ý tưởng mục tiêu do AI cung cấp</p>
+        <p className='text-xs text-muted-foreground'>Dựa trên chủ đề của bạn: "{selectedTopic?.name}"</p>
       </div>
 
       <Button onClick={getSuggestions} disabled={loading} className="w-full">
         <Icons.ai className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-        {loading ? 'Generating Ideas...' : 'Suggest Goals'}
+        {loading ? 'Đang tạo ý tưởng...' : 'Gợi ý mục tiêu'}
       </Button>
 
       {loading && (
@@ -60,7 +60,7 @@ export function AIGoalSuggester({ onSuggestionClick }: AIGoalSuggesterProps) {
 
       {suggestions.length > 0 && (
         <div className="space-y-2 pt-2">
-          <h4 className='text-sm font-medium text-center'>Click to use a suggestion:</h4>
+          <h4 className='text-sm font-medium text-center'>Nhấp để sử dụng gợi ý:</h4>
           {suggestions.map((suggestion, index) => (
             <Button
               key={index}

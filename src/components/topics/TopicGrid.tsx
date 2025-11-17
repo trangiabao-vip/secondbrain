@@ -14,11 +14,11 @@ export function TopicGrid() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight">Topics for {selectedInterest.name}</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Chủ đề cho {selectedInterest.name}</h2>
         <AddTopicDialog>
           <Button>
             <Icons.add className="mr-2 h-4 w-4" />
-            New Topic
+            Chủ đề mới
           </Button>
         </AddTopicDialog>
       </div>
@@ -31,15 +31,15 @@ export function TopicGrid() {
       ) : (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-card p-12 text-center">
             <Icons.topic className="h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">No Topics Yet</h3>
+            <h3 className="mt-4 text-lg font-semibold">Chưa có chủ đề nào</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Create your first topic to start organizing your goals.
+              Tạo chủ đề đầu tiên của bạn để bắt đầu sắp xếp các mục tiêu của bạn.
             </p>
             <div className="mt-6">
                 <AddTopicDialog>
                     <Button>
                         <Icons.add className="mr-2 h-4 w-4" />
-                        New Topic
+                        Chủ đề mới
                     </Button>
                 </AddTopicDialog>
             </div>

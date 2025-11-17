@@ -44,7 +44,7 @@ export function TopicCard({ topic }: TopicCardProps) {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); deleteTopic(topic.id); }}>
                   <Icons.delete className="mr-2 h-4 w-4" />
-                  Delete Topic
+                  Xóa chủ đề
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -55,17 +55,17 @@ export function TopicCard({ topic }: TopicCardProps) {
         <div className="text-sm text-muted-foreground mt-2 flex items-center gap-4">
             <div className="flex items-center gap-1">
                 <Icons.goal className="h-4 w-4"/>
-                <span>{topicGoals.length} Goals</span>
+                <span>{topicGoals.length} Mục tiêu</span>
             </div>
             <div className="flex items-center gap-1">
                 <Icons.task className="h-4 w-4"/>
-                <span>{topicTasks.length} Tasks</span>
+                <span>{topicTasks.length} Công việc</span>
             </div>
         </div>
       </CardContent>
       <CardFooter className="p-4 pt-0">
         <Button onClick={() => selectTopic(topic.id)} className="w-full" variant="outline">
-            View Details
+            Xem chi tiết
         </Button>
       </CardFooter>
     </Card>

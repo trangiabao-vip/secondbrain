@@ -21,7 +21,7 @@ export function InterestSidebar() {
       <SidebarHeader className="border-b">
         <div className="flex items-center gap-2 p-2">
           <Icons.logo className="w-6 h-6 text-primary" />
-          <h1 className="text-lg font-semibold">Interest Hub</h1>
+          <h1 className="text-lg font-semibold">Trung tâm Sở thích</h1>
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2">
@@ -46,7 +46,7 @@ export function InterestSidebar() {
                   <DropdownMenuContent>
                     <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); deleteInterest(interest.id); }}>
                       <Icons.delete className="mr-2 h-4 w-4" />
-                      Delete
+                      Xóa
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -59,7 +59,7 @@ export function InterestSidebar() {
         <AddInterestDialog>
           <Button variant="ghost" className="w-full justify-start">
             <Icons.add className="mr-2 h-4 w-4" />
-            Add Interest
+            Thêm sở thích
           </Button>
         </AddInterestDialog>
       </SidebarFooter>
