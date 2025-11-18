@@ -83,17 +83,13 @@ export function Header() {
             </button>
           </AddTopicDialog>
           <AddGoalDialog>
-             <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full"
-              disabled={!selectedTopic}
-             >
+             <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
                 <Icons.goal className="mr-2 h-4 w-4" />
                 Mục tiêu mới...
              </button>
           </AddGoalDialog>
           <AddOrEditTaskDialog mode="add">
-            <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full"
-                disabled={!selectedTopic}
-            >
+            <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
                 <Icons.task className="mr-2 h-4 w-4" />
                 Nhiệm vụ mới...
             </button>
