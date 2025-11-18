@@ -53,7 +53,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
         if (task) {
           setTaskText(task.text);
           setStatus(task.status);
-          setSelectedGoalId(task.goalId);
+          setSelectedGoalId(task.goalId || undefined);
           const date = getTaskDate(task.scheduledDate);
           if (date) {
             setScheduledDate(date);
@@ -75,7 +75,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
   }, [isOpen, taskId, getTaskById, mode, initialGoalId]);
 
   const handleSubmit = () => {
-    if (taskText.trim() && selectedGoalId) {
+    if (taskText.trim()) {
       let finalDate: Date | undefined | null = scheduledDate;
       if (finalDate) {
         try {
@@ -133,25 +133,26 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
         </DialogHeader>
         <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="task-goal">Mục tiêu</Label>
-              <Select value={selectedGoalId} onValueChange={setSelectedGoalId} disabled={mode === 'edit'}>
-                <SelectTrigger id="task-goal">
-                  <SelectValue placeholder="Chọn một mục tiêu" />
-                </SelectTrigger>
-                <SelectContent>
-                  {topicGoals.map(goal => (
-                    <SelectItem key={goal.id} value={goal.id}>{goal.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="task-text-edit">Nhiệm vụ</Label>
               <Input
                 id="task-text-edit"
                 value={taskText}
                 onChange={(e) => setTaskText(e.target.value)}
               />
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="task-goal">Mục tiêu (Tùy chọn)</Label>
+              <Select value={selectedGoalId} onValueChange={setSelectedGoalId}>
+                <SelectTrigger id="task-goal">
+                  <SelectValue placeholder="Chọn một mục tiêu (hoặc để trống)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Không có mục tiêu</SelectItem>
+                  {topicGoals.map(goal => (
+                    <SelectItem key={goal.id} value={goal.id}>{goal.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="scheduled-date-edit">Ngày đã lên lịch (Tùy chọn)</Label>

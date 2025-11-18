@@ -9,7 +9,8 @@ export interface Task {
   id: string; // Firestore document ID
   text: string;
   status: TaskStatus;
-  goalId: string;
+  goalId?: string | null; // Optional: Link to a goal
+  topicId?: string | null; // Optional: Link directly to a topic
   scheduledDate?: any; // Can be string or Firebase Timestamp
   createdAt: any; // Can be string or Firebase Timestamp
   userId: string;

@@ -10,10 +10,12 @@ import { format } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { AddOrEditTaskDialog } from "./AddOrEditTaskDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { Task } from "@/lib/data";
 
-export function TaskList({ goalId }: { goalId: string }) {
-  const { tasks, updateTask, deleteTask, isDataLoading } = useAppContext();
-  const goalTasks = tasks.filter(task => task.goalId === goalId);
+export function TaskList({ goalId, tasks: customTasks }: { goalId?: string, tasks?: Task[] }) {
+  const { tasks: allTasks, updateTask, deleteTask, isDataLoading } = useAppContext();
+
+  const tasksToRender = customTasks ? customTasks : allTasks.filter(task => task.goalId === goalId);
 
   const getTaskDate = (date: any) => {
     if (!date) return null;
@@ -30,16 +32,16 @@ export function TaskList({ goalId }: { goalId: string }) {
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
         </div>
-        <Skeleton className="h-10 w-full" />
+        {goalId && <Skeleton className="h-10 w-full" />}
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <h4 className="font-semibold">Công việc</h4>
+      {goalId && <h4 className="font-semibold">Công việc</h4>}
       <div className="space-y-2">
-        {goalTasks.map(task => {
+        {tasksToRender.map(task => {
           const createdAt = getTaskDate(task.createdAt);
           const scheduledDate = getTaskDate(task.scheduledDate);
           return (
@@ -78,7 +80,7 @@ export function TaskList({ goalId }: { goalId: string }) {
           )}
         )}
       </div>
-      <AddTaskForm goalId={goalId} />
+      {goalId && <AddTaskForm goalId={goalId} />}
     </div>
   );
 }

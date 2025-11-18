@@ -16,6 +16,7 @@ import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
 import type { GoalStatus } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
 
 export function GoalsView() {
   const { goals, tasks, selectedTopic, deleteGoal, updateGoal, isDataLoading } = useAppContext();
@@ -23,6 +24,8 @@ export function GoalsView() {
   if (!selectedTopic) return null;
   
   const topicGoals = goals.filter(goal => goal.topicId === selectedTopic?.id);
+  const standaloneTasks = tasks.filter(task => task.topicId === selectedTopic?.id && !task.goalId);
+
 
   if (isDataLoading) {
     return (
@@ -63,16 +66,24 @@ export function GoalsView() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold">Mục tiêu</h3>
-        <AddGoalDialog>
-          <Button>
-            <Icons.add className="mr-2 h-4 w-4" />
-            Mục tiêu mới
-          </Button>
-        </AddGoalDialog>
+        <h3 className="text-xl font-bold">Mục tiêu &amp; Nhiệm vụ</h3>
+        <div className="flex gap-2">
+          <AddOrEditTaskDialog mode="add">
+            <Button variant="outline">
+              <Icons.add className="mr-2 h-4 w-4" />
+              Thêm nhiệm vụ
+            </Button>
+          </AddOrEditTaskDialog>
+          <AddGoalDialog>
+            <Button>
+              <Icons.add className="mr-2 h-4 w-4" />
+              Mục tiêu mới
+            </Button>
+          </AddGoalDialog>
+        </div>
       </div>
 
-      {topicGoals.length > 0 ? (
+      {topicGoals.length > 0 && (
         <Accordion type="single" collapsible className="w-full" defaultValue={topicGoals[0]?.id}>
           {topicGoals.map((goal) => {
             const dueDate = getGoalDate(goal.dueDate);
@@ -147,20 +158,37 @@ export function GoalsView() {
             )
           })}
         </Accordion>
-      ) : (
+      )}
+
+      {standaloneTasks.length > 0 && (
+         <Card>
+            <CardContent className="p-4">
+               <h4 className="font-semibold mb-4">Nhiệm vụ độc lập</h4>
+               <TaskList tasks={standaloneTasks} />
+            </CardContent>
+         </Card>
+      )}
+
+      {topicGoals.length === 0 && standaloneTasks.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-card p-12 text-center">
             <Icons.goal className="h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">Chưa có mục tiêu nào</h3>
+            <h3 className="mt-4 text-lg font-semibold">Chưa có mục tiêu hoặc nhiệm vụ nào</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-                Đặt mục tiêu để bắt đầu tiến bộ về chủ đề này.
+                Đặt mục tiêu hoặc thêm nhiệm vụ để bắt đầu tiến bộ về chủ đề này.
             </p>
-            <div className="mt-6">
+            <div className="mt-6 flex gap-4">
                 <AddGoalDialog>
                     <Button>
                         <Icons.add className="mr-2 h-4 w-4" />
                         Mục tiêu mới
                     </Button>
                 </AddGoalDialog>
+                <AddOrEditTaskDialog mode="add">
+                  <Button variant="outline">
+                    <Icons.add className="mr-2 h-4 w-4" />
+                    Thêm nhiệm vụ
+                  </Button>
+                </AddOrEditTaskDialog>
             </div>
         </div>
       )}

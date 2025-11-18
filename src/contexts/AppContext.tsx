@@ -33,7 +33,7 @@ interface AppContextType {
   updateTopic: (topicId: string, name: string) => void;
   addGoal: (title: string, dueDate?: Date) => void;
   updateGoal: (goalId: string, title: string, dueDate?: Date, status?: GoalStatus) => void;
-  addTask: (text: string, goalId: string, scheduledDate?: Date, status?: TaskStatus) => void;
+  addTask: (text: string, goalId?: string, scheduledDate?: Date, status?: TaskStatus) => void;
   updateTask: (taskId: string, status: TaskStatus, text?: string, scheduledDate?: Date | null, goalId?: string) => void;
   deleteInterest: (id: string) => Promise<void>;
   deleteTopic: (id: string) => Promise<void>;
@@ -130,15 +130,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Mục tiêu đã được cập nhật", description: `"${title}" đã được cập nhật.` });
   };
 
-  const addTask = (text: string, goalId: string, scheduledDate?: Date, status?: TaskStatus) => {
-    if (!user) return;
-    const newTask: Omit<Task, 'id'> = { 
-      text, 
-      goalId, 
-      status: status || 'chưa bắt đầu', 
-      scheduledDate: scheduledDate || null, 
-      userId: user.uid, 
-      createdAt: serverTimestamp() 
+  const addTask = (text: string, goalId?: string, scheduledDate?: Date, status?: TaskStatus) => {
+    if (!user || (!goalId && !selectedTopicId)) return;
+    
+    const newTask: Omit<Task, 'id'> = {
+      text,
+      goalId: goalId || null,
+      topicId: goalId ? null : selectedTopicId,
+      status: status || 'chưa bắt đầu',
+      scheduledDate: scheduledDate || null,
+      userId: user.uid,
+      createdAt: serverTimestamp()
     };
     addDocumentNonBlocking(collection(firestore, 'tasks'), newTask);
   };
@@ -149,7 +151,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (scheduledDate !== undefined) {
        updatedData.scheduledDate = scheduledDate;
     }
-    if (goalId !== undefined) updatedData.goalId = goalId;
+    // Logic to handle changing goal
+    if (goalId !== undefined) {
+      updatedData.goalId = goalId || null;
+      updatedData.topicId = goalId ? null : selectedTopicId;
+    }
     updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
   };
 
@@ -160,7 +166,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const topicsToDelete = topics.filter(t => t.interestId === id);
     const goalsToDelete = goals.filter(g => topicsToDelete.some(t => t.id === g.topicId));
-    const tasksToDelete = tasks.filter(t => goalsToDelete.some(g => g.id === t.goalId));
+    const tasksToDelete = tasks.filter(t => goalsToDelete.some(g => g.id === t.goalId) || topicsToDelete.some(topic => topic.id === t.topicId));
     
     tasksToDelete.forEach(t => batch.delete(doc(firestore, 'tasks', t.id)));
     goalsToDelete.forEach(g => batch.delete(doc(firestore, 'goals', g.id)));
@@ -185,7 +191,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const batch = writeBatch(firestore);
     
     const goalsToDelete = goals.filter(g => g.topicId === id);
-    const tasksToDelete = tasks.filter(t => goalsToDelete.some(g => g.id === t.goalId));
+    const tasksToDelete = tasks.filter(t => goalsToDelete.some(g => g.id === t.goalId) || t.topicId === id);
     
     tasksToDelete.forEach(t => batch.delete(doc(firestore, 'tasks', t.id)));
     goalsToDelete.forEach(g => batch.delete(doc(firestore, 'goals', g.id)));
