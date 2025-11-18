@@ -1,0 +1,110 @@
+'use client';
+import { useAppContext } from "@/contexts/AppContext";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { TaskList } from "@/components/tasks/TaskList";
+import { AddGoalDialog } from "@/components/goals/AddGoalDialog";
+import { Button } from "../ui/button";
+import { Icons } from "../icons";
+import { format, formatDistanceToNow } from "date-fns";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { Progress } from "../ui/progress";
+import { vi } from 'date-fns/locale';
+import { Card } from "../ui/card";
+import { EditGoalDialog } from "./EditGoalDialog";
+
+export function GoalsView() {
+  const { goals, tasks, selectedTopic, deleteGoal } = useAppContext();
+  const topicGoals = goals.filter(goal => goal.topicId === selectedTopic?.id);
+
+  if (!selectedTopic) return null;
+
+  const calculateProgress = (goalId: string) => {
+    const goalTasks = tasks.filter(t => t.goalId === goalId);
+    if (goalTasks.length === 0) return 0;
+    const completedTasks = goalTasks.filter(t => t.completed).length;
+    return (completedTasks / goalTasks.length) * 100;
+  };
+  
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold">Mục tiêu</h3>
+        <AddGoalDialog>
+          <Button>
+            <Icons.add className="mr-2 h-4 w-4" />
+            Mục tiêu mới
+          </Button>
+        </AddGoalDialog>
+      </div>
+
+      {topicGoals.length > 0 ? (
+        <Accordion type="single" collapsible className="w-full" defaultValue={topicGoals[0]?.id}>
+          {topicGoals.map((goal) => (
+            <AccordionItem value={goal.id} key={goal.id} className="border-b-0">
+               <Card className="mb-4 overflow-hidden">
+                <div className="flex items-center p-4">
+                    <AccordionTrigger className="flex-1 text-left p-0 hover:no-underline">
+                        <div className="flex flex-col gap-2">
+                            <span className="font-semibold text-base">{goal.title}</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                                {goal.dueDate && (
+                                    <span className="text-xs text-muted-foreground">
+                                    Hết hạn {formatDistanceToNow(new Date(goal.dueDate), { addSuffix: true, locale: vi })} ({format(new Date(goal.dueDate), 'd MMM, yyyy', { locale: vi })})
+                                    </span>
+                                )}
+                                <span className="text-xs text-muted-foreground">
+                                    Tạo lúc: {format(new Date(goal.createdAt), "HH:mm, dd/MM/yyyy", { locale: vi })}
+                                </span>
+                            </div>
+                            <Progress value={calculateProgress(goal.id)} className="h-2 w-full max-w-sm mt-1" />
+                        </div>
+                    </AccordionTrigger>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 ml-2 flex-shrink-0">
+                          <Icons.ellipsis className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <EditGoalDialog goalId={goal.id}>
+                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            <Icons.left className="mr-2 h-4 w-4 rotate-90" />
+                            Chỉnh sửa
+                          </DropdownMenuItem>
+                        </EditGoalDialog>
+                        <DropdownMenuItem className="text-destructive" onClick={() => deleteGoal(goal.id)}>
+                          <Icons.delete className="mr-2 h-4 w-4" />
+                          Xóa mục tiêu
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+                <AccordionContent>
+                    <div className="px-4 pb-4">
+                        <TaskList goalId={goal.id} />
+                    </div>
+                </AccordionContent>
+               </Card>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      ) : (
+        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-card p-12 text-center">
+            <Icons.goal className="h-12 w-12 text-muted-foreground" />
+            <h3 className="mt-4 text-lg font-semibold">Chưa có mục tiêu nào</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+                Đặt mục tiêu để bắt đầu tiến bộ về chủ đề này.
+            </p>
+            <div className="mt-6">
+                <AddGoalDialog>
+                    <Button>
+                        <Icons.add className="mr-2 h-4 w-4" />
+                        Mục tiêu mới
+                    </Button>
+                </AddGoalDialog>
+            </div>
+        </div>
+      )}
+    </div>
+  );
+}

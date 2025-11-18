@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Edit,
   Home,
   LayoutGrid,
   Lightbulb,
@@ -35,4 +36,5 @@ export const Icons = {
   right: ChevronRight,
   left: ChevronLeft,
   ellipsis: MoreHorizontal,
+  edit: Edit,
 };
