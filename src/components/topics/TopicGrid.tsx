@@ -4,12 +4,29 @@ import { TopicCard } from "./TopicCard";
 import { AddTopicDialog } from "./AddTopicDialog";
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function TopicGrid() {
-  const { topics, selectedInterest } = useAppContext();
+  const { topics, selectedInterest, isDataLoading } = useAppContext();
   const filteredTopics = topics.filter(topic => topic.interestId === selectedInterest?.id);
 
   if (!selectedInterest) return null;
+
+  if (isDataLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -1,4 +1,5 @@
 
+
 'use client';
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -22,8 +23,14 @@ export function TopicCard({ topic }: TopicCardProps) {
 
   const topicGoals = goals.filter(g => g.topicId === topic.id);
   const topicTasks = tasks.filter(t => topicGoals.some(g => g.id === t.goalId));
-  const completedTasks = topicTasks.filter(t => t.status === 'hoàn thành').length;
-  const progress = topicTasks.length > 0 ? (completedTasks / topicTasks.length) * 100 : 0;
+
+  const getTopicDate = (date: any) => {
+    if (!date) return null;
+    if (typeof date === 'string') return new Date(date);
+    if (date.seconds) return new Date(date.seconds * 1000);
+    return null;
+  }
+  const createdAt = getTopicDate(topic.createdAt);
 
   return (
     <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
@@ -62,9 +69,11 @@ export function TopicCard({ topic }: TopicCardProps) {
       </CardHeader>
       <CardContent className="p-4 flex-grow">
         <CardTitle className="text-lg font-bold line-clamp-2">{topic.name}</CardTitle>
-        <p className="text-xs text-muted-foreground mt-1">
-            Tạo lúc: {format(new Date(topic.createdAt), "HH:mm, dd/MM/yyyy", { locale: vi })}
-        </p>
+        {createdAt && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Tạo lúc: {format(createdAt, "HH:mm, dd/MM/yyyy", { locale: vi })}
+          </p>
+        )}
         <div className="text-sm text-muted-foreground mt-2 flex items-center gap-4">
             <div className="flex items-center gap-1">
                 <Icons.goal className="h-4 w-4"/>

@@ -33,7 +33,14 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
       const goal = getGoalById(goalId);
       if (goal) {
         setGoalTitle(goal.title);
-        setDueDate(goal.dueDate ? new Date(goal.dueDate) : undefined);
+        if (typeof goal.dueDate === 'string') {
+          setDueDate(new Date(goal.dueDate));
+        } else if (goal.dueDate && 'seconds' in goal.dueDate) {
+          // Handle Firebase Timestamp
+          setDueDate(new Date(goal.dueDate.seconds * 1000));
+        } else {
+          setDueDate(undefined);
+        }
         setStatus(goal.status);
       }
     }
@@ -46,8 +53,8 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
     }
   };
 
-  const handleDeleteGoal = () => {
-    deleteGoal(goalId);
+  const handleDeleteGoal = async () => {
+    await deleteGoal(goalId);
     setIsOpen(false);
   }
 

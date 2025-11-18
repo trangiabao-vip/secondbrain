@@ -29,14 +29,21 @@ export function EditTaskDialog({ taskId, children }: { taskId: string, children:
   const [status, setStatus] = useState<TaskStatus>('chưa bắt đầu');
   const [isOpen, setIsOpen] = useState(false);
 
+  const getTaskDate = (date: any) => {
+    if (!date) return undefined;
+    if (typeof date === 'string') return new Date(date);
+    if (date.seconds) return new Date(date.seconds * 1000);
+    return undefined;
+  }
+
   useEffect(() => {
     if (isOpen) {
       const task = getTaskById(taskId);
       if (task) {
         setTaskText(task.text);
         setStatus(task.status);
-        if (task.scheduledDate) {
-            const date = new Date(task.scheduledDate);
+        const date = getTaskDate(task.scheduledDate);
+        if (date) {
             setScheduledDate(date);
             setTime(format(date, "HH:mm"));
         } else {
@@ -49,7 +56,7 @@ export function EditTaskDialog({ taskId, children }: { taskId: string, children:
 
   const handleUpdateTask = () => {
     if (taskText.trim()) {
-      let finalDate: Date | undefined = scheduledDate;
+      let finalDate: Date | undefined | null = scheduledDate;
       if (finalDate) {
         try {
             const [hours, minutes] = time.split(':').map(Number);
@@ -60,6 +67,8 @@ export function EditTaskDialog({ taskId, children }: { taskId: string, children:
         } catch (e) {
             // ignore time parsing errors, proceed with date only
         }
+      } else {
+        finalDate = null;
       }
       updateTask(taskId, status, taskText.trim(), finalDate);
       setIsOpen(false);

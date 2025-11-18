@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { suggestTopics } from '@/ai/flows/ai-powered-topic-suggestion';
 import { useAppContext } from '@/contexts/AppContext';
 import { Icons } from '@/components/icons';
-import { Skeleton } from '../ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
 interface AITopicSuggesterProps {

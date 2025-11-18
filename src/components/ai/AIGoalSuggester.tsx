@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { suggestGoals } from '@/ai/flows/ai-powered-goal-suggestion';
 import { useAppContext } from '@/contexts/AppContext';
 import { Icons } from '@/components/icons';
-import { Skeleton } from '../ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
 interface AIGoalSuggesterProps {

@@ -2,8 +2,22 @@
 import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { AddInterestDialog } from "./interests/AddInterestDialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAppContext } from "@/contexts/AppContext";
 
 export function WelcomeScreen() {
+  const { isDataLoading } = useAppContext();
+
+  if (isDataLoading) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center p-12">
+        <Skeleton className="h-16 w-16 rounded-full mb-4" />
+        <Skeleton className="h-8 w-64 mb-2" />
+        <Skeleton className="h-6 w-80" />
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-background p-12 text-center">
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">

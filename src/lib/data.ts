@@ -2,36 +2,43 @@
 export type GoalStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại';
 export type TaskStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại';
 
+// Note: The 'id' field will be automatically managed by Firestore.
+// The types here represent the data structure within the application logic.
+
 export interface Task {
-  id: string;
+  id: string; // Firestore document ID
   text: string;
   status: TaskStatus;
   goalId: string;
-  scheduledDate?: string;
-  createdAt: string;
+  scheduledDate?: any; // Can be string or Firebase Timestamp
+  createdAt: any; // Can be string or Firebase Timestamp
+  userId: string;
 }
 
 export interface Goal {
-  id: string;
+  id: string; // Firestore document ID
   title: string;
   topicId: string;
   status: GoalStatus;
-  dueDate?: string;
-  createdAt: string;
+  dueDate?: any; // Can be string or Firebase Timestamp
+  createdAt: any; // Can be string or Firebase Timestamp
+  userId: string;
 }
 
 export interface Topic {
-  id: string;
+  id: string; // Firestore document ID
   name: string;
   interestId: string;
   imageId: string;
-  createdAt: string;
+  createdAt: any; // Can be string or Firebase Timestamp
+  userId: string;
 }
 
 export interface Interest {
-  id: string;
+  id: string; // Firestore document ID
   name: string;
-  createdAt: string;
+  createdAt: any; // Can be string or Firebase Timestamp
+  userId: string;
 }
 
 export type DataType = {
@@ -41,25 +48,11 @@ export type DataType = {
   tasks: Task[];
 };
 
+// This initialData is now only for reference and will not be used
+// as the application will fetch data from Firestore.
 export const initialData: DataType = {
-  interests: [
-    { id: 'interest-1', name: 'Phát triển web', createdAt: new Date().toISOString() },
-    { id: 'interest-2', name: 'Làm vườn', createdAt: new Date().toISOString() },
-    { id: 'interest-3', name: 'Sức khỏe', createdAt: new Date().toISOString() },
-  ],
-  topics: [
-    { id: 'topic-1', name: 'Framework React', interestId: 'interest-1', imageId: '1', createdAt: new Date().toISOString() },
-    { id: 'topic-2', name: 'Vườn rau', interestId: 'interest-2', imageId: '2', createdAt: new Date().toISOString() },
-  ],
-  goals: [
-    { id: 'goal-1', title: 'Học Next.js', topicId: 'topic-1', status: 'đang làm', dueDate: new Date(new Date().setDate(new Date().getDate() + 14)).toISOString(), createdAt: new Date().toISOString() },
-    { id: 'goal-2', title: 'Chuẩn bị đất', topicId: 'topic-2', status: 'chưa bắt đầu', dueDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(), createdAt: new Date().toISOString() },
-  ],
-  tasks: [
-    { id: 'task-1', text: 'Hoàn thành hướng dẫn Next.js', goalId: 'goal-1', status: 'hoàn thành', scheduledDate: new Date().toISOString(), createdAt: new Date().toISOString() },
-    { id: 'task-2', text: 'Xây dựng một dự án nhỏ', goalId: 'goal-1', status: 'chưa bắt đầu', scheduledDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(), createdAt: new Date().toISOString() },
-    { id: 'task-3', text: 'Mua phân compost', goalId: 'goal-2', status: 'chưa bắt đầu', createdAt: new Date().toISOString() },
-    { id: 'task-4', text: 'Xới luống vườn', goalId: 'goal-2', status: 'chưa bắt đầu', scheduledDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString(), createdAt: new Date().toISOString() },
-  ],
+  interests: [],
+  topics: [],
+  goals: [],
+  tasks: [],
 };
-

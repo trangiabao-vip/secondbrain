@@ -14,9 +14,30 @@ import { AddInterestDialog } from "./AddInterestDialog";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { EditInterestDialog } from "./EditInterestDialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function InterestSidebar() {
-  const { interests, selectedInterestId, selectInterest, deleteInterest, viewMode, setViewMode } = useAppContext();
+  const { interests, selectedInterestId, selectInterest, deleteInterest, viewMode, setViewMode, isDataLoading } = useAppContext();
+
+  if (isDataLoading) {
+    return (
+      <>
+        <SidebarHeader className="border-b p-2">
+          <Skeleton className="h-8 w-full" />
+        </SidebarHeader>
+        <SidebarContent className="p-2">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </SidebarContent>
+        <SidebarFooter className="p-2 border-t">
+          <Skeleton className="h-10 w-full" />
+        </SidebarFooter>
+      </>
+    )
+  }
 
   return (
     <>
