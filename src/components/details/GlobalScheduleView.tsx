@@ -83,7 +83,7 @@ export function GlobalScheduleView() {
               {hours.map(hour => (
                 <div key={hour} className="h-16 text-right pr-2 relative">
                   <span className="relative -top-2">
-                    {format(setHours(new Date(), hour), 'H:mm')}
+                    {format(setHours(new Date(), hour), 'HH:mm')}
                   </span>
                 </div>
               ))}

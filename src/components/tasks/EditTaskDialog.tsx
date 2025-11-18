@@ -135,6 +135,7 @@ export function EditTaskDialog({ taskId, children }: { taskId: string, children:
                         value={time}
                         onChange={(e) => setTime(e.target.value)}
                         className="w-32"
+                        step="900"
                     />
                 )}
               </div>
