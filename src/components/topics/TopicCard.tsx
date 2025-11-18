@@ -10,6 +10,7 @@ import { Icons } from "../icons";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import { EditTopicDialog } from "./EditTopicDialog";
 
 interface TopicCardProps {
   topic: Topic;
@@ -45,6 +46,12 @@ export function TopicCard({ topic }: TopicCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <EditTopicDialog topicId={topic.id}>
+                    <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
+                        <Icons.edit className="mr-2 h-4 w-4" />
+                        Chỉnh sửa chủ đề
+                    </button>
+                </EditTopicDialog>
                 <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); deleteTopic(topic.id); }}>
                   <Icons.delete className="mr-2 h-4 w-4" />
                   Xóa chủ đề

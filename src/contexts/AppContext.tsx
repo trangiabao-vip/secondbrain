@@ -18,6 +18,7 @@ interface AppContextType extends DataType {
   selectTopic: (id: string | null) => void;
   addInterest: (name: string) => void;
   addTopic: (name: string, imageId: string) => void;
+  updateTopic: (topicId: string, name: string) => void;
   addGoal: (title: string, dueDate?: Date) => void;
   updateGoal: (goalId: string, title: string, dueDate?: Date, status?: GoalStatus) => void;
   addTask: (text: string, goalId: string, scheduledDate?: Date) => void;
@@ -30,6 +31,7 @@ interface AppContextType extends DataType {
   selectedTopic: Topic | null;
   getGoalById: (id: string) => Goal | undefined;
   getTaskById: (id: string) => Task | undefined;
+  getTopicById: (id: string) => Topic | undefined;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -65,6 +67,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setData((prev) => ({ ...prev, topics: [...prev.topics, newTopic] }));
     toast({ title: "Đã thêm chủ đề", description: `"${name}" đã được thêm.` });
   };
+
+  const updateTopic = (topicId: string, name: string) => {
+    setData((prev) => ({
+      ...prev,
+      topics: prev.topics.map((topic) =>
+        topic.id === topicId ? { ...topic, name } : topic
+      ),
+    }));
+    toast({ title: "Chủ đề đã được cập nhật", description: `"${name}" đã được cập nhật.` });
+  };
   
   const addGoal = (title: string, dueDate?: Date) => {
     if (!selectedTopicId) return;
@@ -95,7 +107,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (task.id === taskId) {
           const updatedTask = { ...task, status };
           if (text !== undefined) updatedTask.text = text;
-          if (scheduledDate !== undefined) updatedTask.scheduledDate = scheduledDate?.toISOString();
+          if (scheduledDate !== undefined) {
+             updatedTask.scheduledDate = scheduledDate?.toISOString();
+          } else if (scheduledDate === null) {
+            updatedTask.scheduledDate = undefined;
+          }
           return updatedTask;
         }
         return task;
@@ -174,13 +190,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  const deleteTask = (id: string) => deleteItem('tasks', id);
+  const deleteTask = (id: string) => {
+    const taskText = data.tasks.find(t => t.id === id)?.text;
+    toast({ title: "Đã xóa nhiệm vụ", description: `"${taskText}" đã bị xóa.`});
+    setData(prev => ({
+      ...prev,
+      tasks: prev.tasks.filter(t => t.id !== id)
+    }));
+  };
 
   const selectedInterest = useMemo(() => data.interests.find((i) => i.id === selectedInterestId) ?? null, [data.interests, selectedInterestId]);
   const selectedTopic = useMemo(() => data.topics.find((t) => t.id === selectedTopicId) ?? null, [data.topics, selectedTopicId]);
 
   const getGoalById = (id: string) => data.goals.find(g => g.id === id);
   const getTaskById = (id: string) => data.tasks.find(t => t.id === id);
+  const getTopicById = (id: string) => data.topics.find(t => t.id === id);
+
 
   const value = {
     ...data,
@@ -192,6 +217,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     selectTopic,
     addInterest,
     addTopic,
+    updateTopic,
     addGoal,
     updateGoal,
     addTask,
@@ -204,6 +230,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     selectedTopic,
     getGoalById,
     getTaskById,
+    getTopicById,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
