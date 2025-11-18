@@ -14,6 +14,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "../ui/avatar";
+import { AddTopicDialog } from "../topics/AddTopicDialog";
+import { AddGoalDialog } from "../goals/AddGoalDialog";
+import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
 
 export function Header() {
   const { selectedInterest, selectedTopic, selectInterest, selectTopic, viewMode } = useAppContext();
@@ -62,6 +65,41 @@ export function Header() {
           )}
         </nav>
       </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon" className="h-8 w-8">
+            <Icons.add className="h-4 w-4" />
+            <span className="sr-only">Tạo mới</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <AddTopicDialog>
+            <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full"
+              disabled={!selectedInterest}
+            >
+              <Icons.topic className="mr-2 h-4 w-4" />
+              Chủ đề mới...
+            </button>
+          </AddTopicDialog>
+          <AddGoalDialog>
+             <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full"
+              disabled={!selectedTopic}
+             >
+                <Icons.goal className="mr-2 h-4 w-4" />
+                Mục tiêu mới...
+             </button>
+          </AddGoalDialog>
+          <AddOrEditTaskDialog mode="add">
+            <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full"
+                disabled={!selectedTopic}
+            >
+                <Icons.task className="mr-2 h-4 w-4" />
+                Nhiệm vụ mới...
+            </button>
+          </AddOrEditTaskDialog>
+        </DropdownMenuContent>
+      </DropdownMenu>
       
       {user && (
         <DropdownMenu>

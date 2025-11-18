@@ -37,4 +37,5 @@ export const Icons = {
   left: ChevronLeft,
   ellipsis: MoreHorizontal,
   edit: Edit,
+  grid: LayoutGrid,
 };
