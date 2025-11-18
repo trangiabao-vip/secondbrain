@@ -28,7 +28,7 @@ const getDateFromFirestore = (date: any): Date | null => {
 };
 
 export function GoalsView() {
-  const { goals, tasks, selectedTopic, deleteGoal, updateGoal, isDataLoading } = useAppContext();
+  const { goals, tasks, selectedTopic, deleteGoal, updateGoal, isDataLoading, duplicateGoal } = useAppContext();
   
   if (!selectedTopic) return null;
   
@@ -167,6 +167,10 @@ export function GoalsView() {
                               </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => duplicateGoal(goal.id)}>
+                                  <Icons.copy className="mr-2 h-4 w-4" />
+                                  Nhân bản
+                              </DropdownMenuItem>
                               <DropdownMenuSub>
                                   <DropdownMenuSubTrigger>
                                       <span>Cập nhật trạng thái</span>

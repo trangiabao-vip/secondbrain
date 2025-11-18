@@ -5,7 +5,7 @@ import { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { type Interest, type Topic, type Goal, type Task } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp, writeBatch, query, where } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, writeBatch, query, where, addDoc } from 'firebase/firestore';
 import { 
   addDocumentNonBlocking, 
   deleteDocumentNonBlocking, 
@@ -39,6 +39,8 @@ interface AppContextType {
   deleteTopic: (id: string) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
   deleteTask: (id: string) => void;
+  duplicateGoal: (goalId: string) => Promise<void>;
+  duplicateTask: (taskId: string) => void;
   selectedInterest: Interest | null;
   selectedTopic: Topic | null;
   getInterestById: (id: string) => Interest | undefined;
@@ -232,6 +234,71 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Đã xóa nhiệm vụ", description: `"${taskText}" đã bị xóa.`});
   };
 
+  const duplicateGoal = async (goalId: string) => {
+    if (!user) return;
+    const originalGoal = getGoalById(goalId);
+    if (!originalGoal) {
+      toast({ variant: 'destructive', title: 'Lỗi', description: 'Không tìm thấy mục tiêu gốc.' });
+      return;
+    }
+
+    const { id, createdAt, ...goalData } = originalGoal;
+    const newGoalData = {
+      ...goalData,
+      title: `Bản sao của ${originalGoal.title}`,
+      status: 'chưa bắt đầu' as const,
+      createdAt: serverTimestamp(),
+    };
+
+    try {
+      const newGoalRef = await addDoc(collection(firestore, 'goals'), newGoalData);
+      
+      const originalTasks = getTasksByGoalId(goalId);
+      if (originalTasks.length > 0) {
+        const batch = writeBatch(firestore);
+        originalTasks.forEach(task => {
+          const { id, createdAt, goalId: _goalId, ...taskData } = task;
+          const newTaskData = {
+            ...taskData,
+            text: task.text,
+            goalId: newGoalRef.id,
+            status: 'chưa bắt đầu' as const,
+            createdAt: serverTimestamp(),
+            userId: user.uid,
+          };
+          const newTaskRef = doc(collection(firestore, 'tasks'));
+          batch.set(newTaskRef, newTaskData);
+        });
+        await batch.commit();
+      }
+      
+      toast({ title: "Đã nhân bản mục tiêu", description: `"${originalGoal.title}" đã được nhân bản.` });
+    } catch (error) {
+      console.error("Error duplicating goal: ", error);
+      toast({ variant: 'destructive', title: 'Lỗi nhân bản', description: 'Không thể nhân bản mục tiêu.' });
+    }
+  };
+
+  const duplicateTask = (taskId: string) => {
+    if (!user) return;
+    const originalTask = getTaskById(taskId);
+    if (!originalTask) {
+      toast({ variant: 'destructive', title: 'Lỗi', description: 'Không tìm thấy nhiệm vụ gốc.' });
+      return;
+    }
+
+    const { id, createdAt, ...taskData } = originalTask;
+    const newTaskData = {
+      ...taskData,
+      text: `Bản sao của ${originalTask.text}`,
+      status: 'chưa bắt đầu' as const,
+      createdAt: serverTimestamp(),
+    };
+
+    addTask(newTaskData);
+    toast({ title: "Đã nhân bản nhiệm vụ", description: `"${originalTask.text}" đã được nhân bản.` });
+  };
+
   const selectedInterest = useMemo(() => interests.find((i) => i.id === selectedInterestId) ?? null, [interests, selectedInterestId]);
   const selectedTopic = useMemo(() => topics.find((t) => t.id === selectedTopicId) ?? null, [topics, selectedTopicId]);
 
@@ -271,6 +338,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteTopic,
     deleteGoal,
     deleteTask,
+    duplicateGoal,
+    duplicateTask,
     selectedInterest,
     selectedTopic,
     getInterestById,

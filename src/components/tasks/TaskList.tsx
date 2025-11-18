@@ -26,7 +26,7 @@ const difficultyColors: Record<TaskDifficulty, string> = {
 };
 
 export function TaskList({ goalId, tasks: customTasks }: { goalId?: string, tasks?: Task[] }) {
-  const { tasks: allTasks, updateTask, deleteTask, isDataLoading } = useAppContext();
+  const { tasks: allTasks, updateTask, deleteTask, isDataLoading, duplicateTask } = useAppContext();
 
   const tasksToRender = customTasks ? customTasks : allTasks.filter(task => task.goalId === goalId);
 
@@ -92,9 +92,14 @@ export function TaskList({ goalId, tasks: customTasks }: { goalId?: string, task
                     )}
                 </div>
                 
-                <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); deleteTask(task.id);}}>
-                  <Icons.delete className="h-4 w-4 text-destructive" />
-                </Button>
+                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); duplicateTask(task.id);}}>
+                      <Icons.copy className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); deleteTask(task.id);}}>
+                      <Icons.delete className="h-4 w-4 text-destructive" />
+                    </Button>
+                </div>
               </div>
             </AddOrEditTaskDialog>
           )}

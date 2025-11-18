@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  Copy,
   Edit,
   Home,
   LayoutGrid,
@@ -40,4 +41,5 @@ export const Icons = {
   ellipsis: MoreHorizontal,
   edit: Edit,
   grid: LayoutGrid,
+  copy: Copy,
 };
