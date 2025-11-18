@@ -210,7 +210,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                 </Popover>
                  {startDate && (
                   <Input 
-                    type="time" 
+                    type="time" _
                     value={startTime}
                     onChange={e => setStartTime(e.target.value)}
                     className="w-32"

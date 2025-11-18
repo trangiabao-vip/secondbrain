@@ -70,8 +70,8 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
 
   const handleAddGoal = () => {
     if (goalTitle.trim()) {
-      const finalStartDate = startDate ? combineDateTime(startDate, startTime) : undefined;
-      const finalEndDate = endDate ? combineDateTime(endDate, endTime) : undefined;
+      const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
+      const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
       
       const customPropsObject = customProperties
         .filter(p => p.key.trim() !== '')
@@ -209,7 +209,7 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
               <div className="space-y-2">
                 {customProperties.map((prop) => (
                   <div key={prop.id} className="flex items-center gap-2">
-                    <Input 
+                    <Input _
                       placeholder="Tên thuộc tính" 
                       value={prop.key}
                       onChange={(e) => handlePropertyChange(prop.id, 'key', e.target.value)}
