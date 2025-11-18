@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useAppContext } from "@/contexts/AppContext";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -7,7 +8,7 @@ import { Button } from "../ui/button";
 import { Icons } from "../icons";
 import { format } from "date-fns";
 import { vi } from 'date-fns/locale';
-import { EditTaskDialog } from "./EditTaskDialog";
+import { AddOrEditTaskDialog } from "./AddOrEditTaskDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function TaskList({ goalId }: { goalId: string }) {
@@ -42,7 +43,7 @@ export function TaskList({ goalId }: { goalId: string }) {
           const createdAt = getTaskDate(task.createdAt);
           const scheduledDate = getTaskDate(task.scheduledDate);
           return (
-            <EditTaskDialog taskId={task.id} key={task.id}>
+            <AddOrEditTaskDialog taskId={task.id} mode="edit" key={task.id}>
               <div className="flex items-start gap-3 p-2 rounded-md hover:bg-secondary/50 group cursor-pointer">
                 <Checkbox
                   id={`task-${task.id}`}
@@ -73,7 +74,7 @@ export function TaskList({ goalId }: { goalId: string }) {
                   <Icons.delete className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
-            </EditTaskDialog>
+            </AddOrEditTaskDialog>
           )}
         )}
       </div>

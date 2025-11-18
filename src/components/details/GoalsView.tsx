@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useAppContext } from "@/contexts/AppContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -15,6 +16,7 @@ import { EditGoalDialog } from "../goals/EditGoalDialog";
 import type { GoalStatus } from "@/lib/data";
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
+import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
 
 export function GoalsView() {
   const { goals, tasks, selectedTopic, deleteGoal, updateGoal } = useAppContext();
@@ -39,13 +41,21 @@ export function GoalsView() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold">Mục tiêu</h3>
-        <AddGoalDialog>
-          <Button>
-            <Icons.add className="mr-2 h-4 w-4" />
-            Mục tiêu mới
-          </Button>
-        </AddGoalDialog>
+        <h3 className="text-xl font-bold">Mục tiêu &amp; Nhiệm vụ</h3>
+        <div className="flex gap-2">
+          <AddOrEditTaskDialog mode="add">
+            <Button variant="outline">
+              <Icons.add className="mr-2 h-4 w-4" />
+              Thêm nhiệm vụ
+            </Button>
+          </AddOrEditTaskDialog>
+          <AddGoalDialog>
+            <Button>
+              <Icons.add className="mr-2 h-4 w-4" />
+              Mục tiêu mới
+            </Button>
+          </AddGoalDialog>
+        </div>
       </div>
 
       {topicGoals.length > 0 ? (

@@ -33,8 +33,8 @@ interface AppContextType {
   updateTopic: (topicId: string, name: string) => void;
   addGoal: (title: string, dueDate?: Date) => void;
   updateGoal: (goalId: string, title: string, dueDate?: Date, status?: GoalStatus) => void;
-  addTask: (text: string, goalId: string, scheduledDate?: Date) => void;
-  updateTask: (taskId: string, status: TaskStatus, text?: string, scheduledDate?: Date | null) => void;
+  addTask: (text: string, goalId: string, scheduledDate?: Date, status?: TaskStatus) => void;
+  updateTask: (taskId: string, status: TaskStatus, text?: string, scheduledDate?: Date | null, goalId?: string) => void;
   deleteInterest: (id: string) => Promise<void>;
   deleteTopic: (id: string) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
@@ -44,6 +44,7 @@ interface AppContextType {
   getInterestById: (id: string) => Interest | undefined;
   getGoalById: (id: string) => Goal | undefined;
   getTaskById: (id: string) => Task | undefined;
+  getTasksByGoalId: (goalId: string) => Task[];
   getTopicById: (id: string) => Topic | undefined;
   logout: () => void;
 }
@@ -129,18 +130,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Mục tiêu đã được cập nhật", description: `"${title}" đã được cập nhật.` });
   };
 
-  const addTask = (text: string, goalId: string, scheduledDate?: Date) => {
+  const addTask = (text: string, goalId: string, scheduledDate?: Date, status?: TaskStatus) => {
     if (!user) return;
-    const newTask: Omit<Task, 'id'> = { text, goalId, status: 'chưa bắt đầu', scheduledDate: scheduledDate || null, userId: user.uid, createdAt: serverTimestamp() };
+    const newTask: Omit<Task, 'id'> = { 
+      text, 
+      goalId, 
+      status: status || 'chưa bắt đầu', 
+      scheduledDate: scheduledDate || null, 
+      userId: user.uid, 
+      createdAt: serverTimestamp() 
+    };
     addDocumentNonBlocking(collection(firestore, 'tasks'), newTask);
   };
 
-  const updateTask = (taskId: string, status: TaskStatus, text?: string, scheduledDate?: Date | null) => {
+  const updateTask = (taskId: string, status: TaskStatus, text?: string, scheduledDate?: Date | null, goalId?: string) => {
     const updatedData: Partial<Task> = { status };
     if (text !== undefined) updatedData.text = text;
     if (scheduledDate !== undefined) {
        updatedData.scheduledDate = scheduledDate;
     }
+    if (goalId !== undefined) updatedData.goalId = goalId;
     updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
   };
 
@@ -225,6 +234,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const getInterestById = (id: string) => interests.find(i => i.id === id);
   const getGoalById = (id: string) => goals.find(g => g.id === id);
   const getTaskById = (id: string) => tasks.find(t => t.id === id);
+  const getTasksByGoalId = (goalId: string) => tasks.filter(t => t.goalId === goalId);
   const getTopicById = (id: string) => topics.find(t => t.id === id);
 
   const logout = () => {
@@ -262,6 +272,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getInterestById,
     getGoalById,
     getTaskById,
+    getTasksByGoalId,
     getTopicById,
     logout,
   };
