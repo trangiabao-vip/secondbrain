@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, type ReactNode, useEffect } from 'react';
 import {
@@ -17,11 +18,14 @@ import { useAppContext } from '@/contexts/AppContext';
 import { Icons } from '../icons';
 import { format } from "date-fns";
 import { vi } from 'date-fns/locale';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { GoalStatus } from '@/lib/data';
 
 export function EditGoalDialog({ goalId, children }: { goalId: string, children: ReactNode }) {
   const { getGoalById, updateGoal, deleteGoal } = useAppContext();
   const [goalTitle, setGoalTitle] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [status, setStatus] = useState<GoalStatus>('chưa bắt đầu');
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -30,13 +34,14 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
       if (goal) {
         setGoalTitle(goal.title);
         setDueDate(goal.dueDate ? new Date(goal.dueDate) : undefined);
+        setStatus(goal.status);
       }
     }
   }, [isOpen, goalId, getGoalById]);
 
   const handleUpdateGoal = () => {
     if (goalTitle.trim()) {
-      updateGoal(goalId, goalTitle.trim(), dueDate);
+      updateGoal(goalId, goalTitle.trim(), dueDate, status);
       setIsOpen(false);
     }
   };
@@ -88,6 +93,20 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                     />
                     </PopoverContent>
                 </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status-edit">Trạng thái</Label>
+              <Select value={status} onValueChange={(value: GoalStatus) => setStatus(value)}>
+                <SelectTrigger id="status-edit">
+                  <SelectValue placeholder="Chọn trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="chưa bắt đầu">Chưa bắt đầu</SelectItem>
+                  <SelectItem value="đang làm">Đang làm</SelectItem>
+                  <SelectItem value="hoàn thành">Hoàn thành</SelectItem>
+                  <SelectItem value="thất bại">Thất bại</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex justify-between">
                 <Button variant="destructive" onClick={handleDeleteGoal}>

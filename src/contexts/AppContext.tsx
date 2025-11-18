@@ -1,8 +1,9 @@
+
 'use client';
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useMemo } from 'react';
-import { initialData, type DataType, type Interest, type Topic, type Goal, type Task } from '@/lib/data';
+import { initialData, type DataType, type Interest, type Topic, type Goal, type Task, type GoalStatus } from '@/lib/data';
 import { generateId } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,7 +19,7 @@ interface AppContextType extends DataType {
   addInterest: (name: string) => void;
   addTopic: (name: string, imageId: string) => void;
   addGoal: (title: string, dueDate?: Date) => void;
-  updateGoal: (goalId: string, title: string, dueDate?: Date) => void;
+  updateGoal: (goalId: string, title: string, dueDate?: Date, status?: GoalStatus) => void;
   addTask: (text: string, goalId: string, scheduledDate?: Date) => void;
   updateTask: (taskId: string, completed: boolean, text?: string, scheduledDate?: Date) => void;
   deleteInterest: (id: string) => void;
@@ -67,16 +68,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const addGoal = (title: string, dueDate?: Date) => {
     if (!selectedTopicId) return;
-    const newGoal: Goal = { id: generateId(), title, topicId: selectedTopicId, dueDate: dueDate?.toISOString(), createdAt: new Date().toISOString() };
+    const newGoal: Goal = { id: generateId(), title, topicId: selectedTopicId, status: 'chưa bắt đầu', dueDate: dueDate?.toISOString(), createdAt: new Date().toISOString() };
     setData((prev) => ({ ...prev, goals: [...prev.goals, newGoal] }));
     toast({ title: "Đã thêm mục tiêu", description: `"${title}" đã được thêm.` });
   };
 
-  const updateGoal = (goalId: string, title: string, dueDate?: Date) => {
+  const updateGoal = (goalId: string, title: string, dueDate?: Date, status?: GoalStatus) => {
     setData((prev) => ({
       ...prev,
       goals: prev.goals.map((goal) =>
-        goal.id === goalId ? { ...goal, title, dueDate: dueDate?.toISOString() } : goal
+        goal.id === goalId ? { ...goal, title, dueDate: dueDate?.toISOString(), status: status || goal.status } : goal
       ),
     }));
     toast({ title: "Mục tiêu đã được cập nhật", description: `"${title}" đã được cập nhật.` });

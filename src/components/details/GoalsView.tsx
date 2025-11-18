@@ -1,3 +1,4 @@
+
 'use client';
 import { useAppContext } from "@/contexts/AppContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -6,14 +7,17 @@ import { AddGoalDialog } from "@/components/goals/AddGoalDialog";
 import { Button } from "../ui/button";
 import { Icons } from "../icons";
 import { format, formatDistanceToNow } from "date-fns";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from "../ui/dropdown-menu";
 import { Progress } from "../ui/progress";
 import { vi } from 'date-fns/locale';
 import { Card } from "../ui/card";
 import { EditGoalDialog } from "../goals/EditGoalDialog";
+import type { GoalStatus } from "@/lib/data";
+import { Badge } from "../ui/badge";
+import { cn } from "@/lib/utils";
 
 export function GoalsView() {
-  const { goals, tasks, selectedTopic, deleteGoal } = useAppContext();
+  const { goals, tasks, selectedTopic, deleteGoal, updateGoal } = useAppContext();
   const topicGoals = goals.filter(goal => goal.topicId === selectedTopic?.id);
 
   if (!selectedTopic) return null;
@@ -24,6 +28,13 @@ export function GoalsView() {
     const completedTasks = goalTasks.filter(t => t.completed).length;
     return (completedTasks / goalTasks.length) * 100;
   };
+
+  const statusColors: Record<GoalStatus, string> = {
+    'chưa bắt đầu': 'bg-gray-500',
+    'đang làm': 'bg-blue-500',
+    'hoàn thành': 'bg-green-500',
+    'thất bại': 'bg-red-500',
+  }
   
   return (
     <div className="space-y-6">
@@ -47,6 +58,10 @@ export function GoalsView() {
                         <div className="flex flex-col gap-2">
                             <span className="font-semibold text-base">{goal.title}</span>
                             <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                                <Badge variant="secondary" className="capitalize w-fit">
+                                    <div className={cn("w-2 h-2 rounded-full mr-2", statusColors[goal.status])}></div>
+                                    {goal.status}
+                                </Badge>
                                 {goal.dueDate && (
                                     <span className="text-xs text-muted-foreground">
                                     Hết hạn {formatDistanceToNow(new Date(goal.dueDate), { addSuffix: true, locale: vi })} ({format(new Date(goal.dueDate), 'd MMM, yyyy', { locale: vi })})
@@ -72,6 +87,19 @@ export function GoalsView() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <span>Cập nhật trạng thái</span>
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuPortal>
+                                    <DropdownMenuSubContent>
+                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, goal.dueDate ? new Date(goal.dueDate) : undefined, 'chưa bắt đầu')}>Chưa bắt đầu</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, goal.dueDate ? new Date(goal.dueDate) : undefined, 'đang làm')}>Đang làm</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, goal.dueDate ? new Date(goal.dueDate) : undefined, 'hoàn thành')}>Hoàn thành</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, goal.dueDate ? new Date(goal.dueDate) : undefined, 'thất bại')}>Thất bại</DropdownMenuItem>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuPortal>
+                            </DropdownMenuSub>
                             <DropdownMenuItem className="text-destructive" onClick={() => deleteGoal(goal.id)}>
                             <Icons.delete className="mr-2 h-4 w-4" />
                             Xóa mục tiêu

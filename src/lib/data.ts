@@ -1,4 +1,6 @@
 
+export type GoalStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại';
+
 export interface Task {
   id: string;
   text: string;
@@ -12,6 +14,7 @@ export interface Goal {
   id: string;
   title: string;
   topicId: string;
+  status: GoalStatus;
   dueDate?: string;
   createdAt: string;
 }
@@ -47,8 +50,8 @@ export const initialData: DataType = {
     { id: 'topic-2', name: 'Vườn rau', interestId: 'interest-2', imageId: '2', createdAt: new Date().toISOString() },
   ],
   goals: [
-    { id: 'goal-1', title: 'Học Next.js', topicId: 'topic-1', dueDate: new Date(new Date().setDate(new Date().getDate() + 14)).toISOString(), createdAt: new Date().toISOString() },
-    { id: 'goal-2', title: 'Chuẩn bị đất', topicId: 'topic-2', dueDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(), createdAt: new Date().toISOString() },
+    { id: 'goal-1', title: 'Học Next.js', topicId: 'topic-1', status: 'đang làm', dueDate: new Date(new Date().setDate(new Date().getDate() + 14)).toISOString(), createdAt: new Date().toISOString() },
+    { id: 'goal-2', title: 'Chuẩn bị đất', topicId: 'topic-2', status: 'chưa bắt đầu', dueDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(), createdAt: new Date().toISOString() },
   ],
   tasks: [
     { id: 'task-1', text: 'Hoàn thành hướng dẫn Next.js', goalId: 'goal-1', completed: true, scheduledDate: new Date().toISOString(), createdAt: new Date().toISOString() },
