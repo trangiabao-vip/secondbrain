@@ -5,7 +5,7 @@ import { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { type Interest, type Topic, type Goal, type Task, type GoalStatus, type TaskStatus } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, writeBatch, query, where } from 'firebase/firestore';
 import { 
   addDocumentNonBlocking, 
   deleteDocumentNonBlocking, 
@@ -58,10 +58,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('interests');
   
-  const interestsQuery = useMemoFirebase(() => user ? collection(firestore, 'interests') : null, [firestore, user]);
-  const topicsQuery = useMemoFirebase(() => user ? collection(firestore, 'topics') : null, [firestore, user]);
-  const goalsQuery = useMemoFirebase(() => user ? collection(firestore, 'goals') : null, [firestore, user]);
-  const tasksQuery = useMemoFirebase(() => user ? collection(firestore, 'tasks') : null, [firestore, user]);
+  const interestsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'interests'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const topicsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'topics'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const goalsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'goals'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const tasksQuery = useMemoFirebase(() => user ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
 
   const { data: interestsData, isLoading: interestsLoading } = useCollection<Interest>(interestsQuery);
   const { data: topicsData, isLoading: topicsLoading } = useCollection<Topic>(topicsQuery);
@@ -123,7 +123,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateGoal = (goalId: string, title: string, dueDate?: Date, status?: GoalStatus) => {
     const updatedData: any = { title };
-    if (dueDate) updatedData.dueDate = dueDate;
+    if (dueDate !== undefined) updatedData.dueDate = dueDate;
     if (status) updatedData.status = status;
     updateDocumentNonBlocking(doc(firestore, 'goals', goalId), updatedData);
     toast({ title: "Mục tiêu đã được cập nhật", description: `"${title}" đã được cập nhật.` });
@@ -211,7 +211,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const getTopicById = (id: string) => topics.find(t => t.id === id);
 
   const logout = () => {
-    const { auth } = useFirebase.getState();
+    const { auth } = useFirebase();
     if(auth) {
       signOut(auth);
     }

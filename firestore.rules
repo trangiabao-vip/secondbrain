@@ -13,35 +13,39 @@ service cloud.firestore {
 
     // Users can only read/write their own user document
     match /users/{userId} {
-      allow read, update, delete: if isSignedIn() && isOwner(userId);
+      allow get, update, delete: if isSignedIn() && isOwner(userId);
       allow create: if isSignedIn();
     }
     
     // Interests can be read by their owner.
     // They can be created, updated, or deleted by their owner.
     match /interests/{interestId} {
-      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && request.query.where.size() == 1 && request.query.where[0].field == "userId" && request.query.where[0].op == "==" && request.query.where[0].value == request.auth.uid;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
     // Topics can be read by their owner.
     // They can be created, updated, or deleted by their owner.
     match /topics/{topicId} {
-      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && request.query.where.size() == 1 && request.query.where[0].field == "userId" && request.query.where[0].op == "==" && request.query.where[0].value == request.auth.uid;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
     // Goals can be read by their owner.
     // They can be created, updated, or deleted by their owner.
     match /goals/{goalId} {
-      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && request.query.where.size() == 1 && request.query.where[0].field == "userId" && request.query.where[0].op == "==" && request.query.where[0].value == request.auth.uid;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
     // Tasks can be read by their owner.
     // They can be created, updated, or deleted by their owner.
     match /tasks/{taskId} {
-       allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+       allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+       allow list: if isSignedIn() && request.query.where.size() == 1 && request.query.where[0].field == "userId" && request.query.where[0].op == "==" && request.query.where[0].value == request.auth.uid;
        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
   }
