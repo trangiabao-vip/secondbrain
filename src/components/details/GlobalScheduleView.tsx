@@ -8,8 +8,18 @@ import { Icons } from "../icons";
 import { Button } from "../ui/button";
 import { EditGoalDialog } from "../goals/EditGoalDialog";
 import { EditTaskDialog } from "../tasks/EditTaskDialog";
+import { Goal, Task } from "@/lib/data";
 
 const hours = Array.from({ length: 24 }, (_, i) => i);
+
+const getDateFromFirestore = (date: any): Date | null => {
+    if (!date) return null;
+    if (typeof date === 'string') return parseISO(date);
+    if (date.seconds) return new Date(date.seconds * 1000);
+    return date;
+};
+
+type ScheduledItem = (Goal | Task) & { type: 'goal' | 'task', date: Date };
 
 export function GlobalScheduleView() {
   const { goals, tasks } = useAppContext();
@@ -20,10 +30,19 @@ export function GlobalScheduleView() {
     return eachDayOfInterval({ start, end: addDays(start, 6) });
   }, [currentDate]);
 
-  const scheduledItems = useMemo(() => [
-    ...goals.filter(g => g.dueDate).map(g => ({ ...g, type: 'goal' as const, date: parseISO(g.dueDate!) })),
-    ...tasks.filter(t => t.scheduledDate).map(t => ({ ...t, type: 'task' as const, date: parseISO(t.scheduledDate!) }))
-  ], [goals, tasks]);
+  const scheduledItems = useMemo((): ScheduledItem[] => {
+    const goalItems = goals
+        .filter(g => g.dueDate)
+        .map(g => ({ ...g, type: 'goal' as const, date: getDateFromFirestore(g.dueDate)! }))
+        .filter(item => item.date);
+
+    const taskItems = tasks
+        .filter(t => t.scheduledDate)
+        .map(t => ({ ...t, type: 'task' as const, date: getDateFromFirestore(t.scheduledDate)! }))
+        .filter(item => item.date);
+        
+    return [...goalItems, ...taskItems];
+  }, [goals, tasks]);
 
   const getItemsForHour = (day: Date, hour: number) => {
     return scheduledItems.filter(item => {
@@ -103,7 +122,7 @@ export function GlobalScheduleView() {
                       <EditGoalDialog goalId={item.id} key={`${item.type}-${item.id}`}>
                         <div className="bg-primary/20 text-primary-foreground text-xs rounded-sm px-1 py-0.5 truncate border border-primary/50 cursor-pointer hover:bg-primary/30">
                           <Icons.goal className="h-3 w-3 inline mr-1 align-middle"/>
-                          {item.title}
+                          {(item as Goal).title}
                         </div>
                       </EditGoalDialog>
                     ))}
@@ -118,7 +137,7 @@ export function GlobalScheduleView() {
                               <div className="absolute inset-x-0.5 bg-secondary/80 rounded p-1 shadow z-10 border border-border cursor-pointer hover:bg-secondary">
                                   <p className="text-xs font-bold truncate flex items-center gap-1">
                                     <Icons.task className="h-3 w-3"/>
-                                    {item.text}
+                                    {(item as Task).text}
                                   </p>
                                   <p className="text-[10px] text-muted-foreground">{format(item.date, 'HH:mm')}</p>
                               </div>
