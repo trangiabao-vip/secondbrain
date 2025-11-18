@@ -12,9 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAppContext } from '@/contexts/AppContext';
-import { AITopicSuggester } from '../ai/AITopicSuggester';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Separator } from '../ui/separator';
 import { Textarea } from '../ui/textarea';
 
 export function AddTopicDialog({ children }: { children: ReactNode }) {
@@ -32,10 +30,6 @@ export function AddTopicDialog({ children }: { children: ReactNode }) {
       setIsOpen(false);
     }
   };
-
-  const handleSuggestion = (suggestion: string) => {
-    setTopicName(suggestion);
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -71,11 +65,6 @@ export function AddTopicDialog({ children }: { children: ReactNode }) {
                 Thêm chủ đề
             </Button>
           </div>
-          <div className="relative">
-            <Separator />
-            <span className="absolute left-1/2 -top-3 -translate-x-1/2 bg-background px-2 text-xs text-muted-foreground">HOẶC</span>
-          </div>
-          <AITopicSuggester onSuggestionClick={handleSuggestion} />
         </div>
       </DialogContent>
     </Dialog>

@@ -17,8 +17,6 @@ import { useAppContext } from '@/contexts/AppContext';
 import { Icons } from '../icons';
 import { format, setHours, setMinutes } from "date-fns";
 import { vi } from 'date-fns/locale';
-import { AIGoalSuggester } from '../ai/AIGoalSuggester';
-import { Separator } from '../ui/separator';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { GoalPriority } from '@/lib/data';
@@ -59,10 +57,6 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
       setIsOpen(false);
     }
   };
-
-  const handleSuggestion = (suggestion: string) => {
-    setGoalTitle(suggestion);
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -179,11 +173,6 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
                     Thêm mục tiêu
                 </Button>
             </div>
-            <div className="relative">
-                <Separator />
-                <span className="absolute left-1/2 -top-3 -translate-x-1/2 bg-background px-2 text-xs text-muted-foreground">HOẶC</span>
-            </div>
-            <AIGoalSuggester onSuggestionClick={handleSuggestion}/>
         </div>
       </DialogContent>
     </Dialog>
