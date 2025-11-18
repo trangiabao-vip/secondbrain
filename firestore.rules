@@ -1,0 +1,105 @@
+/**
+ * @file Firestore Security Rules for Interest Hub Application
+ * @core_philosophy This ruleset enforces a strict user-ownership model, where users can only access their own data.
+ * @data_structure All data is nested under /users/{userId}, creating a clear ownership hierarchy. Interests, Topics, Goals, and Tasks are all subcollections of the user document.
+ * @key_security_decisions Denormalization of IDs: To avoid costly `get()` calls and to enable more efficient security rules, each nested document (Interest, Topic, Goal, Task) includes the `userId` of its owner. This enables the rules to validate ownership directly from the document being accessed, without needing to perform additional reads.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Allows access only to authenticated users.
+     * @path /databases/{database}/documents
+     * @allow (read, write): if isSignedIn()
+     * @deny (read, write): if !isSignedIn()
+     * @principle Authenticated access only.
+     */
+    match /{document=**} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
+     * @description Enforces strict ownership for user profiles.
+     * @path /users/{userId}
+     * @allow (create): Authenticated user can create their own profile (userId matches auth.uid).
+     * @allow (get, update, delete, list): Authenticated user can only access their own profile (userId matches auth.uid).
+     * @deny (create): Attempt to create a profile with a mismatched userId.
+     * @deny (get, update, delete, list): Accessing or modifying another user's profile.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId} {
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+      allow get, update, delete, list: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * @description Enforces strict ownership for user interests.
+     * @path /users/{userId}/interests/{interestId}
+     * @allow (create): Authenticated user can create interests under their profile (userId matches auth.uid).
+     * @allow (get, update, delete, list): Authenticated user can only access their own interests (userId matches auth.uid).
+     * @deny (create): Attempt to create an interest under another user's profile.
+     * @deny (get, update, delete, list): Accessing or modifying another user's interests.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/interests/{interestId} {
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow get, update, delete, list: if isExistingOwner(userId) && resource.data.userId == userId;
+    }
+
+    /**
+     * @description Enforces strict ownership for topics within user interests.
+     * @path /users/{userId}/interests/{interestId}/topics/{topicId}
+     * @allow (create): Authenticated user can create topics under their interests (userId matches auth.uid).
+     * @allow (get, update, delete, list): Authenticated user can only access their own topics (userId matches auth.uid).
+     * @deny (create): Attempt to create a topic under another user's interests.
+     * @deny (get, update, delete, list): Accessing or modifying another user's topics.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/interests/{interestId}/topics/{topicId} {
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow get, update, delete, list: if isExistingOwner(userId) && resource.data.userId == userId;
+    }
+
+    /**
+     * @description Enforces strict ownership for goals within topics.
+     * @path /users/{userId}/interests/{interestId}/topics/{topicId}/goals/{goalId}
+     * @allow (create): Authenticated user can create goals under their topics (userId matches auth.uid).
+     * @allow (get, update, delete, list): Authenticated user can only access their own goals (userId matches auth.uid).
+     * @deny (create): Attempt to create a goal under another user's topics.
+     * @deny (get, update, delete, list): Accessing or modifying another user's goals.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/interests/{interestId}/topics/{topicId}/goals/{goalId} {
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow get, update, delete, list: if isExistingOwner(userId) && resource.data.userId == userId;
+    }
+
+    /**
+     * @description Enforces strict ownership for tasks within goals.
+     * @path /users/{userId}/interests/{interestId}/topics/{topicId}/goals/{goalId}/tasks/{taskId}
+     * @allow (create): Authenticated user can create tasks under their goals (userId matches auth.uid).
+     * @allow (get, update, delete, list): Authenticated user can only access their own tasks (userId matches auth.uid).
+     * @deny (create): Attempt to create a task under another user's goals.
+     * @deny (get, update, delete, list): Accessing or modifying another user's tasks.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/interests/{interestId}/topics/{topicId}/goals/{goalId}/tasks/{taskId} {
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow get, update, delete, list: if isExistingOwner(userId) && resource.data.userId == userId;
+    }
+  }
+
+  // Helper Functions
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  function isOwner(userId) {
+    return request.auth.uid == userId;
+  }
+
+  function isExistingOwner(userId) {
+    return isSignedIn() && isOwner(userId) && resource != null;
+  }
+}

@@ -1,0 +1,333 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Interest Hub application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "username": {
+          "type": "string",
+          "description": "Username of the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "username",
+        "createdAt"
+      ]
+    },
+    "Interest": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Interest",
+      "type": "object",
+      "description": "Represents a user's interest.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the interest."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Interest)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the interest."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the interest."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the interest was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "description",
+        "createdAt"
+      ]
+    },
+    "Topic": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Topic",
+      "type": "object",
+      "description": "Represents a topic within an interest.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the topic."
+        },
+        "interestId": {
+          "type": "string",
+          "description": "Reference to Interest. (Relationship: Interest 1:N Topic)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the topic."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the topic."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the topic was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "interestId",
+        "name",
+        "description",
+        "createdAt"
+      ]
+    },
+    "Goal": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Goal",
+      "type": "object",
+      "description": "Represents a goal within a topic.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the goal."
+        },
+        "topicId": {
+          "type": "string",
+          "description": "Reference to Topic. (Relationship: Topic 1:N Goal)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the goal."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the goal."
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "The date and time when the goal is due.",
+          "format": "date-time"
+        },
+        "isCompleted": {
+          "type": "boolean",
+          "description": "Indicates whether the goal has been completed."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the goal was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "topicId",
+        "name",
+        "description",
+        "dueDate",
+        "isCompleted",
+        "createdAt"
+      ]
+    },
+    "Task": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Task",
+      "type": "object",
+      "description": "Represents a task associated with a goal.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the task."
+        },
+        "goalId": {
+          "type": "string",
+          "description": "Reference to Goal. (Relationship: Goal 1:N Task)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the task."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the task."
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "The date and time when the task is due.",
+          "format": "date-time"
+        },
+        "isCompleted": {
+          "type": "boolean",
+          "description": "Indicates whether the task has been completed."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the task was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "goalId",
+        "name",
+        "description",
+        "dueDate",
+        "isCompleted",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information. Path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/interests/{interestId}",
+        "definition": {
+          "entityName": "Interest",
+          "schema": {
+            "$ref": "#/backend/entities/Interest"
+          },
+          "description": "Stores user's interests. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "interestId",
+              "description": "The unique identifier for the interest."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/interests/{interestId}/topics/{topicId}",
+        "definition": {
+          "entityName": "Topic",
+          "schema": {
+            "$ref": "#/backend/entities/Topic"
+          },
+          "description": "Stores topics within an interest. Includes denormalized 'userId' and 'interestId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "interestId",
+              "description": "The unique identifier for the interest."
+            },
+            {
+              "name": "topicId",
+              "description": "The unique identifier for the topic."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/interests/{interestId}/topics/{topicId}/goals/{goalId}",
+        "definition": {
+          "entityName": "Goal",
+          "schema": {
+            "$ref": "#/backend/entities/Goal"
+          },
+          "description": "Stores goals within a topic. Includes denormalized 'userId', 'interestId', and 'topicId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "interestId",
+              "description": "The unique identifier for the interest."
+            },
+            {
+              "name": "topicId",
+              "description": "The unique identifier for the topic."
+            },
+            {
+              "name": "goalId",
+              "description": "The unique identifier for the goal."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/interests/{interestId}/topics/{topicId}/goals/{goalId}/tasks/{taskId}",
+        "definition": {
+          "entityName": "Task",
+          "schema": {
+            "$ref": "#/backend/entities/Task"
+          },
+          "description": "Stores tasks associated with a goal. Includes denormalized 'userId', 'interestId', 'topicId', and 'goalId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "interestId",
+              "description": "The unique identifier for the interest."
+            },
+            {
+              "name": "topicId",
+              "description": "The unique identifier for the topic."
+            },
+            {
+              "name": "goalId",
+              "description": "The unique identifier for the goal."
+            },
+            {
+              "name": "taskId",
+              "description": "The unique identifier for the task."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the Interest Hub application's features, focusing on user interests, topics, goals, and tasks. The structure employs path-based ownership for data privacy and easy management, aligning with the core design principles of Authorization Independence and Structural Segregation. Specifically, each user has a dedicated space for their interests, topics, goals and tasks. This enables efficient security rules based on the `request.auth.uid`. This design avoids complex authorization logic and simplifies security rules.\n\nThe chosen structure facilitates straightforward queries. For instance, retrieving all interests for a user involves querying the `/users/{userId}/interests` collection. Similarly, tasks associated with a goal can be efficiently fetched from `/users/{userId}/interests/{interestId}/topics/{topicId}/goals/{goalId}/tasks`. This hierarchical organization ensures that each request is scoped to a specific user and their data.\n\nTo enforce Authorization Independence, the `userId` is included in each `Interest` document. This ensures that access control to an interest can be determined solely based on the interest document itself without needing to `get()` the parent user document. This pattern extends to `Topic`, `Goal`, and `Task` entities. For example, the `Topic` entity includes the `interestId` which is nested under a `userId`. The nesting continues for the `Goal` which includes a `topicId` and the `Task` entity includes a `goalId`. This creates a complete hierarchy for each entity which can be created atomically without `get()` calls in the security rules.\n\nRegarding QAPs (Rules are not Filters), the structure segregates data based on ownership. Listing operations are inherently secure because each user can only access their own data via the path-based structure. This eliminates the need for filtering based on user ID within the rules, as the path itself ensures the correct scope. In other words, the security rules are not filters."
+  }
+}
