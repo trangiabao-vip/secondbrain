@@ -46,9 +46,9 @@ export function GlobalScheduleView() {
     return [...goalItems, ...taskItems];
   }, [goals, tasks]);
 
-  const getTasksForDay = (day: Date) => {
+  const getScheduledItemsForDay = (day: Date) => {
     return scheduledItems.filter(item => {
-      if (item.type !== 'task' || !item.startDate) return false;
+      if (!item.startDate) return false;
       const itemInterval = {
         start: item.startDate,
         end: item.endDate || item.startDate,
@@ -64,7 +64,7 @@ export function GlobalScheduleView() {
   
   const getItemsForAllday = (day: Date) => {
     return scheduledItems.filter(item => 
-        item.startDate && isSameDay(item.startDate, day) && item.type === 'goal'
+        item.startDate && isSameDay(item.startDate, day) && !item.endDate
     );
   }
 
@@ -127,12 +127,23 @@ export function GlobalScheduleView() {
                   {/* All day section */}
                   <div className="h-10 border-b p-0.5 space-y-0.5 overflow-hidden">
                     {getItemsForAllday(day).map(item => (
-                      <EditGoalDialog goalId={item.id} key={`${item.type}-${item.id}`}>
-                        <div className="bg-primary/20 text-primary-foreground text-xs rounded-sm px-1 py-0.5 truncate border border-primary/50 cursor-pointer hover:bg-primary/30">
-                          <Icons.goal className="h-3 w-3 inline mr-1 align-middle"/>
-                          {(item as Goal).title}
-                        </div>
-                      </EditGoalDialog>
+                      <div key={`${item.type}-${item.id}`}>
+                        {item.type === 'goal' ? (
+                          <EditGoalDialog goalId={item.id}>
+                            <div className="bg-primary/20 text-primary-foreground text-xs rounded-sm px-1 py-0.5 truncate border border-primary/50 cursor-pointer hover:bg-primary/30">
+                              <Icons.goal className="h-3 w-3 inline mr-1 align-middle"/>
+                              {(item as Goal).title}
+                            </div>
+                          </EditGoalDialog>
+                        ) : (
+                          <EditTaskDialog taskId={item.id}>
+                             <div className="bg-secondary/80 text-secondary-foreground text-xs rounded-sm px-1 py-0.5 truncate border border-secondary/50 cursor-pointer hover:bg-secondary">
+                              <Icons.task className="h-3 w-3 inline mr-1 align-middle"/>
+                              {(item as Task).text}
+                            </div>
+                          </EditTaskDialog>
+                        )}
+                      </div>
                     ))}
                   </div>
 
@@ -141,19 +152,17 @@ export function GlobalScheduleView() {
                     {hours.map(hour => (
                       <div key={hour} className="h-16 border-b relative"></div>
                     ))}
-                    {getTasksForDay(day).map(item => {
-                        const task = item as Task;
-                        const startDate = getDateFromFirestore(task.startDate);
+                    {getScheduledItemsForDay(day).map(item => {
+                        const startDate = getDateFromFirestore(item.startDate);
 
-                        if (!startDate) return null;
+                        if (!startDate || !item.endDate) return null;
                         
                         let displayStart = startDate;
-                        let displayEnd = getDateFromFirestore(task.endDate) || setMinutes(startDate, getMinutes(startDate) + 30);
+                        let displayEnd = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 30);
                         
                         const dayStart = startOfDay(day);
                         const dayEnd = endOfDay(day);
 
-                        // Clamp the display time to the current day
                         if (displayStart < dayStart) displayStart = dayStart;
                         if (displayEnd > dayEnd) displayEnd = dayEnd;
                         
@@ -167,26 +176,38 @@ export function GlobalScheduleView() {
                         
                         if (height <= 0) return null;
 
-                        return (
-                            <EditTaskDialog taskId={item.id} key={`${item.type}-${item.id}`}>
-                              <div 
-                                className="absolute inset-x-0.5 bg-secondary/80 rounded p-1 shadow z-10 border border-border cursor-pointer hover:bg-secondary overflow-hidden"
-                                style={{
-                                    top: `${top}px`,
-                                    height: `${Math.max(height, 24)}px` // min height of 24px
-                                }}
-                              >
-                                  <p className="text-xs font-bold truncate flex items-center gap-1">
-                                    <Icons.task className="h-3 w-3"/>
-                                    {task.text}
-                                  </p>
-                                  <p className="text-[10px] text-muted-foreground">
-                                    {startDate && format(startDate, 'HH:mm')}
-                                    {task.endDate && ` - ${format(getDateFromFirestore(task.endDate)!, 'HH:mm')}`}
-                                  </p>
-                              </div>
-                            </EditTaskDialog>
+                        const content = (
+                            <div 
+                              className="absolute inset-x-0.5 rounded p-1 shadow z-10 border border-border cursor-pointer hover:bg-secondary overflow-hidden"
+                              style={{
+                                  top: `${top}px`,
+                                  height: `${Math.max(height, 24)}px`
+                              }}
+                            >
+                                <p className="text-xs font-bold truncate flex items-center gap-1">
+                                  {item.type === 'goal' ? <Icons.goal className="h-3 w-3"/> : <Icons.task className="h-3 w-3"/>}
+                                  {item.type === 'goal' ? (item as Goal).title : (item as Task).text}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {startDate && format(startDate, 'HH:mm')}
+                                  {item.endDate && ` - ${format(getDateFromFirestore(item.endDate)!, 'HH:mm')}`}
+                                </p>
+                            </div>
                         );
+
+                        if (item.type === 'goal') {
+                          return (
+                            <EditGoalDialog goalId={item.id} key={`${item.type}-${item.id}`}>
+                              {content}
+                            </EditGoalDialog>
+                          );
+                        } else {
+                          return (
+                            <EditTaskDialog taskId={item.id} key={`${item.type}-${item.id}`}>
+                              {content}
+                            </EditTaskDialog>
+                          );
+                        }
                     })}
                   </div>
                 </div>
