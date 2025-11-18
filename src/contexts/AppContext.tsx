@@ -52,7 +52,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
-  const { firestore, user, isUserLoading } = useFirebase();
+  const { firestore, user, isUserLoading, auth } = useFirebase();
 
   const [selectedInterestId, setSelectedInterestId] = useState<string | null>(null);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
@@ -116,13 +116,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const addGoal = (title: string, dueDate?: Date) => {
     if (!selectedTopicId || !user) return;
-    const newGoal = { title, topicId: selectedTopicId, status: 'chưa bắt đầu', dueDate: dueDate || null, userId: user.uid, createdAt: serverTimestamp() };
+    const newGoal: Omit<Goal, 'id'> = { title, topicId: selectedTopicId, status: 'chưa bắt đầu', dueDate: dueDate || null, userId: user.uid, createdAt: serverTimestamp() };
     addDocumentNonBlocking(collection(firestore, 'goals'), newGoal);
     toast({ title: "Đã thêm mục tiêu", description: `"${title}" đã được thêm.` });
   };
 
   const updateGoal = (goalId: string, title: string, dueDate?: Date, status?: GoalStatus) => {
-    const updatedData: any = { title };
+    const updatedData: Partial<Goal> = { title };
     if (dueDate !== undefined) updatedData.dueDate = dueDate;
     if (status) updatedData.status = status;
     updateDocumentNonBlocking(doc(firestore, 'goals', goalId), updatedData);
@@ -131,12 +131,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addTask = (text: string, goalId: string, scheduledDate?: Date) => {
     if (!user) return;
-    const newTask = { text, goalId, status: 'chưa bắt đầu', scheduledDate: scheduledDate || null, userId: user.uid, createdAt: serverTimestamp() };
+    const newTask: Omit<Task, 'id'> = { text, goalId, status: 'chưa bắt đầu', scheduledDate: scheduledDate || null, userId: user.uid, createdAt: serverTimestamp() };
     addDocumentNonBlocking(collection(firestore, 'tasks'), newTask);
   };
 
   const updateTask = (taskId: string, status: TaskStatus, text?: string, scheduledDate?: Date | null) => {
-    const updatedData: any = { status };
+    const updatedData: Partial<Task> = { status };
     if (text !== undefined) updatedData.text = text;
     if (scheduledDate !== undefined) {
        updatedData.scheduledDate = scheduledDate;
@@ -145,6 +145,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteInterest = async (id: string) => {
+    if (!user) return;
     const interestName = interests.find(i => i.id === id)?.name;
     const batch = writeBatch(firestore);
 
@@ -157,15 +158,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     topicsToDelete.forEach(t => batch.delete(doc(firestore, 'topics', t.id)));
     batch.delete(doc(firestore, 'interests', id));
     
-    await batch.commit();
-
-    if (selectedInterestId === id) {
-      selectInterest(null);
+    try {
+      await batch.commit();
+      if (selectedInterestId === id) {
+        selectInterest(null);
+      }
+      toast({ title: `Sở thích đã bị xóa`, description: `"${interestName}" và tất cả nội dung của nó đã bị xóa.`});
+    } catch (error) {
+      console.error("Error deleting interest and its subcollections: ", error);
+      toast({ variant: 'destructive', title: 'Lỗi xóa sở thích', description: 'Không thể xóa sở thích và dữ liệu liên quan.'});
     }
-    toast({ title: `Sở thích đã bị xóa`, description: `"${interestName}" và tất cả nội dung của nó đã bị xóa.`});
   }
 
   const deleteTopic = async (id: string) => {
+    if (!user) return;
     const topicName = topics.find(t => t.id === id)?.name;
     const batch = writeBatch(firestore);
     
@@ -176,15 +182,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     goalsToDelete.forEach(g => batch.delete(doc(firestore, 'goals', g.id)));
     batch.delete(doc(firestore, 'topics', id));
     
-    await batch.commit();
-
-    if (selectedTopicId === id) {
-      selectTopic(null);
+    try {
+      await batch.commit();
+      if (selectedTopicId === id) {
+        selectTopic(null);
+      }
+      toast({ title: `Chủ đề đã bị xóa`, description: `"${topicName}" và tất cả nội dung của nó đã bị xóa.`});
+    } catch (error) {
+      console.error("Error deleting topic and its subcollections: ", error);
+      toast({ variant: 'destructive', title: 'Lỗi xóa chủ đề', description: 'Không thể xóa chủ đề và dữ liệu liên quan.'});
     }
-    toast({ title: `Chủ đề đã bị xóa`, description: `"${topicName}" và tất cả nội dung của nó đã bị xóa.`});
   }
 
   const deleteGoal = async (id: string) => {
+    if (!user) return;
     const goalName = goals.find(g => g.id === id)?.title;
     const batch = writeBatch(firestore);
 
@@ -192,11 +203,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     tasksToDelete.forEach(t => batch.delete(doc(firestore, 'tasks', t.id)));
     batch.delete(doc(firestore, 'goals', id));
 
-    await batch.commit();
-    toast({ title: `Mục tiêu đã bị xóa`, description: `"${goalName}" và tất cả các nhiệm vụ của nó đã bị xóa.`});
+    try {
+      await batch.commit();
+      toast({ title: `Mục tiêu đã bị xóa`, description: `"${goalName}" và tất cả các nhiệm vụ của nó đã bị xóa.`});
+    } catch (error) {
+      console.error("Error deleting goal and its tasks: ", error);
+      toast({ variant: 'destructive', title: 'Lỗi xóa mục tiêu', description: 'Không thể xóa mục tiêu và các nhiệm vụ của nó.'});
+    }
   }
 
   const deleteTask = (id: string) => {
+    if (!user) return;
     const taskText = tasks.find(t => t.id === id)?.text;
     deleteDocumentNonBlocking(doc(firestore, 'tasks', id));
     toast({ title: "Đã xóa nhiệm vụ", description: `"${taskText}" đã bị xóa.`});
@@ -211,7 +228,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const getTopicById = (id: string) => topics.find(t => t.id === id);
 
   const logout = () => {
-    const { auth } = useFirebase();
     if(auth) {
       signOut(auth);
     }
