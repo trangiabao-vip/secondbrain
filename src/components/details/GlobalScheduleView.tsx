@@ -2,7 +2,7 @@
 import { useState, useMemo } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from "@/contexts/AppContext";
-import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, isSameHour, parseISO, getMinutes, differenceInMinutes } from "date-fns";
+import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, isSameHour, parseISO, getMinutes, differenceInMinutes, startOfDay, endOfDay, isWithinInterval } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Icons } from "../icons";
 import { Button } from "../ui/button";
@@ -48,7 +48,17 @@ export function GlobalScheduleView() {
 
   const getTasksForDay = (day: Date) => {
     return scheduledItems.filter(item => {
-      return item.startDate && isSameDay(item.startDate, day) && item.type === 'task';
+      if (item.type !== 'task' || !item.startDate) return false;
+      const itemInterval = {
+        start: item.startDate,
+        end: item.endDate || item.startDate,
+      };
+      const dayInterval = {
+        start: startOfDay(day),
+        end: endOfDay(day),
+      }
+      return isWithinInterval(itemInterval.start, dayInterval) || 
+             isWithinInterval(dayInterval.start, itemInterval);
     });
   };
   
@@ -59,7 +69,7 @@ export function GlobalScheduleView() {
   }
 
   const goToPreviousWeek = () => setCurrentDate(prev => addDays(prev, -7));
-  const goToNextWeek = () => setCurrentDate(prev => addDays(prev, 7));
+  const goToNextWeek = () => setCurrentDate(prev => addDays(prev, 6));
   const goToToday = () => setCurrentDate(new Date());
 
   return (
@@ -134,19 +144,29 @@ export function GlobalScheduleView() {
                     {getTasksForDay(day).map(item => {
                         const task = item as Task;
                         const startDate = getDateFromFirestore(task.startDate);
-                        const endDate = getDateFromFirestore(task.endDate);
 
                         if (!startDate) return null;
                         
-                        const startHour = getHours(startDate);
-                        const startMinutes = getMinutes(startDate);
+                        let displayStart = startDate;
+                        let displayEnd = getDateFromFirestore(task.endDate) || setMinutes(startDate, getMinutes(startDate) + 30);
+                        
+                        const dayStart = startOfDay(day);
+                        const dayEnd = endOfDay(day);
+
+                        // Clamp the display time to the current day
+                        if (displayStart < dayStart) displayStart = dayStart;
+                        if (displayEnd > dayEnd) displayEnd = dayEnd;
+                        
+                        const startHour = getHours(displayStart);
+                        const startMinutes = getMinutes(displayStart);
 
                         const top = (startHour * 64) + (startMinutes / 60 * 64);
                         
-                        const end = endDate ? endDate : setMinutes(startDate, startMinutes + 30);
-                        const durationMinutes = differenceInMinutes(end, startDate);
+                        const durationMinutes = differenceInMinutes(displayEnd, displayStart);
                         const height = (durationMinutes / 60) * 64;
                         
+                        if (height <= 0) return null;
+
                         return (
                             <EditTaskDialog taskId={item.id} key={`${item.type}-${item.id}`}>
                               <div 
@@ -162,7 +182,7 @@ export function GlobalScheduleView() {
                                   </p>
                                   <p className="text-[10px] text-muted-foreground">
                                     {startDate && format(startDate, 'HH:mm')}
-                                    {endDate && ` - ${format(endDate, 'HH:mm')}`}
+                                    {task.endDate && ` - ${format(getDateFromFirestore(task.endDate)!, 'HH:mm')}`}
                                   </p>
                               </div>
                             </EditTaskDialog>
