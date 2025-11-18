@@ -43,7 +43,6 @@ export function GoalsView() {
             <AccordionItem value={goal.id} key={goal.id} className="border-b-0">
                <Card className="mb-4 overflow-hidden">
                 <div className="flex items-center p-4">
-                  <EditGoalDialog goalId={goal.id}>
                     <AccordionTrigger className="flex-1 text-left p-0 hover:no-underline">
                         <div className="flex flex-col gap-2">
                             <span className="font-semibold text-base">{goal.title}</span>
@@ -60,21 +59,25 @@ export function GoalsView() {
                             <Progress value={calculateProgress(goal.id)} className="h-2 w-full max-w-sm mt-1" />
                         </div>
                     </AccordionTrigger>
-                  </EditGoalDialog>
                     <div className="flex items-center ml-2">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
-                            <Icons.ellipsis className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem className="text-destructive" onClick={() => deleteGoal(goal.id)}>
-                            <Icons.delete className="mr-2 h-4 w-4" />
-                            Xóa mục tiêu
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                        <EditGoalDialog goalId={goal.id}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                                <Icons.edit className="h-4 w-4" />
+                            </Button>
+                        </EditGoalDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                                <Icons.ellipsis className="h-4 w-4" />
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                            <DropdownMenuItem className="text-destructive" onClick={() => deleteGoal(goal.id)}>
+                                <Icons.delete className="mr-2 h-4 w-4" />
+                                Xóa mục tiêu
+                            </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
                 <AccordionContent>
