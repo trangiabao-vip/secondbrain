@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -33,7 +34,7 @@ const getDateFromFirestore = (date: any): Date | undefined => {
 
 
 export function EditGoalDialog({ goalId, children }: { goalId: string, children: ReactNode }) {
-  const { getGoalById, updateGoal, deleteGoal } = useAppContext();
+  const { getGoalById, updateGoal, deleteGoal, duplicateGoal } = useAppContext();
   const [goalTitle, setGoalTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<GoalPriority>('Vừa');
@@ -74,7 +75,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
 
         if (goal.customProperties) {
           setCustomProperties(
-            Object.entries(goal.customProperties).map(([key, value], index) => ({ id: index, key, value }))
+            Object.entries(goal.customProperties).map(([key, value], index) => ({ id: index, key, value: String(value) }))
           );
         } else {
           setCustomProperties([]);
@@ -136,6 +137,11 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
     await deleteGoal(goalId);
     setIsOpen(false);
   }
+
+  const handleDuplicateGoal = async () => {
+    await duplicateGoal(goalId);
+    setIsOpen(false);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -288,16 +294,22 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                 Thêm thuộc tính
               </Button>
             </div>
-            <div className="flex justify-between pt-2">
-                <Button variant="destructive" onClick={handleDeleteGoal}>
-                    <Icons.delete className="mr-2 h-4 w-4" />
-                    Xóa
-                </Button>
-                <Button type="submit" onClick={handleUpdateGoal}>
-                    Lưu thay đổi
-                </Button>
-            </div>
         </div>
+        <DialogFooter className="sm:justify-between pt-2">
+          <div className='flex gap-2'>
+              <Button variant="destructive" onClick={handleDeleteGoal}>
+                  <Icons.delete className="mr-2 h-4 w-4" />
+                  Xóa
+              </Button>
+               <Button variant="secondary" onClick={handleDuplicateGoal}>
+                  <Icons.copy className="mr-2 h-4 w-4" />
+                  Nhân bản
+              </Button>
+          </div>
+          <Button type="submit" onClick={handleUpdateGoal}>
+              Lưu thay đổi
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

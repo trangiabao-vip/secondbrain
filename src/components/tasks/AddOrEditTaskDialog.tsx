@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -39,7 +40,7 @@ const getDateFromFirestore = (date: any): Date | undefined => {
 
 
 export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, mode }: AddOrEditTaskDialogProps) {
-  const { getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic } = useAppContext();
+  const { getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic, duplicateTask } = useAppContext();
   
   const [taskText, setTaskText] = useState('');
   const [notes, setNotes] = useState('');
@@ -86,7 +87,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
 
            if (task.customProperties) {
             setCustomProperties(
-              Object.entries(task.customProperties).map(([key, value], index) => ({ id: index, key, value }))
+              Object.entries(task.customProperties).map(([key, value], index) => ({ id: index, key, value: String(value) }))
             );
           } else {
             setCustomProperties([]);
@@ -172,6 +173,13 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
       setIsOpen(false);
     }
   }
+
+  const handleDuplicateTask = () => {
+    if (taskId) {
+      duplicateTask(taskId);
+      setIsOpen(false);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -339,18 +347,24 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
                 Thêm thuộc tính
               </Button>
             </div>
-            <div className="flex justify-between pt-2">
-                {mode === 'edit' ? (
+        </div>
+        <DialogFooter className="sm:justify-between pt-2">
+            {mode === 'edit' ? (
+                <div className='flex gap-2'>
                     <Button variant="destructive" onClick={handleDeleteTask}>
                         <Icons.delete className="mr-2 h-4 w-4" />
                         Xóa
                     </Button>
-                ) : <div></div>}
-                <Button type="submit" onClick={handleSubmit}>
-                    {mode === 'edit' ? 'Lưu thay đổi' : 'Thêm nhiệm vụ'}
-                </Button>
-            </div>
-        </div>
+                    <Button variant="secondary" onClick={handleDuplicateTask}>
+                      <Icons.copy className="mr-2 h-4 w-4" />
+                      Nhân bản
+                    </Button>
+                </div>
+            ) : <div></div>}
+            <Button type="submit" onClick={handleSubmit}>
+                {mode === 'edit' ? 'Lưu thay đổi' : 'Thêm nhiệm vụ'}
+            </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
