@@ -2,7 +2,7 @@
 import { useState, useMemo } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from "@/contexts/AppContext";
-import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, isSameHour, parseISO, getMinutes, differenceInMinutes, startOfDay, endOfDay, isWithinInterval } from "date-fns";
+import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, parseISO, getMinutes, differenceInMinutes, startOfDay, endOfDay, isWithinInterval, areIntervalsOverlapping } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Icons } from "../icons";
 import { Button } from "../ui/button";
@@ -48,24 +48,34 @@ export function GlobalScheduleView() {
 
   const getScheduledItemsForDay = (day: Date) => {
     return scheduledItems.filter(item => {
-      if (!item.startDate) return false;
+      const startDate = getDateFromFirestore(item.startDate);
+      if (!startDate) return false;
+
+      // Check if the item's interval overlaps with the given day
       const itemInterval = {
-        start: item.startDate,
-        end: item.endDate || item.startDate,
+        start: startDate,
+        end: getDateFromFirestore(item.endDate) || startDate,
       };
+
       const dayInterval = {
         start: startOfDay(day),
         end: endOfDay(day),
       }
-      return isWithinInterval(itemInterval.start, dayInterval) || 
-             isWithinInterval(dayInterval.start, itemInterval);
+
+      return areIntervalsOverlapping(itemInterval, dayInterval);
     });
   };
   
   const getItemsForAllday = (day: Date) => {
-    return scheduledItems.filter(item => 
-        item.startDate && isSameDay(item.startDate, day) && !item.endDate
-    );
+    return scheduledItems.filter(item => {
+        const startDate = getDateFromFirestore(item.startDate);
+        if (!startDate) return false;
+        
+        const hasTime = getHours(startDate) !== 0 || getMinutes(startDate) !== 0;
+        
+        // It's an all-day event if it's on the same day and has no specific time
+        return isSameDay(startDate, day) && !hasTime;
+    });
   }
 
   const goToPreviousWeek = () => setCurrentDate(prev => addDays(prev, -7));
@@ -154,8 +164,10 @@ export function GlobalScheduleView() {
                     ))}
                     {getScheduledItemsForDay(day).map(item => {
                         const startDate = getDateFromFirestore(item.startDate);
-
-                        if (!startDate || !item.endDate) return null;
+                        if (!startDate) return null;
+                        
+                        const hasTime = getHours(startDate) !== 0 || getMinutes(startDate) !== 0;
+                        if (!hasTime) return null; // Skip all-day events in the hourly section
                         
                         let displayStart = startDate;
                         let displayEnd = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 30);
