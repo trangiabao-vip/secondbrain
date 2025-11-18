@@ -2,7 +2,7 @@
 import { useState, useMemo } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from "@/contexts/AppContext";
-import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, isSameHour, parseISO } from "date-fns";
+import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, isSameHour, parseISO, getMinutes, differenceInMinutes } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Icons } from "../icons";
 import { Button } from "../ui/button";
@@ -15,6 +15,7 @@ const hours = Array.from({ length: 24 }, (_, i) => i);
 const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
     if (typeof date === 'string') return parseISO(date);
+    if (date && typeof date.toDate === 'function') return date.toDate();
     if (date.seconds) return new Date(date.seconds * 1000);
     if (date instanceof Date) return date;
     return null;
@@ -33,8 +34,8 @@ export function GlobalScheduleView() {
 
   const scheduledItems = useMemo((): ScheduledItem[] => {
     const goalItems: ScheduledItem[] = goals
-        .filter(g => g.endDate)
-        .map(g => ({ ...g, type: 'goal' as const, startDate: getDateFromFirestore(g.startDate)!, endDate: getDateFromFirestore(g.endDate)! }))
+        .filter(g => g.startDate)
+        .map(g => ({ ...g, type: 'goal' as const, startDate: getDateFromFirestore(g.startDate)!, endDate: getDateFromFirestore(g.endDate) }))
         .filter(item => item.startDate);
 
     const taskItems: ScheduledItem[] = tasks
@@ -47,7 +48,7 @@ export function GlobalScheduleView() {
 
   const getItemsForHour = (day: Date, hour: number) => {
     return scheduledItems.filter(item => {
-      if (!isSameDay(item.startDate, day)) return false;
+      if (!item.startDate || !isSameDay(item.startDate, day)) return false;
       if (item.type === 'goal') return false;
       return getHours(item.startDate) === hour;
     });
@@ -101,7 +102,7 @@ export function GlobalScheduleView() {
               {hours.map(hour => (
                 <div key={hour} className="h-16 text-right pr-2 relative">
                   <span className="relative -top-2">
-                    {format(setMinutes(setHours(new Date(), hour), 0), 'HH:mm')}
+                    {format(setMinutes(setHours(new Date(), hour), 0), 'HH:00')}
                   </span>
                 </div>
               ))}
@@ -130,29 +131,41 @@ export function GlobalScheduleView() {
                   {/* Hourly section */}
                   <div className="relative">
                     {hours.map(hour => (
-                      <div key={hour} className="h-16 border-b relative">
-                         {getItemsForHour(day, hour).map(item => {
-                            const task = item as Task;
-                            const startDate = getDateFromFirestore(task.startDate);
-                            const endDate = getDateFromFirestore(task.endDate);
-
-                            return (
-                                <EditTaskDialog taskId={item.id} key={`${item.type}-${item.id}`}>
-                                  <div className="absolute inset-x-0.5 bg-secondary/80 rounded p-1 shadow z-10 border border-border cursor-pointer hover:bg-secondary">
-                                      <p className="text-xs font-bold truncate flex items-center gap-1">
-                                        <Icons.task className="h-3 w-3"/>
-                                        {task.text}
-                                      </p>
-                                      <p className="text-[10px] text-muted-foreground">
-                                        {startDate && format(startDate, 'HH:mm')}
-                                        {endDate && ` - ${format(endDate, 'HH:mm')}`}
-                                      </p>
-                                  </div>
-                                </EditTaskDialog>
-                            );
-                         })}
-                      </div>
+                      <div key={hour} className="h-16 border-b relative"></div>
                     ))}
+                    {getItemsForHour(day, getHours(day)).map(item => {
+                        const task = item as Task;
+                        const startDate = getDateFromFirestore(task.startDate);
+                        const endDate = getDateFromFirestore(task.endDate);
+
+                        if (!startDate) return null;
+                        
+                        const top = (getMinutes(startDate) / 60) * 64; // 64px is h-16
+                        const end = endDate ? endDate : setMinutes(startDate, getMinutes(startDate) + 30);
+                        const height = (differenceInMinutes(end, startDate) / 60) * 64;
+                        const startHour = getHours(startDate);
+                        
+                        return (
+                            <EditTaskDialog taskId={item.id} key={`${item.type}-${item.id}`}>
+                              <div 
+                                className="absolute inset-x-0.5 bg-secondary/80 rounded p-1 shadow z-10 border border-border cursor-pointer hover:bg-secondary overflow-hidden"
+                                style={{
+                                    top: `${startHour * 64 + top}px`,
+                                    height: `${height}px`
+                                }}
+                              >
+                                  <p className="text-xs font-bold truncate flex items-center gap-1">
+                                    <Icons.task className="h-3 w-3"/>
+                                    {task.text}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {startDate && format(startDate, 'HH:mm')}
+                                    {endDate && ` - ${format(endDate, 'HH:mm')}`}
+                                  </p>
+                              </div>
+                            </EditTaskDialog>
+                        );
+                    })}
                   </div>
                 </div>
               ))}
