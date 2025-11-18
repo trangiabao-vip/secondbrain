@@ -15,10 +15,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from '@/contexts/AppContext';
 import { Icons } from '../icons';
-import { format, setHours, setMinutes } from "date-fns";
+import { format, setHours, setMinutes, parseISO } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { TaskStatus, TaskDifficulty } from '@/lib/data';
+import { TaskStatus, TaskDifficulty, type Task } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
 
 interface AddOrEditTaskDialogProps {
@@ -27,6 +27,15 @@ interface AddOrEditTaskDialogProps {
   children: ReactNode;
   mode: 'add' | 'edit';
 }
+
+const getDateFromFirestore = (date: any): Date | undefined => {
+    if (!date) return undefined;
+    if (typeof date === 'string') return parseISO(date);
+    if (date.seconds) return new Date(date.seconds * 1000);
+    if (date instanceof Date) return date;
+    return undefined;
+};
+
 
 export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, mode }: AddOrEditTaskDialogProps) {
   const { getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic } = useAppContext();
@@ -44,13 +53,6 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
 
   const topicGoals = goals.filter(g => g.topicId === selectedTopic?.id);
 
-  const getTaskDate = (date: any) => {
-    if (!date) return undefined;
-    if (typeof date === 'string') return new Date(date);
-    if (date.seconds) return new Date(date.seconds * 1000);
-    return undefined;
-  }
-
   useEffect(() => {
     if (isOpen) {
       if (mode === 'edit' && taskId) {
@@ -62,7 +64,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
           setStatus(task.status);
           setSelectedGoalId(task.goalId || undefined);
           
-          const sDate = getTaskDate(task.startDate);
+          const sDate = getDateFromFirestore(task.startDate);
           if (sDate) {
             setStartDate(sDate);
             setStartTime(format(sDate, "HH:mm"));
@@ -71,7 +73,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
             setStartTime('09:00');
           }
 
-          const eDate = getTaskDate(task.endDate);
+          const eDate = getDateFromFirestore(task.endDate);
           if (eDate) {
             setEndDate(eDate);
             setEndTime(format(eDate, "HH:mm"));
@@ -110,14 +112,14 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
       const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
       const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
       
-      const taskData: Partial<Task> = {
+      const taskData: Partial<Omit<Task, 'id'>> = {
         text: taskText.trim(),
         notes: notes,
         difficulty: difficulty,
         status: status,
         startDate: finalStartDate,
         endDate: finalEndDate,
-        goalId: selectedGoalId === 'none' ? null : selectedGoalId
+        goalId: selectedGoalId === 'none' || selectedGoalId === undefined ? null : selectedGoalId,
       };
 
       if (!taskData.goalId) {
@@ -170,7 +172,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
             </div>
              <div className="space-y-2">
               <Label htmlFor="task-goal">Mục tiêu (Tùy chọn)</Label>
-              <Select value={selectedGoalId} onValueChange={setSelectedGoalId}>
+              <Select value={selectedGoalId || 'none'} onValueChange={setSelectedGoalId}>
                 <SelectTrigger id="task-goal">
                   <SelectValue placeholder="Chọn một mục tiêu (hoặc để trống)" />
                 </SelectTrigger>

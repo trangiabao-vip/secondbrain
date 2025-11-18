@@ -31,7 +31,7 @@ interface AppContextType {
   updateInterest: (id: string, name: string) => void;
   addTopic: (name: string, imageId: string, description?: string) => void;
   updateTopic: (topicId: string, name: string, description?: string) => void;
-  addGoal: (title: string, description: string | undefined, priority: GoalPriority, startDate?: Date, endDate?: Date) => void;
+  addGoal: (title: string, description: string | undefined, priority: GoalPriority, startDate?: Date | null, endDate?: Date | null) => void;
   updateGoal: (goalId: string, updatedData: Partial<Omit<Goal, 'id'>>) => void;
   addTask: (taskData: Partial<Omit<Task, 'id'>>) => void;
   updateTask: (taskId: string, updatedData: Partial<Task>) => void;
@@ -120,7 +120,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Chủ đề đã được cập nhật", description: `"${name}" đã được cập nhật.` });
   };
   
-  const addGoal = (title: string, description: string | undefined, priority: GoalPriority, startDate?: Date, endDate?: Date) => {
+  const addGoal = (title: string, description: string | undefined, priority: GoalPriority, startDate?: Date | null, endDate?: Date | null) => {
     if (!selectedTopicId || !user) return;
     const newGoal: Omit<Goal, 'id'> = { 
       title, 
@@ -144,8 +144,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addTask = (taskData: Partial<Omit<Task, 'id'>>) => {
     if (!user) return;
-    if (!taskData.goalId && !selectedTopicId) return;
-
+    
     const newTask: Partial<Task> = {
       ...taskData,
       status: taskData.status || 'chưa bắt đầu',
@@ -153,10 +152,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createdAt: serverTimestamp()
     };
     
-    if (!newTask.goalId) {
-      newTask.topicId = selectedTopicId;
-    }
-
     addDocumentNonBlocking(collection(firestore, 'tasks'), newTask);
   };
 

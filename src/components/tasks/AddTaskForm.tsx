@@ -12,7 +12,7 @@ export function AddTaskForm({ goalId }: { goalId: string }) {
 
   const handleAddTask = () => {
     if (taskText.trim()) {
-      addTask(taskText.trim(), goalId);
+      addTask({ text: taskText.trim(), goalId });
       setTaskText('');
     }
   };
