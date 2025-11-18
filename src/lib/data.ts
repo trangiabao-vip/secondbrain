@@ -53,11 +53,22 @@ export interface Interest {
   userId: string;
 }
 
+export interface WikiPage {
+  id: string; // Firestore document ID
+  title: string;
+  content: string;
+  topicId: string;
+  createdAt: any;
+  updatedAt: any;
+  userId: string;
+}
+
 export type DataType = {
   interests: Interest[];
   topics: Topic[];
   goals: Goal[];
   tasks: Task[];
+  wikiPages: WikiPage[];
 };
 
 // This initialData is now only for reference and will not be used
@@ -67,4 +78,5 @@ export const initialData: DataType = {
   topics: [],
   goals: [],
   tasks: [],
+  wikiPages: [],
 };

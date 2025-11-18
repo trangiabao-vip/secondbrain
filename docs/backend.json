@@ -191,6 +191,40 @@
         }
       },
       "required": ["text", "status", "createdAt", "userId"]
+    },
+    "WikiPage": {
+      "title": "Wiki Page",
+      "type": "object",
+      "description": "Represents a single page or entry in the knowledge wiki for a topic.",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The title of the wiki page."
+        },
+        "content": {
+          "type": "string",
+          "description": "The content of the wiki page, likely in Markdown format."
+        },
+        "topicId": {
+          "type": "string",
+          "description": "The ID of the parent topic."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the page was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the page was last updated.",
+          "format": "date-time"
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this page."
+        }
+      },
+      "required": ["title", "content", "topicId", "createdAt", "updatedAt", "userId"]
     }
   },
   "auth": {
@@ -218,6 +252,10 @@
     "/tasks/{taskId}": {
       "schema": { "$ref": "#/entities/Task" },
       "description": "Top-level collection for tasks. Contains a userId field for security rules."
+    },
+    "/wikiPages/{wikiPageId}": {
+      "schema": { "$ref": "#/entities/WikiPage" },
+      "description": "Top-level collection for wiki pages. Contains a userId for security rules."
     }
   }
 }

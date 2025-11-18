@@ -47,5 +47,13 @@ service cloud.firestore {
        allow list: if isSignedIn();
        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
+
+    // WikiPages can be read by their owner.
+    // They can be created, updated, or deleted by their owner.
+    match /wikiPages/{wikiPageId} {
+       allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+       allow list: if isSignedIn();
+       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
   }
 }

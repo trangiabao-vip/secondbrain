@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GoalsView } from "./GoalsView";
 import { ScheduleView } from "./ScheduleView";
 import { Icons } from "../icons";
+import { WikiView } from "../wiki/WikiView";
 
 export function TopicDetailView() {
   
@@ -17,12 +18,19 @@ export function TopicDetailView() {
             <Icons.calendar className="h-4 w-4" />
             Lịch trình
         </TabsTrigger>
+        <TabsTrigger value="wiki" className="gap-2">
+            <Icons.topic className="h-4 w-4" />
+            Wiki
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="goals" className="mt-4 flex-grow">
         <GoalsView />
       </TabsContent>
       <TabsContent value="schedule" className="mt-4 flex-grow">
         <ScheduleView />
+      </TabsContent>
+       <TabsContent value="wiki" className="mt-4 flex-grow">
+        <WikiView />
       </TabsContent>
     </Tabs>
   );

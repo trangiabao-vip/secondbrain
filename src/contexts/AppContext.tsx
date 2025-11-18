@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useMemo, useEffect } from 'react';
-import { type Interest, type Topic, type Goal, type Task } from '@/lib/data';
+import { type Interest, type Topic, type Goal, type Task, type WikiPage } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, serverTimestamp, writeBatch, query, where, addDoc } from 'firebase/firestore';
@@ -20,6 +20,7 @@ interface AppContextType {
   topics: Topic[];
   goals: Goal[];
   tasks: Task[];
+  wikiPages: WikiPage[];
   selectedInterestId: string | null;
   selectedTopicId: string | null;
   viewMode: ViewMode;
@@ -41,6 +42,9 @@ interface AppContextType {
   deleteTask: (id: string) => void;
   duplicateGoal: (goalId: string) => Promise<void>;
   duplicateTask: (taskId: string) => void;
+  addWikiPage: (pageData: Partial<Omit<WikiPage, 'id'>>) => void;
+  updateWikiPage: (pageId: string, updatedData: Partial<Omit<WikiPage, 'id'>>) => void;
+  deleteWikiPage: (pageId: string) => void;
   selectedInterest: Interest | null;
   selectedTopic: Topic | null;
   getInterestById: (id: string) => Interest | undefined;
@@ -48,6 +52,7 @@ interface AppContextType {
   getTaskById: (id: string) => Task | undefined;
   getTasksByGoalId: (goalId: string) => Task[];
   getTopicById: (id: string) => Topic | undefined;
+  getWikiPageById: (id: string) => WikiPage | undefined;
   logout: () => void;
 }
 
@@ -65,20 +70,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const topicsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'topics'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const goalsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'goals'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const tasksQuery = useMemoFirebase(() => user ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const wikiPagesQuery = useMemoFirebase(() => user ? query(collection(firestore, 'wikiPages'), where('userId', '==', user.uid)) : null, [firestore, user]);
 
   const { data: interestsData, isLoading: interestsLoading } = useCollection<Interest>(interestsQuery);
   const { data: topicsData, isLoading: topicsLoading } = useCollection<Topic>(topicsQuery);
   const { data: goalsData, isLoading: goalsLoading } = useCollection<Goal>(goalsQuery);
   const { data: tasksData, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
+  const { data: wikiPagesData, isLoading: wikiPagesLoading } = useCollection<WikiPage>(wikiPagesQuery);
   
   const interests = interestsData || [];
   const topics = topicsData || [];
   const goals = goalsData || [];
   const tasks = tasksData || [];
+  const wikiPages = wikiPagesData || [];
 
   const isDataLoading = useMemo(() => {
-    return isUserLoading || interestsLoading || topicsLoading || goalsLoading || tasksLoading;
-  }, [isUserLoading, interestsLoading, topicsLoading, goalsLoading, tasksLoading]);
+    return isUserLoading || interestsLoading || topicsLoading || goalsLoading || tasksLoading || wikiPagesLoading;
+  }, [isUserLoading, interestsLoading, topicsLoading, goalsLoading, tasksLoading, wikiPagesLoading]);
 
 
   const selectInterest = (id: string | null) => {
@@ -167,7 +175,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const topicsToDelete = topics.filter(t => t.interestId === id);
     const goalsToDelete = goals.filter(g => topicsToDelete.some(t => t.id === g.topicId));
     const tasksToDelete = tasks.filter(t => goalsToDelete.some(g => g.id === t.goalId) || topicsToDelete.some(topic => topic.id === t.topicId));
+    const wikiPagesToDelete = wikiPages.filter(p => topicsToDelete.some(t => t.id === p.topicId));
     
+    wikiPagesToDelete.forEach(p => batch.delete(doc(firestore, 'wikiPages', p.id)));
     tasksToDelete.forEach(t => batch.delete(doc(firestore, 'tasks', t.id)));
     goalsToDelete.forEach(g => batch.delete(doc(firestore, 'goals', g.id)));
     topicsToDelete.forEach(t => batch.delete(doc(firestore, 'topics', t.id)));
@@ -192,7 +202,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     
     const goalsToDelete = goals.filter(g => g.topicId === id);
     const tasksToDelete = tasks.filter(t => goalsToDelete.some(g => g.id === t.goalId) || t.topicId === id);
+    const wikiPagesToDelete = wikiPages.filter(p => p.topicId === id);
     
+    wikiPagesToDelete.forEach(p => batch.delete(doc(firestore, 'wikiPages', p.id)));
     tasksToDelete.forEach(t => batch.delete(doc(firestore, 'tasks', t.id)));
     goalsToDelete.forEach(g => batch.delete(doc(firestore, 'goals', g.id)));
     batch.delete(doc(firestore, 'topics', id));
@@ -298,6 +310,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addTask(newTaskData);
     toast({ title: "Đã nhân bản nhiệm vụ", description: `"${originalTask.text}" đã được nhân bản.` });
   };
+  
+  const addWikiPage = (pageData: Partial<Omit<WikiPage, 'id'>>) => {
+    if (!selectedTopicId || !user) return;
+    const newPage: Omit<WikiPage, 'id'> = {
+      title: pageData.title || 'Trang không có tiêu đề',
+      content: pageData.content || '',
+      topicId: selectedTopicId,
+      userId: user.uid,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    addDocumentNonBlocking(collection(firestore, 'wikiPages'), newPage);
+    toast({ title: "Đã thêm trang Wiki", description: `"${newPage.title}" đã được thêm.` });
+  };
+  
+  const updateWikiPage = (pageId: string, updatedData: Partial<Omit<WikiPage, 'id'>>) => {
+    const dataWithTimestamp = {
+      ...updatedData,
+      updatedAt: serverTimestamp(),
+    };
+    updateDocumentNonBlocking(doc(firestore, 'wikiPages', pageId), dataWithTimestamp);
+    toast({ title: "Trang Wiki đã được cập nhật" });
+  };
+
+  const deleteWikiPage = (pageId: string) => {
+    if (!user) return;
+    const pageTitle = wikiPages.find(p => p.id === pageId)?.title;
+    deleteDocumentNonBlocking(doc(firestore, 'wikiPages', pageId));
+    toast({ title: "Đã xóa trang Wiki", description: `"${pageTitle}" đã bị xóa.` });
+  };
 
   const selectedInterest = useMemo(() => interests.find((i) => i.id === selectedInterestId) ?? null, [interests, selectedInterestId]);
   const selectedTopic = useMemo(() => topics.find((t) => t.id === selectedTopicId) ?? null, [topics, selectedTopicId]);
@@ -307,6 +349,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const getTaskById = (id: string) => tasks.find(t => t.id === id);
   const getTasksByGoalId = (goalId: string) => tasks.filter(t => t.goalId === goalId);
   const getTopicById = (id: string) => topics.find(t => t.id === id);
+  const getWikiPageById = (id: string) => wikiPages.find(p => p.id === id);
 
   const logout = () => {
     if(auth) {
@@ -319,6 +362,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     topics,
     goals,
     tasks,
+    wikiPages,
     isDataLoading,
     selectedInterestId,
     selectedTopicId,
@@ -340,6 +384,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteTask,
     duplicateGoal,
     duplicateTask,
+    addWikiPage,
+    updateWikiPage,
+    deleteWikiPage,
     selectedInterest,
     selectedTopic,
     getInterestById,
@@ -347,6 +394,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getTaskById,
     getTasksByGoalId,
     getTopicById,
+    getWikiPageById,
     logout,
   };
 
