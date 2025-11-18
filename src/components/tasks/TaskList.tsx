@@ -1,5 +1,3 @@
-
-
 'use client';
 import { useAppContext } from "@/contexts/AppContext";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -62,7 +60,7 @@ export function TaskList({ goalId, tasks: customTasks }: { goalId?: string, task
                   onClick={(e) => e.stopPropagation()}
                 />
                 <div className="flex-grow">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                          <label
                             htmlFor={`task-${task.id}`}
                             className={`text-sm ${task.status === 'hoàn thành' ? 'line-through text-muted-foreground' : ''}`}
@@ -71,7 +69,7 @@ export function TaskList({ goalId, tasks: customTasks }: { goalId?: string, task
                         </label>
                         {task.difficulty && <Badge variant="outline" className={difficultyColors[task.difficulty]}>{task.difficulty}</Badge>}
                     </div>
-                    {(task.notes || startDate) && (
+                    {(task.notes || startDate || (task.customProperties && Object.keys(task.customProperties).length > 0)) && (
                         <div className="text-xs text-muted-foreground flex flex-col items-start gap-1 mt-1">
                            {task.notes && <p className="line-clamp-2">{task.notes}</p>}
                             {startDate && (
@@ -79,6 +77,16 @@ export function TaskList({ goalId, tasks: customTasks }: { goalId?: string, task
                                     <Icons.calendar className="h-3 w-3" />
                                     {format(startDate, "d MMM, HH:mm", { locale: vi })}
                                 </div>
+                            )}
+                            {task.customProperties && Object.keys(task.customProperties).length > 0 && (
+                              <div className="flex items-center gap-2 flex-wrap mt-1">
+                                {Object.entries(task.customProperties).map(([key, value]) => (
+                                  <Badge key={key} variant="outline" className="font-normal text-xs">
+                                    <span className="font-semibold mr-1">{key}:</span>
+                                    <span>{value}</span>
+                                  </Badge>
+                                ))}
+                              </div>
                             )}
                         </div>
                     )}

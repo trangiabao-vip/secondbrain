@@ -1,5 +1,3 @@
-
-
 'use client';
 import { useAppContext } from "@/contexts/AppContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -11,7 +9,7 @@ import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from "../ui/dropdown-menu";
 import { Progress } from "../ui/progress";
 import { vi } from 'date-fns/locale';
-import { Card, CardContent, CardDescription } from "../ui/card";
+import { Card, CardContent } from "../ui/card";
 import { EditGoalDialog } from "./EditGoalDialog";
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
@@ -99,8 +97,6 @@ export function GoalsView() {
         <Accordion type="single" collapsible className="w-full" defaultValue={topicGoals[0]?.id}>
           {topicGoals.map((goal) => {
             const endDate = getDateFromFirestore(goal.endDate);
-            const createdAt = getDateFromFirestore(goal.createdAt);
-            const startDate = getDateFromFirestore(goal.startDate);
             const priority = goal.priority || 'Vừa';
             const { color: priorityColor, icon: PriorityIcon } = priorityConfig[priority];
             const IconComponent = Icons[PriorityIcon] as React.ElementType;
@@ -108,12 +104,12 @@ export function GoalsView() {
             return (
               <AccordionItem value={goal.id} key={goal.id} className="border-b-0">
                 <Card className="mb-4 overflow-hidden">
-                  <div className="flex items-center p-4">
+                  <div className="flex items-start p-4">
                       <AccordionTrigger className="flex-1 text-left p-0 hover:no-underline">
-                          <div className="flex flex-col gap-2">
+                          <div className="flex flex-col gap-2 w-full">
                               <span className="font-semibold text-base">{goal.title}</span>
                               {goal.description && <p className="text-sm text-muted-foreground line-clamp-2">{goal.description}</p>}
-                              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 flex-wrap">
                                   <Badge variant="secondary" className="capitalize w-fit">
                                       <div className={cn("w-2 h-2 rounded-full mr-2", statusColors[goal.status])}></div>
                                       {goal.status}
@@ -138,6 +134,16 @@ export function GoalsView() {
                                       </span>
                                   )}
                               </div>
+                               {goal.customProperties && Object.keys(goal.customProperties).length > 0 && (
+                                <div className="flex items-center gap-2 flex-wrap mt-2">
+                                  {Object.entries(goal.customProperties).map(([key, value]) => (
+                                    <Badge key={key} variant="outline" className="font-normal">
+                                      <span className="font-semibold mr-1">{key}:</span>
+                                      <span>{value}</span>
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
                               <Progress value={calculateProgress(goal.id)} className="h-2 w-full max-w-sm mt-1" />
                           </div>
                       </AccordionTrigger>

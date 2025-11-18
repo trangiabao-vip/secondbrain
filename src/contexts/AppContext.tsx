@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useMemo, useEffect } from 'react';
-import { type Interest, type Topic, type Goal, type Task, type GoalStatus, type TaskStatus, type GoalPriority } from '@/lib/data';
+import { type Interest, type Topic, type Goal, type Task } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, serverTimestamp, writeBatch, query, where } from 'firebase/firestore';
@@ -31,7 +31,7 @@ interface AppContextType {
   updateInterest: (id: string, name: string) => void;
   addTopic: (name: string, imageId: string, description?: string) => void;
   updateTopic: (topicId: string, name: string, description?: string) => void;
-  addGoal: (title: string, description: string | undefined, priority: GoalPriority, startDate?: Date | null, endDate?: Date | null) => void;
+  addGoal: (goalData: Partial<Omit<Goal, 'id'>>) => void;
   updateGoal: (goalId: string, updatedData: Partial<Omit<Goal, 'id'>>) => void;
   addTask: (taskData: Partial<Omit<Task, 'id'>>) => void;
   updateTask: (taskId: string, updatedData: Partial<Task>) => void;
@@ -120,21 +120,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Chủ đề đã được cập nhật", description: `"${name}" đã được cập nhật.` });
   };
   
-  const addGoal = (title: string, description: string | undefined, priority: GoalPriority, startDate?: Date | null, endDate?: Date | null) => {
+  const addGoal = (goalData: Partial<Omit<Goal, 'id'>>) => {
     if (!selectedTopicId || !user) return;
-    const newGoal: Omit<Goal, 'id'> = { 
-      title, 
-      description,
-      priority,
-      topicId: selectedTopicId, 
-      status: 'chưa bắt đầu', 
-      startDate: startDate || null, 
-      endDate: endDate || null, 
-      userId: user.uid, 
-      createdAt: serverTimestamp() 
+    const newGoal: Omit<Goal, 'id'> = {
+      title: goalData.title || 'Mục tiêu không tên',
+      topicId: selectedTopicId,
+      status: 'chưa bắt đầu',
+      userId: user.uid,
+      createdAt: serverTimestamp(),
+      ...goalData
     };
     addDocumentNonBlocking(collection(firestore, 'goals'), newGoal);
-    toast({ title: "Đã thêm mục tiêu", description: `"${title}" đã được thêm.` });
+    toast({ title: "Đã thêm mục tiêu", description: `"${newGoal.title}" đã được thêm.` });
   };
 
   const updateGoal = (goalId: string, updatedData: Partial<Omit<Goal, 'id'>>) => {

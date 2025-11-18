@@ -1,5 +1,3 @@
-
-
 'use client';
 import { useState, type ReactNode, useEffect } from 'react';
 import {
@@ -22,6 +20,7 @@ import { vi } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { GoalStatus, GoalPriority, Goal } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
+import { Separator } from '../ui/separator';
 
 const getDateFromFirestore = (date: any): Date | undefined => {
     if (!date) return undefined;
@@ -43,6 +42,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [endTime, setEndTime] = useState('10:00');
   const [status, setStatus] = useState<GoalStatus>('chưa bắt đầu');
+  const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -71,6 +71,14 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
           setEndDate(undefined);
           setEndTime('10:00');
         }
+
+        if (goal.customProperties) {
+          setCustomProperties(
+            Object.entries(goal.customProperties).map(([key, value], index) => ({ id: index, key, value }))
+          );
+        } else {
+          setCustomProperties([]);
+        }
       }
     }
   }, [isOpen, goalId, getGoalById]);
@@ -85,10 +93,29 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
     return date;
   };
 
+  const handleAddProperty = () => {
+    setCustomProperties([...customProperties, { id: Date.now(), key: '', value: '' }]);
+  };
+
+  const handleRemoveProperty = (id: number) => {
+    setCustomProperties(customProperties.filter(p => p.id !== id));
+  };
+  
+  const handlePropertyChange = (id: number, field: 'key' | 'value', text: string) => {
+    setCustomProperties(customProperties.map(p => p.id === id ? { ...p, [field]: text } : p));
+  };
+
   const handleUpdateGoal = () => {
     if (goalTitle.trim()) {
       const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
       const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
+
+      const customPropsObject = customProperties
+        .filter(p => p.key.trim() !== '')
+        .reduce((acc, prop) => {
+          acc[prop.key.trim()] = prop.value;
+          return acc;
+        }, {} as { [key: string]: string });
 
       const updatedData: Partial<Omit<Goal, 'id'>> = {
         title: goalTitle.trim(),
@@ -97,6 +124,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
         startDate: finalStartDate,
         endDate: finalEndDate,
         status: status,
+        customProperties: customPropsObject,
       };
 
       updateGoal(goalId, updatedData);
@@ -233,7 +261,34 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex justify-between">
+             <Separator />
+            <div className="space-y-2">
+              <Label>Thuộc tính tùy chỉnh</Label>
+              <div className="space-y-2">
+                {customProperties.map((prop) => (
+                  <div key={prop.id} className="flex items-center gap-2">
+                    <Input 
+                      placeholder="Tên thuộc tính" 
+                      value={prop.key}
+                      onChange={(e) => handlePropertyChange(prop.id, 'key', e.target.value)}
+                    />
+                    <Input 
+                      placeholder="Giá trị" 
+                      value={prop.value}
+                      onChange={(e) => handlePropertyChange(prop.id, 'value', e.target.value)}
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveProperty(prop.id)} className='flex-shrink-0'>
+                      <Icons.delete className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Button variant="outline" size="sm" onClick={handleAddProperty} className='mt-2'>
+                <Icons.add className='mr-2 h-4 w-4' />
+                Thêm thuộc tính
+              </Button>
+            </div>
+            <div className="flex justify-between pt-2">
                 <Button variant="destructive" onClick={handleDeleteGoal}>
                     <Icons.delete className="mr-2 h-4 w-4" />
                     Xóa

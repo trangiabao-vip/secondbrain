@@ -17,6 +17,7 @@ export interface Task {
   topicId?: string | null; // Optional: Link directly to a topic
   startDate?: any; // Can be string or Firebase Timestamp
   endDate?: any; // Can be string or Firebase Timestamp
+  customProperties?: { [key: string]: string };
   createdAt: any; // Can be string or Firebase Timestamp
   userId: string;
 }
@@ -30,6 +31,7 @@ export interface Goal {
   priority?: GoalPriority;
   startDate?: any; // Can be string or Firebase Timestamp
   endDate?: any; // Can be string or Firebase Timestamp
+  customProperties?: { [key: string]: string };
   createdAt: any; // Can be string or Firebase Timestamp
   userId: string;
 }

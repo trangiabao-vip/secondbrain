@@ -113,6 +113,13 @@
           "description": "The priority of the goal.",
           "enum": ["Thấp", "Vừa", "Cao"]
         },
+        "customProperties": {
+          "type": "object",
+          "description": "User-defined custom properties for the goal.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp indicating when the goal was created.",
@@ -165,6 +172,13 @@
             "type": "string",
             "description": "The difficulty of the task.",
             "enum": ["Dễ", "Vừa", "Khó"]
+        },
+        "customProperties": {
+          "type": "object",
+          "description": "User-defined custom properties for the task.",
+          "additionalProperties": {
+            "type": "string"
+          }
         },
         "createdAt": {
           "type": "string",

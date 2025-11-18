@@ -20,6 +20,7 @@ import { vi } from 'date-fns/locale';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { GoalPriority } from '@/lib/data';
+import { Separator } from '../ui/separator';
 
 export function AddGoalDialog({ children }: { children: ReactNode }) {
   const { addGoal, selectedTopic } = useAppContext();
@@ -30,7 +31,20 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
   const [startTime, setStartTime] = useState('09:00');
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [endTime, setEndTime] = useState('10:00');
+  const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isOpen, setIsOpen] = useState(false);
+
+  const resetState = () => {
+    setGoalTitle('');
+    setDescription('');
+    setPriority('Vừa');
+    setStartDate(undefined);
+    setEndDate(undefined);
+    setStartTime('09:00');
+    setEndTime('10:00');
+    setCustomProperties([]);
+    setIsOpen(false);
+  }
 
   const combineDateTime = (date: Date, time: string): Date => {
     try {
@@ -41,20 +55,40 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
     } catch (e) { /* ignore */ }
     return date;
   };
+  
+  const handleAddProperty = () => {
+    setCustomProperties([...customProperties, { id: Date.now(), key: '', value: '' }]);
+  };
+
+  const handleRemoveProperty = (id: number) => {
+    setCustomProperties(customProperties.filter(p => p.id !== id));
+  };
+  
+  const handlePropertyChange = (id: number, field: 'key' | 'value', text: string) => {
+    setCustomProperties(customProperties.map(p => p.id === id ? { ...p, [field]: text } : p));
+  };
 
   const handleAddGoal = () => {
     if (goalTitle.trim()) {
       const finalStartDate = startDate ? combineDateTime(startDate, startTime) : undefined;
       const finalEndDate = endDate ? combineDateTime(endDate, endTime) : undefined;
-      addGoal(goalTitle.trim(), description, priority, finalStartDate, finalEndDate);
-      setGoalTitle('');
-      setDescription('');
-      setPriority('Vừa');
-      setStartDate(undefined);
-      setEndDate(undefined);
-      setStartTime('09:00');
-      setEndTime('10:00');
-      setIsOpen(false);
+      
+      const customPropsObject = customProperties
+        .filter(p => p.key.trim() !== '')
+        .reduce((acc, prop) => {
+          acc[prop.key.trim()] = prop.value;
+          return acc;
+        }, {} as { [key: string]: string });
+
+      addGoal({
+        title: goalTitle.trim(),
+        description,
+        priority,
+        startDate: finalStartDate,
+        endDate: finalEndDate,
+        customProperties: customPropsObject
+      });
+      resetState();
     }
   };
 
@@ -169,7 +203,34 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
                 )}
               </div>
             </div>
-            <div className="flex justify-end">
+            <Separator />
+            <div className="space-y-2">
+              <Label>Thuộc tính tùy chỉnh</Label>
+              <div className="space-y-2">
+                {customProperties.map((prop) => (
+                  <div key={prop.id} className="flex items-center gap-2">
+                    <Input 
+                      placeholder="Tên thuộc tính" 
+                      value={prop.key}
+                      onChange={(e) => handlePropertyChange(prop.id, 'key', e.target.value)}
+                    />
+                    <Input 
+                      placeholder="Giá trị" 
+                      value={prop.value}
+                      onChange={(e) => handlePropertyChange(prop.id, 'value', e.target.value)}
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveProperty(prop.id)} className='flex-shrink-0'>
+                      <Icons.delete className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Button variant="outline" size="sm" onClick={handleAddProperty} className='mt-2'>
+                <Icons.add className='mr-2 h-4 w-4' />
+                Thêm thuộc tính
+              </Button>
+            </div>
+            <div className="flex justify-end pt-2">
                 <Button type="submit" onClick={handleAddGoal}>
                     Thêm mục tiêu
                 </Button>
