@@ -49,6 +49,7 @@ export function AddTopicDialog({ children }: { children: ReactNode }) {
               value={topicName}
               onChange={(e) => setTopicName(e.target.value)}
               placeholder="ví dụ: 'Kỹ thuật CSS nâng cao'"
+              onKeyDown={(e) => e.key === 'Enter' && handleAddTopic()}
             />
           </div>
           <div className="space-y-2">

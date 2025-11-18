@@ -76,6 +76,7 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
                 value={goalTitle}
                 onChange={(e) => setGoalTitle(e.target.value)}
                 placeholder="ví dụ: 'Thành thạo React Hooks'"
+                onKeyDown={(e) => e.key === 'Enter' && handleAddGoal()}
               />
             </div>
             <div className="space-y-2">
