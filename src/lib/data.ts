@@ -1,10 +1,11 @@
 
 export type GoalStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại';
+export type TaskStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại';
 
 export interface Task {
   id: string;
   text: string;
-  completed: boolean;
+  status: TaskStatus;
   goalId: string;
   scheduledDate?: string;
   createdAt: string;
@@ -54,9 +55,9 @@ export const initialData: DataType = {
     { id: 'goal-2', title: 'Chuẩn bị đất', topicId: 'topic-2', status: 'chưa bắt đầu', dueDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(), createdAt: new Date().toISOString() },
   ],
   tasks: [
-    { id: 'task-1', text: 'Hoàn thành hướng dẫn Next.js', goalId: 'goal-1', completed: true, scheduledDate: new Date().toISOString(), createdAt: new Date().toISOString() },
-    { id: 'task-2', text: 'Xây dựng một dự án nhỏ', goalId: 'goal-1', completed: false, scheduledDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(), createdAt: new Date().toISOString() },
-    { id: 'task-3', text: 'Mua phân compost', goalId: 'goal-2', completed: false, createdAt: new Date().toISOString() },
-    { id: 'task-4', text: 'Xới luống vườn', goalId: 'goal-2', completed: false, scheduledDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString(), createdAt: new Date().toISOString() },
+    { id: 'task-1', text: 'Hoàn thành hướng dẫn Next.js', goalId: 'goal-1', status: 'hoàn thành', scheduledDate: new Date().toISOString(), createdAt: new Date().toISOString() },
+    { id: 'task-2', text: 'Xây dựng một dự án nhỏ', goalId: 'goal-1', status: 'chưa bắt đầu', scheduledDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(), createdAt: new Date().toISOString() },
+    { id: 'task-3', text: 'Mua phân compost', goalId: 'goal-2', status: 'chưa bắt đầu', createdAt: new Date().toISOString() },
+    { id: 'task-4', text: 'Xới luống vườn', goalId: 'goal-2', status: 'chưa bắt đầu', scheduledDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString(), createdAt: new Date().toISOString() },
   ],
 };

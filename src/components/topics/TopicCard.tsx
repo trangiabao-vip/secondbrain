@@ -1,3 +1,4 @@
+
 'use client';
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -20,7 +21,7 @@ export function TopicCard({ topic }: TopicCardProps) {
 
   const topicGoals = goals.filter(g => g.topicId === topic.id);
   const topicTasks = tasks.filter(t => topicGoals.some(g => g.id === t.goalId));
-  const completedTasks = topicTasks.filter(t => t.completed).length;
+  const completedTasks = topicTasks.filter(t => t.status === 'hoàn thành').length;
   const progress = topicTasks.length > 0 ? (completedTasks / topicTasks.length) * 100 : 0;
 
   return (

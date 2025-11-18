@@ -1,3 +1,4 @@
+
 'use client';
 import { useAppContext } from "@/contexts/AppContext";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -7,6 +8,7 @@ import { Icons } from "../icons";
 import { format } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { EditTaskDialog } from "./EditTaskDialog";
+import type { TaskStatus } from "@/lib/data";
 
 export function TaskList({ goalId }: { goalId: string }) {
   const { tasks, updateTask, deleteTask } = useAppContext();
@@ -21,15 +23,15 @@ export function TaskList({ goalId }: { goalId: string }) {
             <div className="flex items-start gap-3 p-2 rounded-md hover:bg-secondary/50 group cursor-pointer">
               <Checkbox
                 id={`task-${task.id}`}
-                checked={task.completed}
-                onCheckedChange={(checked) => updateTask(task.id, !!checked)}
+                checked={task.status === 'hoàn thành'}
+                onCheckedChange={(checked) => updateTask(task.id, checked ? 'hoàn thành' : 'chưa bắt đầu')}
                 className="mt-1"
                 onClick={(e) => e.stopPropagation()}
               />
               <div className="flex-grow">
                   <label
                   htmlFor={`task-${task.id}`}
-                  className={`text-sm ${task.completed ? 'line-through text-muted-foreground' : ''}`}
+                  className={`text-sm ${task.status === 'hoàn thành' ? 'line-through text-muted-foreground' : ''}`}
                   >
                   {task.text}
                   </label>

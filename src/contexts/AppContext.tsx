@@ -3,7 +3,7 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useMemo } from 'react';
-import { initialData, type DataType, type Interest, type Topic, type Goal, type Task, type GoalStatus } from '@/lib/data';
+import { initialData, type DataType, type Interest, type Topic, type Goal, type Task, type GoalStatus, type TaskStatus } from '@/lib/data';
 import { generateId } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -21,7 +21,7 @@ interface AppContextType extends DataType {
   addGoal: (title: string, dueDate?: Date) => void;
   updateGoal: (goalId: string, title: string, dueDate?: Date, status?: GoalStatus) => void;
   addTask: (text: string, goalId: string, scheduledDate?: Date) => void;
-  updateTask: (taskId: string, completed: boolean, text?: string, scheduledDate?: Date) => void;
+  updateTask: (taskId: string, status: TaskStatus, text?: string, scheduledDate?: Date) => void;
   deleteInterest: (id: string) => void;
   deleteTopic: (id: string) => void;
   deleteGoal: (id: string) => void;
@@ -84,16 +84,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const addTask = (text: string, goalId: string, scheduledDate?: Date) => {
-    const newTask: Task = { id: generateId(), text, goalId, completed: false, scheduledDate: scheduledDate?.toISOString(), createdAt: new Date().toISOString() };
+    const newTask: Task = { id: generateId(), text, goalId, status: 'chưa bắt đầu', scheduledDate: scheduledDate?.toISOString(), createdAt: new Date().toISOString() };
     setData((prev) => ({ ...prev, tasks: [...prev.tasks, newTask] }));
   };
 
-  const updateTask = (taskId: string, completed: boolean, text?: string, scheduledDate?: Date) => {
+  const updateTask = (taskId: string, status: TaskStatus, text?: string, scheduledDate?: Date) => {
     setData((prev) => ({
       ...prev,
       tasks: prev.tasks.map((task) => {
         if (task.id === taskId) {
-          const updatedTask = { ...task, completed };
+          const updatedTask = { ...task, status };
           if (text !== undefined) updatedTask.text = text;
           if (scheduledDate !== undefined) updatedTask.scheduledDate = scheduledDate?.toISOString();
           return updatedTask;

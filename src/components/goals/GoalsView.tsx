@@ -25,7 +25,7 @@ export function GoalsView() {
   const calculateProgress = (goalId: string) => {
     const goalTasks = tasks.filter(t => t.goalId === goalId);
     if (goalTasks.length === 0) return 0;
-    const completedTasks = goalTasks.filter(t => t.completed).length;
+    const completedTasks = goalTasks.filter(t => t.status === 'hoàn thành').length;
     return (completedTasks / goalTasks.length) * 100;
   };
 

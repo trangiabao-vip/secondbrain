@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, type ReactNode, useEffect } from 'react';
 import {
@@ -15,16 +16,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from '@/contexts/AppContext';
 import { Icons } from '../icons';
-import { format, setHours, setMinutes, parse } from "date-fns";
+import { format, setHours, setMinutes } from "date-fns";
 import { vi } from 'date-fns/locale';
-import { Checkbox } from '../ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { TaskStatus } from '@/lib/data';
 
 export function EditTaskDialog({ taskId, children }: { taskId: string, children: ReactNode }) {
   const { getTaskById, updateTask, deleteTask } = useAppContext();
   const [taskText, setTaskText] = useState('');
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>();
   const [time, setTime] = useState('09:00');
-  const [completed, setCompleted] = useState(false);
+  const [status, setStatus] = useState<TaskStatus>('chưa bắt đầu');
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export function EditTaskDialog({ taskId, children }: { taskId: string, children:
       const task = getTaskById(taskId);
       if (task) {
         setTaskText(task.text);
-        setCompleted(task.completed);
+        setStatus(task.status);
         if (task.scheduledDate) {
             const date = new Date(task.scheduledDate);
             setScheduledDate(date);
@@ -59,7 +61,7 @@ export function EditTaskDialog({ taskId, children }: { taskId: string, children:
             // ignore time parsing errors, proceed with date only
         }
       }
-      updateTask(taskId, completed, taskText.trim(), finalDate);
+      updateTask(taskId, status, taskText.trim(), finalDate);
       setIsOpen(false);
     }
   };
@@ -140,9 +142,19 @@ export function EditTaskDialog({ taskId, children }: { taskId: string, children:
                 )}
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="completed-edit" checked={completed} onCheckedChange={(checked) => setCompleted(!!checked)} />
-              <Label htmlFor="completed-edit">Hoàn thành</Label>
+            <div className="space-y-2">
+              <Label htmlFor="status-edit-task">Trạng thái</Label>
+              <Select value={status} onValueChange={(value: TaskStatus) => setStatus(value)}>
+                <SelectTrigger id="status-edit-task">
+                  <SelectValue placeholder="Chọn trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="chưa bắt đầu">Chưa bắt đầu</SelectItem>
+                  <SelectItem value="đang làm">Đang làm</SelectItem>
+                  <SelectItem value="hoàn thành">Hoàn thành</SelectItem>
+                  <SelectItem value="thất bại">Thất bại</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex justify-between">
                 <Button variant="destructive" onClick={handleDeleteTask}>
