@@ -68,7 +68,7 @@ export function GoalsView() {
                       <DropdownMenuContent align="end">
                         <EditGoalDialog goalId={goal.id}>
                           <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                            <Icons.left className="mr-2 h-4 w-4 rotate-90" />
+                            <Icons.edit className="mr-2 h-4 w-4" />
                             Chỉnh sửa
                           </DropdownMenuItem>
                         </EditGoalDialog>
