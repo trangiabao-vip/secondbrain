@@ -85,7 +85,12 @@
           "type": "string",
           "description": "The ID of the parent topic."
         },
-        "dueDate": {
+        "startDate": {
+          "type": "string",
+          "description": "The date and time when the goal starts.",
+          "format": "date-time"
+        },
+        "endDate": {
           "type": "string",
           "description": "The date and time when the goal is due.",
           "format": "date-time"
@@ -124,9 +129,14 @@
           "type": "string",
           "description": "The ID of the parent topic if not associated with a goal. Optional."
         },
-        "scheduledDate": {
+        "startDate": {
           "type": "string",
-          "description": "The date and time when the task is scheduled.",
+          "description": "The date and time when the task is scheduled to start.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The date and time when the task is scheduled to end.",
           "format": "date-time"
         },
         "status": {

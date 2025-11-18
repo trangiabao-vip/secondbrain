@@ -43,7 +43,7 @@ export function TaskList({ goalId, tasks: customTasks }: { goalId?: string, task
       <div className="space-y-2">
         {tasksToRender.map(task => {
           const createdAt = getTaskDate(task.createdAt);
-          const scheduledDate = getTaskDate(task.scheduledDate);
+          const startDate = getTaskDate(task.startDate);
           return (
             <AddOrEditTaskDialog taskId={task.id} mode="edit" key={task.id}>
               <div className="flex items-start gap-3 p-2 rounded-md hover:bg-secondary/50 group cursor-pointer">
@@ -63,10 +63,10 @@ export function TaskList({ goalId, tasks: customTasks }: { goalId?: string, task
                     </label>
                     <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
                         {createdAt && <span>Tạo lúc: {format(createdAt, "HH:mm, dd/MM/yy", { locale: vi })}</span>}
-                        {scheduledDate && (
+                        {startDate && (
                             <div className="flex items-center gap-1">
                                 <Icons.calendar className="h-3 w-3" />
-                                {format(scheduledDate, "d MMM, HH:mm", { locale: vi })}
+                                {format(startDate, "d MMM, HH:mm", { locale: vi })}
                             </div>
                         )}
                     </div>

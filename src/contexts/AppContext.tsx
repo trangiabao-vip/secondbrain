@@ -31,10 +31,10 @@ interface AppContextType {
   updateInterest: (id: string, name: string) => void;
   addTopic: (name: string, imageId: string) => void;
   updateTopic: (topicId: string, name: string) => void;
-  addGoal: (title: string, dueDate?: Date) => void;
-  updateGoal: (goalId: string, title: string, dueDate?: Date, status?: GoalStatus) => void;
-  addTask: (text: string, goalId?: string, scheduledDate?: Date, status?: TaskStatus) => void;
-  updateTask: (taskId: string, status: TaskStatus, text?: string, scheduledDate?: Date | null, goalId?: string) => void;
+  addGoal: (title: string, startDate?: Date, endDate?: Date) => void;
+  updateGoal: (goalId: string, title: string, startDate?: Date, endDate?: Date, status?: GoalStatus) => void;
+  addTask: (text: string, goalId?: string, startDate?: Date, endDate?: Date, status?: TaskStatus) => void;
+  updateTask: (taskId: string, status: TaskStatus, text?: string, startDate?: Date | null, endDate?: Date | null, goalId?: string) => void;
   deleteInterest: (id: string) => Promise<void>;
   deleteTopic: (id: string) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
@@ -115,22 +115,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Chủ đề đã được cập nhật", description: `"${name}" đã được cập nhật.` });
   };
   
-  const addGoal = (title: string, dueDate?: Date) => {
+  const addGoal = (title: string, startDate?: Date, endDate?: Date) => {
     if (!selectedTopicId || !user) return;
-    const newGoal: Omit<Goal, 'id'> = { title, topicId: selectedTopicId, status: 'chưa bắt đầu', dueDate: dueDate || null, userId: user.uid, createdAt: serverTimestamp() };
+    const newGoal: Omit<Goal, 'id'> = { 
+      title, 
+      topicId: selectedTopicId, 
+      status: 'chưa bắt đầu', 
+      startDate: startDate || null, 
+      endDate: endDate || null, 
+      userId: user.uid, 
+      createdAt: serverTimestamp() 
+    };
     addDocumentNonBlocking(collection(firestore, 'goals'), newGoal);
     toast({ title: "Đã thêm mục tiêu", description: `"${title}" đã được thêm.` });
   };
 
-  const updateGoal = (goalId: string, title: string, dueDate?: Date, status?: GoalStatus) => {
+  const updateGoal = (goalId: string, title: string, startDate?: Date, endDate?: Date, status?: GoalStatus) => {
     const updatedData: Partial<Goal> = { title };
-    if (dueDate !== undefined) updatedData.dueDate = dueDate;
+    if (startDate !== undefined) updatedData.startDate = startDate;
+    if (endDate !== undefined) updatedData.endDate = endDate;
     if (status) updatedData.status = status;
     updateDocumentNonBlocking(doc(firestore, 'goals', goalId), updatedData);
     toast({ title: "Mục tiêu đã được cập nhật", description: `"${title}" đã được cập nhật.` });
   };
 
-  const addTask = (text: string, goalId?: string, scheduledDate?: Date, status?: TaskStatus) => {
+  const addTask = (text: string, goalId?: string, startDate?: Date, endDate?: Date, status?: TaskStatus) => {
     if (!user || (!goalId && !selectedTopicId)) return;
     
     const newTask: Omit<Task, 'id'> = {
@@ -138,19 +147,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       goalId: goalId || null,
       topicId: goalId ? null : selectedTopicId,
       status: status || 'chưa bắt đầu',
-      scheduledDate: scheduledDate || null,
+      startDate: startDate || null,
+      endDate: endDate || null,
       userId: user.uid,
       createdAt: serverTimestamp()
     };
     addDocumentNonBlocking(collection(firestore, 'tasks'), newTask);
   };
 
-  const updateTask = (taskId: string, status: TaskStatus, text?: string, scheduledDate?: Date | null, goalId?: string) => {
+  const updateTask = (taskId: string, status: TaskStatus, text?: string, startDate?: Date | null, endDate?: Date | null, goalId?: string) => {
     const updatedData: Partial<Task> = { status };
     if (text !== undefined) updatedData.text = text;
-    if (scheduledDate !== undefined) {
-       updatedData.scheduledDate = scheduledDate;
-    }
+    if (startDate !== undefined) updatedData.startDate = startDate;
+    if (endDate !== undefined) updatedData.endDate = endDate;
     // Logic to handle changing goal
     if (goalId !== undefined) {
       updatedData.goalId = goalId || null;

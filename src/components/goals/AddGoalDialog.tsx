@@ -23,14 +23,16 @@ import { Separator } from '../ui/separator';
 export function AddGoalDialog({ children }: { children: ReactNode }) {
   const { addGoal, selectedTopic } = useAppContext();
   const [goalTitle, setGoalTitle] = useState('');
-  const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleAddGoal = () => {
     if (goalTitle.trim()) {
-      addGoal(goalTitle.trim(), dueDate);
+      addGoal(goalTitle.trim(), startDate, endDate);
       setGoalTitle('');
-      setDueDate(undefined);
+      setStartDate(undefined);
+      setEndDate(undefined);
       setIsOpen(false);
     }
   };
@@ -60,7 +62,7 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="due-date">Hạn chót (Tùy chọn)</Label>
+              <Label htmlFor="start-date">Ngày bắt đầu (Tùy chọn)</Label>
                 <Popover>
                     <PopoverTrigger asChild>
                     <Button
@@ -68,15 +70,38 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
                         className="w-full justify-start text-left font-normal"
                     >
                         <Icons.calendar className="mr-2 h-4 w-4" />
-                        {dueDate ? format(dueDate, "PPP", { locale: vi }) : <span>Chọn một ngày</span>}
+                        {startDate ? format(startDate, "PPP", { locale: vi }) : <span>Chọn một ngày</span>}
                     </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
                     <Calendar
                         locale={vi}
                         mode="single"
-                        selected={dueDate}
-                        onSelect={setDueDate}
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                    />
+                    </PopoverContent>
+                </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="end-date">Ngày kết thúc (Tùy chọn)</Label>
+                <Popover>
+                    <PopoverTrigger asChild>
+                    <Button
+                        variant={"outline"}
+                        className="w-full justify-start text-left font-normal"
+                    >
+                        <Icons.calendar className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, "PPP", { locale: vi }) : <span>Chọn một ngày</span>}
+                    </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                    <Calendar
+                        locale={vi}
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
                         initialFocus
                     />
                     </PopoverContent>

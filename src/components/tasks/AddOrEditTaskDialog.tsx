@@ -31,8 +31,10 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
   const { getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic } = useAppContext();
   
   const [taskText, setTaskText] = useState('');
-  const [scheduledDate, setScheduledDate] = useState<Date | undefined>();
-  const [time, setTime] = useState('09:00');
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [startTime, setStartTime] = useState('09:00');
+  const [endDate, setEndDate] = useState<Date | undefined>();
+  const [endTime, setEndTime] = useState('10:00');
   const [status, setStatus] = useState<TaskStatus>('chưa bắt đầu');
   const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(initialGoalId);
   const [isOpen, setIsOpen] = useState(false);
@@ -54,45 +56,57 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
           setTaskText(task.text);
           setStatus(task.status);
           setSelectedGoalId(task.goalId || undefined);
-          const date = getTaskDate(task.scheduledDate);
-          if (date) {
-            setScheduledDate(date);
-            setTime(format(date, "HH:mm"));
+          
+          const sDate = getTaskDate(task.startDate);
+          if (sDate) {
+            setStartDate(sDate);
+            setStartTime(format(sDate, "HH:mm"));
           } else {
-            setScheduledDate(undefined);
-            setTime('09:00');
+            setStartDate(undefined);
+            setStartTime('09:00');
+          }
+
+          const eDate = getTaskDate(task.endDate);
+          if (eDate) {
+            setEndDate(eDate);
+            setEndTime(format(eDate, "HH:mm"));
+          } else {
+            setEndDate(undefined);
+            setEndTime('10:00');
           }
         }
       } else {
         // Reset for 'add' mode
         setTaskText('');
         setStatus('chưa bắt đầu');
-        setScheduledDate(undefined);
-        setTime('09:00');
+        setStartDate(undefined);
+        setStartTime('09:00');
+        setEndDate(undefined);
+        setEndTime('10:00');
         setSelectedGoalId(initialGoalId);
       }
     }
   }, [isOpen, taskId, getTaskById, mode, initialGoalId]);
 
+  const combineDateTime = (date: Date, time: string) => {
+    try {
+      const [hours, minutes] = time.split(':').map(Number);
+      if (!isNaN(hours) && !isNaN(minutes)) {
+        return setMinutes(setHours(date, hours), minutes);
+      }
+    } catch (e) { /* ignore time parsing errors */ }
+    return date;
+  }
+
   const handleSubmit = () => {
     if (taskText.trim()) {
-      let finalDate: Date | undefined | null = scheduledDate;
-      if (finalDate) {
-        try {
-          const [hours, minutes] = time.split(':').map(Number);
-          if (!isNaN(hours) && !isNaN(minutes)) {
-            let tempDate = setHours(scheduledDate!, hours);
-            finalDate = setMinutes(tempDate, minutes);
-          }
-        } catch (e) { /* ignore time parsing errors */ }
-      } else {
-        finalDate = null;
-      }
+      const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
+      const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
       
       if (mode === 'edit' && taskId) {
-        updateTask(taskId, status, taskText.trim(), finalDate, selectedGoalId);
+        updateTask(taskId, status, taskText.trim(), finalStartDate, finalEndDate, selectedGoalId);
       } else {
-        addTask(taskText.trim(), selectedGoalId, finalDate || undefined, status);
+        addTask(taskText.trim(), selectedGoalId, finalStartDate || undefined, finalEndDate || undefined, status);
       }
       setIsOpen(false);
     }
@@ -103,22 +117,6 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
       deleteTask(taskId);
       setIsOpen(false);
     }
-  }
-
-  const handleDateSelect = (date: Date | undefined) => {
-    if (!date) {
-      setScheduledDate(undefined);
-      return;
-    }
-    let newDate = date;
-    try {
-      const [hours, minutes] = time.split(':').map(Number);
-      if (!isNaN(hours) && !isNaN(minutes)) {
-        newDate = setHours(newDate, hours);
-        newDate = setMinutes(newDate, minutes);
-      }
-    } catch(e) { /* time not set yet */ }
-    setScheduledDate(newDate);
   }
 
   return (
@@ -155,7 +153,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="scheduled-date-edit">Ngày đã lên lịch (Tùy chọn)</Label>
+              <Label htmlFor="start-date-edit">Thời gian bắt đầu (Tùy chọn)</Label>
               <div className="flex gap-2">
                 <Popover>
                     <PopoverTrigger asChild>
@@ -164,24 +162,58 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
                         className="w-full justify-start text-left font-normal"
                     >
                         <Icons.calendar className="mr-2 h-4 w-4" />
-                        {scheduledDate ? format(scheduledDate, "PPP", { locale: vi }) : <span>Chọn một ngày</span>}
+                        {startDate ? format(startDate, "PPP", { locale: vi }) : <span>Chọn một ngày</span>}
                     </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
                     <Calendar
                         locale={vi}
                         mode="single"
-                        selected={scheduledDate}
-                        onSelect={handleDateSelect}
+                        selected={startDate}
+                        onSelect={setStartDate}
                         initialFocus
                     />
                     </PopoverContent>
                 </Popover>
-                {scheduledDate && (
+                {startDate && (
                     <Input 
                         type="time" 
-                        value={time}
-                        onChange={(e) => setTime(e.target.value)}
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        className="w-32"
+                        step="900"
+                    />
+                )}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="end-date-edit">Thời gian kết thúc (Tùy chọn)</Label>
+              <div className="flex gap-2">
+                <Popover>
+                    <PopoverTrigger asChild>
+                    <Button
+                        variant={"outline"}
+                        className="w-full justify-start text-left font-normal"
+                    >
+                        <Icons.calendar className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, "PPP", { locale: vi }) : <span>Chọn một ngày</span>}
+                    </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                    <Calendar
+                        locale={vi}
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        initialFocus
+                    />
+                    </PopoverContent>
+                </Popover>
+                {endDate && (
+                    <Input 
+                        type="time" 
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
                         className="w-32"
                         step="900"
                     />

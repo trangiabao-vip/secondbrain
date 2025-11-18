@@ -21,10 +21,19 @@ import { vi } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { GoalStatus } from '@/lib/data';
 
+const getDateFromFirestore = (date: any): Date | undefined => {
+    if (!date) return undefined;
+    if (typeof date === 'string') return new Date(date);
+    if (date.seconds) return new Date(date.seconds * 1000);
+    return undefined;
+};
+
+
 export function EditGoalDialog({ goalId, children }: { goalId: string, children: ReactNode }) {
   const { getGoalById, updateGoal, deleteGoal } = useAppContext();
   const [goalTitle, setGoalTitle] = useState('');
-  const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const [status, setStatus] = useState<GoalStatus>('chưa bắt đầu');
   const [isOpen, setIsOpen] = useState(false);
 
@@ -33,14 +42,8 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
       const goal = getGoalById(goalId);
       if (goal) {
         setGoalTitle(goal.title);
-        if (typeof goal.dueDate === 'string') {
-          setDueDate(new Date(goal.dueDate));
-        } else if (goal.dueDate && 'seconds' in goal.dueDate) {
-          // Handle Firebase Timestamp
-          setDueDate(new Date(goal.dueDate.seconds * 1000));
-        } else {
-          setDueDate(undefined);
-        }
+        setStartDate(getDateFromFirestore(goal.startDate));
+        setEndDate(getDateFromFirestore(goal.endDate));
         setStatus(goal.status);
       }
     }
@@ -48,7 +51,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
 
   const handleUpdateGoal = () => {
     if (goalTitle.trim()) {
-      updateGoal(goalId, goalTitle.trim(), dueDate, status);
+      updateGoal(goalId, goalTitle.trim(), startDate, endDate, status);
       setIsOpen(false);
     }
   };
@@ -79,7 +82,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="due-date-edit">Hạn chót (Tùy chọn)</Label>
+              <Label htmlFor="start-date-edit">Ngày bắt đầu (Tùy chọn)</Label>
                 <Popover>
                     <PopoverTrigger asChild>
                     <Button
@@ -87,15 +90,38 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                         className="w-full justify-start text-left font-normal"
                     >
                         <Icons.calendar className="mr-2 h-4 w-4" />
-                        {dueDate ? format(dueDate, "PPP", { locale: vi }) : <span>Chọn một ngày</span>}
+                        {startDate ? format(startDate, "PPP", { locale: vi }) : <span>Chọn một ngày</span>}
                     </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
                     <Calendar
                         locale={vi}
                         mode="single"
-                        selected={dueDate}
-                        onSelect={setDueDate}
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                    />
+                    </PopoverContent>
+                </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="end-date-edit">Ngày kết thúc (Tùy chọn)</Label>
+                <Popover>
+                    <PopoverTrigger asChild>
+                    <Button
+                        variant={"outline"}
+                        className="w-full justify-start text-left font-normal"
+                    >
+                        <Icons.calendar className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, "PPP", { locale: vi }) : <span>Chọn một ngày</span>}
+                    </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                    <Calendar
+                        locale={vi}
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
                         initialFocus
                     />
                     </PopoverContent>

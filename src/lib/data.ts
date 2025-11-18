@@ -11,7 +11,8 @@ export interface Task {
   status: TaskStatus;
   goalId?: string | null; // Optional: Link to a goal
   topicId?: string | null; // Optional: Link directly to a topic
-  scheduledDate?: any; // Can be string or Firebase Timestamp
+  startDate?: any; // Can be string or Firebase Timestamp
+  endDate?: any; // Can be string or Firebase Timestamp
   createdAt: any; // Can be string or Firebase Timestamp
   userId: string;
 }
@@ -21,7 +22,8 @@ export interface Goal {
   title: string;
   topicId: string;
   status: GoalStatus;
-  dueDate?: any; // Can be string or Firebase Timestamp
+  startDate?: any; // Can be string or Firebase Timestamp
+  endDate?: any; // Can be string or Firebase Timestamp
   createdAt: any; // Can be string or Firebase Timestamp
   userId: string;
 }

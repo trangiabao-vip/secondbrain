@@ -86,7 +86,7 @@ export function GoalsView() {
       {topicGoals.length > 0 && (
         <Accordion type="single" collapsible className="w-full" defaultValue={topicGoals[0]?.id}>
           {topicGoals.map((goal) => {
-            const dueDate = getGoalDate(goal.dueDate);
+            const endDate = getGoalDate(goal.endDate);
             const createdAt = getGoalDate(goal.createdAt);
             return (
               <AccordionItem value={goal.id} key={goal.id} className="border-b-0">
@@ -100,9 +100,9 @@ export function GoalsView() {
                                       <div className={cn("w-2 h-2 rounded-full mr-2", statusColors[goal.status])}></div>
                                       {goal.status}
                                   </Badge>
-                                  {dueDate && (
+                                  {endDate && (
                                       <span className="text-xs text-muted-foreground">
-                                      Hết hạn {formatDistanceToNow(dueDate, { addSuffix: true, locale: vi })} ({format(dueDate, 'd MMM, yyyy', { locale: vi })})
+                                      Hết hạn {formatDistanceToNow(endDate, { addSuffix: true, locale: vi })} ({format(endDate, 'd MMM, yyyy', { locale: vi })})
                                       </span>
                                   )}
                                   {createdAt && (
@@ -133,10 +133,10 @@ export function GoalsView() {
                                   </DropdownMenuSubTrigger>
                                   <DropdownMenuPortal>
                                       <DropdownMenuSubContent>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, dueDate || undefined, 'chưa bắt đầu')}>Chưa bắt đầu</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, dueDate || undefined, 'đang làm')}>Đang làm</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, dueDate || undefined, 'hoàn thành')}>Hoàn thành</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, dueDate || undefined, 'thất bại')}>Thất bại</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, goal.startDate ? new Date(goal.startDate) : undefined, endDate || undefined, 'chưa bắt đầu')}>Chưa bắt đầu</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, goal.startDate ? new Date(goal.startDate) : undefined, endDate || undefined, 'đang làm')}>Đang làm</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, goal.startDate ? new Date(goal.startDate) : undefined, endDate || undefined, 'hoàn thành')}>Hoàn thành</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, goal.startDate ? new Date(goal.startDate) : undefined, endDate || undefined, 'thất bại')}>Thất bại</DropdownMenuItem>
                                       </DropdownMenuSubContent>
                                   </DropdownMenuPortal>
                               </DropdownMenuSub>

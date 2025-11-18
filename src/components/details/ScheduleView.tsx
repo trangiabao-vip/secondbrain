@@ -15,8 +15,8 @@ export function ScheduleView() {
 
   const topicGoals = goals.filter(g => g.topicId === selectedTopic?.id);
   const scheduledItems = [
-    ...topicGoals.filter(g => g.dueDate).map(g => ({ ...g, type: 'goal' as const, date: new Date(g.dueDate!) })),
-    ...tasks.filter(t => topicGoals.some(g => g.id === t.goalId) && t.scheduledDate).map(t => ({ ...t, type: 'task' as const, date: new Date(t.scheduledDate!) }))
+    ...topicGoals.filter(g => g.endDate).map(g => ({ ...g, type: 'goal' as const, date: new Date(g.endDate!) })),
+    ...tasks.filter(t => topicGoals.some(g => g.id === t.goalId) && t.startDate).map(t => ({ ...t, type: 'task' as const, date: new Date(t.startDate!) }))
   ];
 
   const scheduledDates = scheduledItems.map(item => item.date);

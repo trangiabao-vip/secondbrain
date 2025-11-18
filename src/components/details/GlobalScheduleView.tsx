@@ -16,7 +16,8 @@ const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
     if (typeof date === 'string') return parseISO(date);
     if (date.seconds) return new Date(date.seconds * 1000);
-    return date;
+    if (date instanceof Date) return date;
+    return null;
 };
 
 type ScheduledItem = (Goal | Task) & { type: 'goal' | 'task', date: Date };
@@ -32,13 +33,13 @@ export function GlobalScheduleView() {
 
   const scheduledItems = useMemo((): ScheduledItem[] => {
     const goalItems = goals
-        .filter(g => g.dueDate)
-        .map(g => ({ ...g, type: 'goal' as const, date: getDateFromFirestore(g.dueDate)! }))
+        .filter(g => g.endDate)
+        .map(g => ({ ...g, type: 'goal' as const, date: getDateFromFirestore(g.endDate)! }))
         .filter(item => item.date);
 
     const taskItems = tasks
-        .filter(t => t.scheduledDate)
-        .map(t => ({ ...t, type: 'task' as const, date: getDateFromFirestore(t.scheduledDate)! }))
+        .filter(t => t.startDate)
+        .map(t => ({ ...t, type: 'task' as const, date: getDateFromFirestore(t.startDate)! }))
         .filter(item => item.date);
         
     return [...goalItems, ...taskItems];
