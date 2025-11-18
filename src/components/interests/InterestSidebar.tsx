@@ -13,6 +13,7 @@ import { Icons } from "@/components/icons";
 import { AddInterestDialog } from "./AddInterestDialog";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { EditInterestDialog } from "./EditInterestDialog";
 
 export function InterestSidebar() {
   const { interests, selectedInterestId, selectInterest, deleteInterest, viewMode, setViewMode } = useAppContext();
@@ -20,9 +21,16 @@ export function InterestSidebar() {
   return (
     <>
       <SidebarHeader className="border-b">
-        <div className="flex items-center gap-2 p-2">
-          <Icons.logo className="w-6 h-6 text-primary" />
-          <h1 className="text-lg font-semibold">Trung tâm Sở thích</h1>
+        <div className="flex items-center justify-between p-2">
+          <div className="flex items-center gap-2">
+            <Icons.logo className="w-6 h-6 text-primary" />
+            <h1 className="text-lg font-semibold">Trung tâm Sở thích</h1>
+          </div>
+          <AddInterestDialog>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Icons.add />
+            </Button>
+          </AddInterestDialog>
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2">
@@ -58,6 +66,12 @@ export function InterestSidebar() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
+                    <EditInterestDialog interestId={interest.id}>
+                       <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
+                          <Icons.edit className="mr-2 h-4 w-4" />
+                          Đổi tên
+                       </button>
+                    </EditInterestDialog>
                     <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); deleteInterest(interest.id); }}>
                       <Icons.delete className="mr-2 h-4 w-4" />
                       Xóa
@@ -70,12 +84,7 @@ export function InterestSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-2 border-t">
-        <AddInterestDialog>
-          <Button variant="ghost" className="w-full justify-start">
-            <Icons.add className="mr-2 h-4 w-4" />
-            Thêm sở thích
-          </Button>
-        </AddInterestDialog>
+        {/* The "Add Interest" button was moved to the header */}
       </SidebarFooter>
     </>
   );

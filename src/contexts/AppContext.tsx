@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { ReactNode } from 'react';
@@ -17,6 +16,7 @@ interface AppContextType extends DataType {
   selectInterest: (id: string | null) => void;
   selectTopic: (id: string | null) => void;
   addInterest: (name: string) => void;
+  updateInterest: (id: string, name: string) => void;
   addTopic: (name: string, imageId: string) => void;
   updateTopic: (topicId: string, name: string) => void;
   addGoal: (title: string, dueDate?: Date) => void;
@@ -29,6 +29,7 @@ interface AppContextType extends DataType {
   deleteTask: (id: string) => void;
   selectedInterest: Interest | null;
   selectedTopic: Topic | null;
+  getInterestById: (id: string) => Interest | undefined;
   getGoalById: (id: string) => Goal | undefined;
   getTaskById: (id: string) => Task | undefined;
   getTopicById: (id: string) => Topic | undefined;
@@ -61,6 +62,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Đã thêm sở thích", description: `"${name}" đã được thêm.` });
   };
   
+  const updateInterest = (id: string, name: string) => {
+    setData((prev) => ({
+      ...prev,
+      interests: prev.interests.map((interest) =>
+        interest.id === id ? { ...interest, name } : interest
+      ),
+    }));
+    toast({ title: "Sở thích đã được cập nhật", description: `Sở thích đã được đổi tên thành "${name}".` });
+  }
+
   const addTopic = (name: string, imageId: string) => {
     if (!selectedInterestId) return;
     const newTopic: Topic = { id: generateId(), name, interestId: selectedInterestId, imageId, createdAt: new Date().toISOString() };
@@ -202,6 +213,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const selectedInterest = useMemo(() => data.interests.find((i) => i.id === selectedInterestId) ?? null, [data.interests, selectedInterestId]);
   const selectedTopic = useMemo(() => data.topics.find((t) => t.id === selectedTopicId) ?? null, [data.topics, selectedTopicId]);
 
+  const getInterestById = (id: string) => data.interests.find(i => i.id === id);
   const getGoalById = (id: string) => data.goals.find(g => g.id === id);
   const getTaskById = (id: string) => data.tasks.find(t => t.id === id);
   const getTopicById = (id: string) => data.topics.find(t => t.id === id);
@@ -216,6 +228,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     selectInterest,
     selectTopic,
     addInterest,
+    updateInterest,
     addTopic,
     updateTopic,
     addGoal,
@@ -228,6 +241,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteTask,
     selectedInterest,
     selectedTopic,
+    getInterestById,
     getGoalById,
     getTaskById,
     getTopicById,
