@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useAppContext } from "@/contexts/AppContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -6,17 +7,25 @@ import { TaskList } from "@/components/tasks/TaskList";
 import { AddGoalDialog } from "@/components/goals/AddGoalDialog";
 import { Button } from "../ui/button";
 import { Icons } from "../icons";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from "../ui/dropdown-menu";
 import { Progress } from "../ui/progress";
 import { vi } from 'date-fns/locale';
-import { Card } from "../ui/card";
+import { Card, CardContent } from "../ui/card";
 import { EditGoalDialog } from "./EditGoalDialog";
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
 import type { GoalStatus } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
+
+const getDateFromFirestore = (date: any): Date | null => {
+    if (!date) return null;
+    if (typeof date === 'string') return parseISO(date);
+    if (date.seconds) return new Date(date.seconds * 1000);
+    if (date instanceof Date) return date;
+    return null;
+};
 
 export function GoalsView() {
   const { goals, tasks, selectedTopic, deleteGoal, updateGoal, isDataLoading } = useAppContext();
@@ -49,13 +58,6 @@ export function GoalsView() {
     return (completedTasks / goalTasks.length) * 100;
   };
 
-  const getGoalDate = (date: any) => {
-    if (!date) return null;
-    if (typeof date === 'string') return new Date(date);
-    if (date.seconds) return new Date(date.seconds * 1000);
-    return null;
-  }
-
   const statusColors: Record<GoalStatus, string> = {
     'chưa bắt đầu': 'bg-gray-500',
     'đang làm': 'bg-blue-500',
@@ -86,8 +88,9 @@ export function GoalsView() {
       {topicGoals.length > 0 && (
         <Accordion type="single" collapsible className="w-full" defaultValue={topicGoals[0]?.id}>
           {topicGoals.map((goal) => {
-            const endDate = getGoalDate(goal.endDate);
-            const createdAt = getGoalDate(goal.createdAt);
+            const endDate = getDateFromFirestore(goal.endDate);
+            const createdAt = getDateFromFirestore(goal.createdAt);
+            const startDate = getDateFromFirestore(goal.startDate);
             return (
               <AccordionItem value={goal.id} key={goal.id} className="border-b-0">
                 <Card className="mb-4 overflow-hidden">
@@ -133,10 +136,10 @@ export function GoalsView() {
                                   </DropdownMenuSubTrigger>
                                   <DropdownMenuPortal>
                                       <DropdownMenuSubContent>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, goal.startDate ? new Date(goal.startDate) : undefined, endDate || undefined, 'chưa bắt đầu')}>Chưa bắt đầu</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, goal.startDate ? new Date(goal.startDate) : undefined, endDate || undefined, 'đang làm')}>Đang làm</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, goal.startDate ? new Date(goal.startDate) : undefined, endDate || undefined, 'hoàn thành')}>Hoàn thành</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, goal.startDate ? new Date(goal.startDate) : undefined, endDate || undefined, 'thất bại')}>Thất bại</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, startDate || undefined, endDate || undefined, 'chưa bắt đầu')}>Chưa bắt đầu</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, startDate || undefined, endDate || undefined, 'đang làm')}>Đang làm</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, startDate || undefined, endDate || undefined, 'hoàn thành')}>Hoàn thành</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, startDate || undefined, endDate || undefined, 'thất bại')}>Thất bại</DropdownMenuItem>
                                       </DropdownMenuSubContent>
                                   </DropdownMenuPortal>
                               </DropdownMenuSub>

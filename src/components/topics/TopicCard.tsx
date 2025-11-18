@@ -9,9 +9,17 @@ import type { Topic } from "@/lib/data";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Icons } from "../icons";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { vi } from "date-fns/locale";
 import { EditTopicDialog } from "./EditTopicDialog";
+
+const getDateFromFirestore = (date: any): Date | null => {
+    if (!date) return null;
+    if (typeof date === 'string') return parseISO(date);
+    if (date.seconds) return new Date(date.seconds * 1000);
+    if (date instanceof Date) return date;
+    return null;
+};
 
 interface TopicCardProps {
   topic: Topic;
@@ -24,13 +32,7 @@ export function TopicCard({ topic }: TopicCardProps) {
   const topicGoals = goals.filter(g => g.topicId === topic.id);
   const topicTasks = tasks.filter(t => topicGoals.some(g => g.id === t.goalId));
 
-  const getTopicDate = (date: any) => {
-    if (!date) return null;
-    if (typeof date === 'string') return new Date(date);
-    if (date.seconds) return new Date(date.seconds * 1000);
-    return null;
-  }
-  const createdAt = getTopicDate(topic.createdAt);
+  const createdAt = getDateFromFirestore(topic.createdAt);
 
   return (
     <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg">

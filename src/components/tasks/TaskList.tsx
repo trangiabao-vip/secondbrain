@@ -6,23 +6,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AddTaskForm } from "./AddTaskForm";
 import { Button } from "../ui/button";
 import { Icons } from "../icons";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { AddOrEditTaskDialog } from "./AddOrEditTaskDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Task } from "@/lib/data";
 
+const getDateFromFirestore = (date: any): Date | null => {
+    if (!date) return null;
+    if (typeof date === 'string') return parseISO(date);
+    if (date.seconds) return new Date(date.seconds * 1000);
+    if (date instanceof Date) return date;
+    return null;
+};
+
 export function TaskList({ goalId, tasks: customTasks }: { goalId?: string, tasks?: Task[] }) {
   const { tasks: allTasks, updateTask, deleteTask, isDataLoading } = useAppContext();
 
   const tasksToRender = customTasks ? customTasks : allTasks.filter(task => task.goalId === goalId);
-
-  const getTaskDate = (date: any) => {
-    if (!date) return null;
-    if (typeof date === 'string') return new Date(date);
-    if (date.seconds) return new Date(date.seconds * 1000);
-    return null;
-  }
 
   if (isDataLoading) {
     return (
@@ -42,8 +43,8 @@ export function TaskList({ goalId, tasks: customTasks }: { goalId?: string, task
       {goalId && <h4 className="font-semibold">Công việc</h4>}
       <div className="space-y-2">
         {tasksToRender.map(task => {
-          const createdAt = getTaskDate(task.createdAt);
-          const startDate = getTaskDate(task.startDate);
+          const createdAt = getDateFromFirestore(task.createdAt);
+          const startDate = getDateFromFirestore(task.startDate);
           return (
             <AddOrEditTaskDialog taskId={task.id} mode="edit" key={task.id}>
               <div className="flex items-start gap-3 p-2 rounded-md hover:bg-secondary/50 group cursor-pointer">
