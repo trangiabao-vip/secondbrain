@@ -153,13 +153,13 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
         customProperties: customPropsObject,
       };
 
-      if (!taskData.goalId) {
-        taskData.topicId = selectedTopic?.id;
-      }
-
       if (mode === 'edit' && taskId) {
         updateTask(taskId, taskData);
       } else {
+        // Only assign topicId when creating a new standalone task
+        if (!taskData.goalId && selectedTopic) {
+          taskData.topicId = selectedTopic.id;
+        }
         addTask(taskData);
       }
       setIsOpen(false);
