@@ -45,6 +45,7 @@ export const initialData: DataType = {
   interests: [
     { id: 'interest-1', name: 'Phát triển web', createdAt: new Date().toISOString() },
     { id: 'interest-2', name: 'Làm vườn', createdAt: new Date().toISOString() },
+    { id: 'interest-3', name: 'Sức khỏe', createdAt: new Date().toISOString() },
   ],
   topics: [
     { id: 'topic-1', name: 'Framework React', interestId: 'interest-1', imageId: '1', createdAt: new Date().toISOString() },
@@ -61,3 +62,4 @@ export const initialData: DataType = {
     { id: 'task-4', text: 'Xới luống vườn', goalId: 'goal-2', status: 'chưa bắt đầu', scheduledDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString(), createdAt: new Date().toISOString() },
   ],
 };
+
