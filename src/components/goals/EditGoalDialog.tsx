@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from '@/contexts/AppContext';
 import { Icons } from '../icons';
-import { format } from "date-fns";
+import { format, setHours, setMinutes } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { GoalStatus } from '@/lib/data';
@@ -24,7 +24,9 @@ import { GoalStatus } from '@/lib/data';
 const getDateFromFirestore = (date: any): Date | undefined => {
     if (!date) return undefined;
     if (typeof date === 'string') return new Date(date);
+    if (date && typeof date.toDate === 'function') return date.toDate();
     if (date.seconds) return new Date(date.seconds * 1000);
+    if (date instanceof Date) return date;
     return undefined;
 };
 
@@ -33,7 +35,9 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
   const { getGoalById, updateGoal, deleteGoal } = useAppContext();
   const [goalTitle, setGoalTitle] = useState('');
   const [startDate, setStartDate] = useState<Date | undefined>();
+  const [startTime, setStartTime] = useState('09:00');
   const [endDate, setEndDate] = useState<Date | undefined>();
+  const [endTime, setEndTime] = useState('10:00');
   const [status, setStatus] = useState<GoalStatus>('chưa bắt đầu');
   const [isOpen, setIsOpen] = useState(false);
 
@@ -42,16 +46,44 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
       const goal = getGoalById(goalId);
       if (goal) {
         setGoalTitle(goal.title);
-        setStartDate(getDateFromFirestore(goal.startDate));
-        setEndDate(getDateFromFirestore(goal.endDate));
         setStatus(goal.status);
+        
+        const sDate = getDateFromFirestore(goal.startDate);
+        if (sDate) {
+          setStartDate(sDate);
+          setStartTime(format(sDate, "HH:mm"));
+        } else {
+          setStartDate(undefined);
+          setStartTime('09:00');
+        }
+
+        const eDate = getDateFromFirestore(goal.endDate);
+        if (eDate) {
+          setEndDate(eDate);
+          setEndTime(format(eDate, "HH:mm"));
+        } else {
+          setEndDate(undefined);
+          setEndTime('10:00');
+        }
       }
     }
   }, [isOpen, goalId, getGoalById]);
 
+   const combineDateTime = (date: Date, time: string): Date => {
+    try {
+      const [hours, minutes] = time.split(':').map(Number);
+      if (!isNaN(hours) && !isNaN(minutes)) {
+        return setMinutes(setHours(date, hours), minutes);
+      }
+    } catch (e) { /* ignore */ }
+    return date;
+  };
+
   const handleUpdateGoal = () => {
     if (goalTitle.trim()) {
-      updateGoal(goalId, goalTitle.trim(), startDate, endDate, status);
+      const finalStartDate = startDate ? combineDateTime(startDate, startTime) : undefined;
+      const finalEndDate = endDate ? combineDateTime(endDate, endTime) : undefined;
+      updateGoal(goalId, goalTitle.trim(), finalStartDate, finalEndDate, status);
       setIsOpen(false);
     }
   };
@@ -83,6 +115,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             </div>
             <div className="space-y-2">
               <Label htmlFor="start-date-edit">Ngày bắt đầu (Tùy chọn)</Label>
+              <div className="flex gap-2">
                 <Popover>
                     <PopoverTrigger asChild>
                     <Button
@@ -103,9 +136,20 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                     />
                     </PopoverContent>
                 </Popover>
+                 {startDate && (
+                  <Input 
+                    type="time" 
+                    value={startTime}
+                    onChange={e => setStartTime(e.target.value)}
+                    className="w-32"
+                    step="900"
+                  />
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="end-date-edit">Ngày kết thúc (Tùy chọn)</Label>
+              <div className="flex gap-2">
                 <Popover>
                     <PopoverTrigger asChild>
                     <Button
@@ -126,6 +170,16 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                     />
                     </PopoverContent>
                 </Popover>
+                {endDate && (
+                  <Input 
+                    type="time" 
+                    value={endTime}
+                    onChange={e => setEndTime(e.target.value)}
+                    className="w-32"
+                    step="900"
+                  />
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="status-edit">Trạng thái</Label>

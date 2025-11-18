@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from '@/contexts/AppContext';
 import { Icons } from '../icons';
-import { format } from "date-fns";
+import { format, setHours, setMinutes } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { AIGoalSuggester } from '../ai/AIGoalSuggester';
 import { Separator } from '../ui/separator';
@@ -24,15 +24,31 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
   const { addGoal, selectedTopic } = useAppContext();
   const [goalTitle, setGoalTitle] = useState('');
   const [startDate, setStartDate] = useState<Date | undefined>();
+  const [startTime, setStartTime] = useState('09:00');
   const [endDate, setEndDate] = useState<Date | undefined>();
+  const [endTime, setEndTime] = useState('10:00');
   const [isOpen, setIsOpen] = useState(false);
+
+  const combineDateTime = (date: Date, time: string): Date => {
+    try {
+      const [hours, minutes] = time.split(':').map(Number);
+      if (!isNaN(hours) && !isNaN(minutes)) {
+        return setMinutes(setHours(date, hours), minutes);
+      }
+    } catch (e) { /* ignore */ }
+    return date;
+  };
 
   const handleAddGoal = () => {
     if (goalTitle.trim()) {
-      addGoal(goalTitle.trim(), startDate, endDate);
+      const finalStartDate = startDate ? combineDateTime(startDate, startTime) : undefined;
+      const finalEndDate = endDate ? combineDateTime(endDate, endTime) : undefined;
+      addGoal(goalTitle.trim(), finalStartDate, finalEndDate);
       setGoalTitle('');
       setStartDate(undefined);
       setEndDate(undefined);
+      setStartTime('09:00');
+      setEndTime('10:00');
       setIsOpen(false);
     }
   };
@@ -63,6 +79,7 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="start-date">Ngày bắt đầu (Tùy chọn)</Label>
+              <div className="flex gap-2">
                 <Popover>
                     <PopoverTrigger asChild>
                     <Button
@@ -83,9 +100,20 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
                     />
                     </PopoverContent>
                 </Popover>
+                {startDate && (
+                  <Input 
+                    type="time" 
+                    value={startTime}
+                    onChange={e => setStartTime(e.target.value)}
+                    className="w-32"
+                    step="900"
+                  />
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="end-date">Ngày kết thúc (Tùy chọn)</Label>
+              <div className="flex gap-2">
                 <Popover>
                     <PopoverTrigger asChild>
                     <Button
@@ -106,6 +134,16 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
                     />
                     </PopoverContent>
                 </Popover>
+                 {endDate && (
+                  <Input 
+                    type="time" 
+                    value={endTime}
+                    onChange={e => setEndTime(e.target.value)}
+                    className="w-32"
+                    step="900"
+                  />
+                )}
+              </div>
             </div>
             <div className="flex justify-end">
                 <Button type="submit" onClick={handleAddGoal}>
