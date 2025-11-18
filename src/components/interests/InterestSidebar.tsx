@@ -26,11 +26,6 @@ export function InterestSidebar() {
             <Icons.logo className="w-6 h-6 text-primary" />
             <h1 className="text-lg font-semibold">Trung tâm Sở thích</h1>
           </div>
-          <AddInterestDialog>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <Icons.add />
-            </Button>
-          </AddInterestDialog>
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2">
@@ -84,7 +79,12 @@ export function InterestSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-2 border-t">
-        {/* The "Add Interest" button was moved to the header */}
+        <AddInterestDialog>
+            <Button variant="ghost" className="w-full justify-start">
+              <Icons.add className="mr-2 h-4 w-4" />
+              Thêm sở thích mới
+            </Button>
+        </AddInterestDialog>
       </SidebarFooter>
     </>
   );
