@@ -13,15 +13,14 @@ service cloud.firestore {
 
     // Users can only read/write their own user document
     match /users/{userId} {
-      allow get, update, delete: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn();
+      allow read, write: if isSignedIn() && isOwner(userId);
     }
     
     // Interests can be read by their owner.
     // They can be created, updated, or deleted by their owner.
     match /interests/{interestId} {
       allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow list: if isSignedIn() && request.query.where.size() == 1 && request.query.where[0].field == "userId" && request.query.where[0].op == "==" && request.query.where[0].value == request.auth.uid;
+      allow list: if isSignedIn() && request.query.where.size() > 0 && request.query.where[0].field == "userId";
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
@@ -29,7 +28,7 @@ service cloud.firestore {
     // They can be created, updated, or deleted by their owner.
     match /topics/{topicId} {
       allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow list: if isSignedIn() && request.query.where.size() == 1 && request.query.where[0].field == "userId" && request.query.where[0].op == "==" && request.query.where[0].value == request.auth.uid;
+      allow list: if isSignedIn() && request.query.where.size() > 0 && request.query.where[0].field == "userId";
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
@@ -37,7 +36,7 @@ service cloud.firestore {
     // They can be created, updated, or deleted by their owner.
     match /goals/{goalId} {
       allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow list: if isSignedIn() && request.query.where.size() == 1 && request.query.where[0].field == "userId" && request.query.where[0].op == "==" && request.query.where[0].value == request.auth.uid;
+      allow list: if isSignedIn() && request.query.where.size() > 0 && request.query.where[0].field == "userId";
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
@@ -45,7 +44,7 @@ service cloud.firestore {
     // They can be created, updated, or deleted by their owner.
     match /tasks/{taskId} {
        allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-       allow list: if isSignedIn() && request.query.where.size() == 1 && request.query.where[0].field == "userId" && request.query.where[0].op == "==" && request.query.where[0].value == request.auth.uid;
+       allow list: if isSignedIn() && request.query.where.size() > 0 && request.query.where[0].field == "userId";
        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
   }
