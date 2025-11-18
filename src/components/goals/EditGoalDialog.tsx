@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, type ReactNode, useEffect } from 'react';
 import {
@@ -19,7 +20,7 @@ import { Icons } from '../icons';
 import { format, setHours, setMinutes } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { GoalStatus, GoalPriority } from '@/lib/data';
+import { GoalStatus, GoalPriority, Goal } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
 
 const getDateFromFirestore = (date: any): Date | undefined => {
@@ -86,9 +87,19 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
 
   const handleUpdateGoal = () => {
     if (goalTitle.trim()) {
-      const finalStartDate = startDate ? combineDateTime(startDate, startTime) : undefined;
-      const finalEndDate = endDate ? combineDateTime(endDate, endTime) : undefined;
-      updateGoal(goalId, goalTitle.trim(), description, priority, finalStartDate, finalEndDate, status);
+      const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
+      const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
+
+      const updatedData: Partial<Omit<Goal, 'id'>> = {
+        title: goalTitle.trim(),
+        description: description,
+        priority: priority,
+        startDate: finalStartDate,
+        endDate: finalEndDate,
+        status: status,
+      };
+
+      updateGoal(goalId, updatedData);
       setIsOpen(false);
     }
   };

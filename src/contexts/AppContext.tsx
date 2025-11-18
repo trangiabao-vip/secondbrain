@@ -32,7 +32,7 @@ interface AppContextType {
   addTopic: (name: string, imageId: string, description?: string) => void;
   updateTopic: (topicId: string, name: string, description?: string) => void;
   addGoal: (title: string, description: string | undefined, priority: GoalPriority, startDate?: Date, endDate?: Date) => void;
-  updateGoal: (goalId: string, updatedData: Partial<Goal>) => void;
+  updateGoal: (goalId: string, updatedData: Partial<Omit<Goal, 'id'>>) => void;
   addTask: (taskData: Partial<Omit<Task, 'id'>>) => void;
   updateTask: (taskId: string, updatedData: Partial<Task>) => void;
   deleteInterest: (id: string) => Promise<void>;
@@ -137,9 +137,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Đã thêm mục tiêu", description: `"${title}" đã được thêm.` });
   };
 
-  const updateGoal = (goalId: string, updatedData: Partial<Goal>) => {
+  const updateGoal = (goalId: string, updatedData: Partial<Omit<Goal, 'id'>>) => {
     updateDocumentNonBlocking(doc(firestore, 'goals', goalId), updatedData);
-    toast({ title: "Mục tiêu đã được cập nhật", description: `"${updatedData.title || 'Mục tiêu'}" đã được cập nhật.` });
+    toast({ title: "Mục tiêu đã được cập nhật", description: `Mục tiêu đã được cập nhật.` });
   };
 
   const addTask = (taskData: Partial<Omit<Task, 'id'>>) => {

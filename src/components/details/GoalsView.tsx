@@ -118,10 +118,10 @@ export function GoalsView() {
                                 </DropdownMenuSubTrigger>
                                 <DropdownMenuPortal>
                                     <DropdownMenuSubContent>
-                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, getDateFromFirestore(goal.startDate) || undefined, getDateFromFirestore(goal.endDate) || undefined, 'chưa bắt đầu')}>Chưa bắt đầu</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, getDateFromFirestore(goal.startDate) || undefined, getDateFromFirestore(goal.endDate) || undefined, 'đang làm')}>Đang làm</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, getDateFromFirestore(goal.startDate) || undefined, getDateFromFirestore(goal.endDate) || undefined, 'hoàn thành')}>Hoàn thành</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, getDateFromFirestore(goal.startDate) || undefined, getDateFromFirestore(goal.endDate) || undefined, 'thất bại')}>Thất bại</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'chưa bắt đầu' })}>Chưa bắt đầu</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'đang làm' })}>Đang làm</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'hoàn thành' })}>Hoàn thành</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'thất bại' })}>Thất bại</DropdownMenuItem>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuPortal>
                             </DropdownMenuSub>
