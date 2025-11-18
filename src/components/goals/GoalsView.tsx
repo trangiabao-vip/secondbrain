@@ -59,25 +59,26 @@ export function GoalsView() {
                             <Progress value={calculateProgress(goal.id)} className="h-2 w-full max-w-sm mt-1" />
                         </div>
                     </AccordionTrigger>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 ml-2 flex-shrink-0">
-                          <Icons.ellipsis className="h-4 w-4" />
+                    <div className="flex items-center ml-2">
+                      <EditGoalDialog goalId={goal.id}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                          <Icons.edit className="h-4 w-4" />
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <EditGoalDialog goalId={goal.id}>
-                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                            <Icons.edit className="mr-2 h-4 w-4" />
-                            Chỉnh sửa
+                      </EditGoalDialog>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                            <Icons.ellipsis className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem className="text-destructive" onClick={() => deleteGoal(goal.id)}>
+                            <Icons.delete className="mr-2 h-4 w-4" />
+                            Xóa mục tiêu
                           </DropdownMenuItem>
-                        </EditGoalDialog>
-                        <DropdownMenuItem className="text-destructive" onClick={() => deleteGoal(goal.id)}>
-                          <Icons.delete className="mr-2 h-4 w-4" />
-                          Xóa mục tiêu
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                 </div>
                 <AccordionContent>
                     <div className="px-4 pb-4">
