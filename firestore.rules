@@ -19,35 +19,35 @@ service cloud.firestore {
     // Interests can be read by their owner.
     // They can be created, updated, or deleted by their owner.
     match /interests/{interestId} {
-      allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
     // Topics can be read by their owner.
     // They can be created, updated, or deleted by their owner.
     match /topics/{topicId} {
-      allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
     // Goals can be read by their owner.
     // They can be created, updated, or deleted by their owner.
     match /goals/{goalId} {
-      allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
     // Tasks can be read by their owner.
     // They can be created, updated, or deleted by their owner.
     match /tasks/{taskId} {
-       allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+       allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
     // WikiPages can be read by their owner.
     // They can be created, updated, or deleted by their owner.
     match /wikiPages/{wikiPageId} {
-       allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+       allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
   }
