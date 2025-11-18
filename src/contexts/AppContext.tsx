@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useMemo, useEffect } from 'react';
-import { type Interest, type Topic, type Goal, type Task, type GoalStatus, type TaskStatus } from '@/lib/data';
+import { type Interest, type Topic, type Goal, type Task, type GoalStatus, type TaskStatus, type GoalPriority } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, serverTimestamp, writeBatch, query, where } from 'firebase/firestore';
@@ -29,12 +29,12 @@ interface AppContextType {
   selectTopic: (id: string | null) => void;
   addInterest: (name: string) => void;
   updateInterest: (id: string, name: string) => void;
-  addTopic: (name: string, imageId: string) => void;
-  updateTopic: (topicId: string, name: string) => void;
-  addGoal: (title: string, startDate?: Date, endDate?: Date) => void;
-  updateGoal: (goalId: string, title: string, startDate?: Date, endDate?: Date, status?: GoalStatus) => void;
-  addTask: (text: string, goalId?: string, startDate?: Date, endDate?: Date, status?: TaskStatus) => void;
-  updateTask: (taskId: string, status: TaskStatus, text?: string, startDate?: Date | null, endDate?: Date | null, goalId?: string) => void;
+  addTopic: (name: string, imageId: string, description?: string) => void;
+  updateTopic: (topicId: string, name: string, description?: string) => void;
+  addGoal: (title: string, description: string | undefined, priority: GoalPriority, startDate?: Date, endDate?: Date) => void;
+  updateGoal: (goalId: string, updatedData: Partial<Goal>) => void;
+  addTask: (taskData: Partial<Omit<Task, 'id'>>) => void;
+  updateTask: (taskId: string, updatedData: Partial<Task>) => void;
   deleteInterest: (id: string) => Promise<void>;
   deleteTopic: (id: string) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
@@ -103,22 +103,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Sở thích đã được cập nhật", description: `Sở thích đã được đổi tên thành "${name}".` });
   }
 
-  const addTopic = (name: string, imageId: string) => {
+  const addTopic = (name: string, imageId: string, description?: string) => {
     if (!selectedInterestId || !user) return;
-    const newTopic = { name, imageId, interestId: selectedInterestId, userId: user.uid, createdAt: serverTimestamp() };
+    const newTopic: Partial<Topic> = { name, imageId, interestId: selectedInterestId, userId: user.uid, createdAt: serverTimestamp() };
+    if (description) newTopic.description = description;
     addDocumentNonBlocking(collection(firestore, 'topics'), newTopic);
     toast({ title: "Đã thêm chủ đề", description: `"${name}" đã được thêm.` });
   };
 
-  const updateTopic = (topicId: string, name: string) => {
-    updateDocumentNonBlocking(doc(firestore, 'topics', topicId), { name });
+  const updateTopic = (topicId: string, name: string, description?: string) => {
+    const data: Partial<Topic> = { name };
+    if (description !== undefined) {
+      data.description = description;
+    }
+    updateDocumentNonBlocking(doc(firestore, 'topics', topicId), data);
     toast({ title: "Chủ đề đã được cập nhật", description: `"${name}" đã được cập nhật.` });
   };
   
-  const addGoal = (title: string, startDate?: Date, endDate?: Date) => {
+  const addGoal = (title: string, description: string | undefined, priority: GoalPriority, startDate?: Date, endDate?: Date) => {
     if (!selectedTopicId || !user) return;
     const newGoal: Omit<Goal, 'id'> = { 
       title, 
+      description,
+      priority,
       topicId: selectedTopicId, 
       status: 'chưa bắt đầu', 
       startDate: startDate || null, 
@@ -130,41 +137,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Đã thêm mục tiêu", description: `"${title}" đã được thêm.` });
   };
 
-  const updateGoal = (goalId: string, title: string, startDate?: Date, endDate?: Date, status?: GoalStatus) => {
-    const updatedData: Partial<Goal> = { title };
-    if (startDate !== undefined) updatedData.startDate = startDate;
-    if (endDate !== undefined) updatedData.endDate = endDate;
-    if (status) updatedData.status = status;
+  const updateGoal = (goalId: string, updatedData: Partial<Goal>) => {
     updateDocumentNonBlocking(doc(firestore, 'goals', goalId), updatedData);
-    toast({ title: "Mục tiêu đã được cập nhật", description: `"${title}" đã được cập nhật.` });
+    toast({ title: "Mục tiêu đã được cập nhật", description: `"${updatedData.title || 'Mục tiêu'}" đã được cập nhật.` });
   };
 
-  const addTask = (text: string, goalId?: string, startDate?: Date, endDate?: Date, status?: TaskStatus) => {
-    if (!user || (!goalId && !selectedTopicId)) return;
-    
-    const newTask: Omit<Task, 'id'> = {
-      text,
-      goalId: goalId || null,
-      topicId: goalId ? null : selectedTopicId,
-      status: status || 'chưa bắt đầu',
-      startDate: startDate || null,
-      endDate: endDate || null,
+  const addTask = (taskData: Partial<Omit<Task, 'id'>>) => {
+    if (!user) return;
+    if (!taskData.goalId && !selectedTopicId) return;
+
+    const newTask: Partial<Task> = {
+      ...taskData,
+      status: taskData.status || 'chưa bắt đầu',
       userId: user.uid,
       createdAt: serverTimestamp()
     };
+    
+    if (!newTask.goalId) {
+      newTask.topicId = selectedTopicId;
+    }
+
     addDocumentNonBlocking(collection(firestore, 'tasks'), newTask);
   };
 
-  const updateTask = (taskId: string, status: TaskStatus, text?: string, startDate?: Date | null, endDate?: Date | null, goalId?: string) => {
-    const updatedData: Partial<Task> = { status };
-    if (text !== undefined) updatedData.text = text;
-    if (startDate !== undefined) updatedData.startDate = startDate;
-    if (endDate !== undefined) updatedData.endDate = endDate;
-    // Logic to handle changing goal
-    if (goalId !== undefined) {
-      updatedData.goalId = goalId || null;
-      updatedData.topicId = goalId ? null : selectedTopicId;
-    }
+  const updateTask = (taskId: string, updatedData: Partial<Task>) => {
     updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
   };
 

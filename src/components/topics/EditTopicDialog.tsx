@@ -13,10 +13,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAppContext } from '@/contexts/AppContext';
+import { Textarea } from '../ui/textarea';
 
 export function EditTopicDialog({ topicId, children }: { topicId: string, children: ReactNode }) {
   const { getTopicById, updateTopic } = useAppContext();
   const [topicName, setTopicName] = useState('');
+  const [description, setDescription] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -24,13 +26,14 @@ export function EditTopicDialog({ topicId, children }: { topicId: string, childr
       const topic = getTopicById(topicId);
       if (topic) {
         setTopicName(topic.name);
+        setDescription(topic.description || '');
       }
     }
   }, [isOpen, topicId, getTopicById]);
 
   const handleUpdateTopic = () => {
     if (topicName.trim()) {
-      updateTopic(topicId, topicName.trim());
+      updateTopic(topicId, topicName.trim(), description);
       setIsOpen(false);
     }
   };
@@ -54,6 +57,15 @@ export function EditTopicDialog({ topicId, children }: { topicId: string, childr
                 onChange={(e) => setTopicName(e.target.value)}
                 placeholder="e.g., 'Advanced CSS Techniques'"
               />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="topic-description-edit">Mô tả (Tùy chọn)</Label>
+                <Textarea
+                  id="topic-description-edit"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Mô tả ngắn gọn về chủ đề này"
+                />
             </div>
             <div className="flex justify-end">
                 <Button type="submit" onClick={handleUpdateTopic}>

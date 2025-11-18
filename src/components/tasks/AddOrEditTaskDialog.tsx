@@ -18,7 +18,8 @@ import { Icons } from '../icons';
 import { format, setHours, setMinutes } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { TaskStatus } from '@/lib/data';
+import { TaskStatus, TaskDifficulty } from '@/lib/data';
+import { Textarea } from '../ui/textarea';
 
 interface AddOrEditTaskDialogProps {
   taskId?: string;
@@ -31,6 +32,8 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
   const { getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic } = useAppContext();
   
   const [taskText, setTaskText] = useState('');
+  const [notes, setNotes] = useState('');
+  const [difficulty, setDifficulty] = useState<TaskDifficulty>('Vừa');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [startTime, setStartTime] = useState('09:00');
   const [endDate, setEndDate] = useState<Date | undefined>();
@@ -54,6 +57,8 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
         const task = getTaskById(taskId);
         if (task) {
           setTaskText(task.text);
+          setNotes(task.notes || '');
+          setDifficulty(task.difficulty || 'Vừa');
           setStatus(task.status);
           setSelectedGoalId(task.goalId || undefined);
           
@@ -78,6 +83,8 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
       } else {
         // Reset for 'add' mode
         setTaskText('');
+        setNotes('');
+        setDifficulty('Vừa');
         setStatus('chưa bắt đầu');
         setStartDate(undefined);
         setStartTime('09:00');
@@ -103,10 +110,24 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
       const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
       const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
       
+      const taskData: Partial<Task> = {
+        text: taskText.trim(),
+        notes: notes,
+        difficulty: difficulty,
+        status: status,
+        startDate: finalStartDate,
+        endDate: finalEndDate,
+        goalId: selectedGoalId === 'none' ? null : selectedGoalId
+      };
+
+      if (!taskData.goalId) {
+        taskData.topicId = selectedTopic?.id;
+      }
+
       if (mode === 'edit' && taskId) {
-        updateTask(taskId, status, taskText.trim(), finalStartDate, finalEndDate, selectedGoalId);
+        updateTask(taskId, taskData);
       } else {
-        addTask(taskText.trim(), selectedGoalId, finalStartDate || undefined, finalEndDate || undefined, status);
+        addTask(taskData);
       }
       setIsOpen(false);
     }
@@ -129,13 +150,22 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
             {mode === 'edit' ? 'Cập nhật chi tiết nhiệm vụ của bạn.' : 'Thêm một nhiệm vụ mới vào một trong các mục tiêu của bạn.'}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-2">
+        <div className="space-y-4 py-2 max-h-[80vh] overflow-y-auto pr-4">
             <div className="space-y-2">
               <Label htmlFor="task-text-edit">Nhiệm vụ</Label>
               <Input
                 id="task-text-edit"
                 value={taskText}
                 onChange={(e) => setTaskText(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="task-notes">Ghi chú (Tùy chọn)</Label>
+              <Textarea
+                id="task-notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Thêm ghi chú hoặc chi tiết..."
               />
             </div>
              <div className="space-y-2">
@@ -151,6 +181,35 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                <Label htmlFor="difficulty-edit">Độ khó</Label>
+                <Select value={difficulty} onValueChange={(value: TaskDifficulty) => setDifficulty(value)}>
+                    <SelectTrigger id="difficulty-edit">
+                    <SelectValue placeholder="Chọn độ khó" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    <SelectItem value="Dễ">Dễ</SelectItem>
+                    <SelectItem value="Vừa">Vừa</SelectItem>
+                    <SelectItem value="Khó">Khó</SelectItem>
+                    </SelectContent>
+                </Select>
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="status-edit-task">Trạng thái</Label>
+                <Select value={status} onValueChange={(value: TaskStatus) => setStatus(value)}>
+                    <SelectTrigger id="status-edit-task">
+                    <SelectValue placeholder="Chọn trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    <SelectItem value="chưa bắt đầu">Chưa bắt đầu</SelectItem>
+                    <SelectItem value="đang làm">Đang làm</SelectItem>
+                    <SelectItem value="hoàn thành">Hoàn thành</SelectItem>
+                    <SelectItem value="thất bại">Thất bại</SelectItem>
+                    </SelectContent>
+                </Select>
+                </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="start-date-edit">Thời gian bắt đầu (Tùy chọn)</Label>
@@ -220,21 +279,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
                 )}
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="status-edit-task">Trạng thái</Label>
-              <Select value={status} onValueChange={(value: TaskStatus) => setStatus(value)}>
-                <SelectTrigger id="status-edit-task">
-                  <SelectValue placeholder="Chọn trạng thái" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="chưa bắt đầu">Chưa bắt đầu</SelectItem>
-                  <SelectItem value="đang làm">Đang làm</SelectItem>
-                  <SelectItem value="hoàn thành">Hoàn thành</SelectItem>
-                  <SelectItem value="thất bại">Thất bại</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between pt-2">
                 {mode === 'edit' ? (
                     <Button variant="destructive" onClick={handleDeleteTask}>
                         <Icons.delete className="mr-2 h-4 w-4" />

@@ -2,7 +2,7 @@
 
 'use client';
 import Image from "next/image";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/contexts/AppContext";
 import type { Topic } from "@/lib/data";
@@ -30,7 +30,7 @@ export function TopicCard({ topic }: TopicCardProps) {
   const placeholder = PlaceHolderImages.find(p => p.id === topic.imageId);
 
   const topicGoals = goals.filter(g => g.topicId === topic.id);
-  const topicTasks = tasks.filter(t => topicGoals.some(g => g.id === t.goalId));
+  const topicTasks = tasks.filter(t => topicGoals.some(g => g.id === t.goalId) || t.topicId === topic.id);
 
   const createdAt = getDateFromFirestore(topic.createdAt);
 
@@ -71,6 +71,7 @@ export function TopicCard({ topic }: TopicCardProps) {
       </CardHeader>
       <CardContent className="p-4 flex-grow">
         <CardTitle className="text-lg font-bold line-clamp-2">{topic.name}</CardTitle>
+        {topic.description && <CardDescription className="mt-2 text-sm line-clamp-2">{topic.description}</CardDescription>}
         {createdAt && (
           <p className="text-xs text-muted-foreground mt-1">
             Tạo lúc: {format(createdAt, "HH:mm, dd/MM/yyyy", { locale: vi })}

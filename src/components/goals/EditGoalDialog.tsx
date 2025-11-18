@@ -19,7 +19,8 @@ import { Icons } from '../icons';
 import { format, setHours, setMinutes } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { GoalStatus } from '@/lib/data';
+import { GoalStatus, GoalPriority } from '@/lib/data';
+import { Textarea } from '../ui/textarea';
 
 const getDateFromFirestore = (date: any): Date | undefined => {
     if (!date) return undefined;
@@ -34,6 +35,8 @@ const getDateFromFirestore = (date: any): Date | undefined => {
 export function EditGoalDialog({ goalId, children }: { goalId: string, children: ReactNode }) {
   const { getGoalById, updateGoal, deleteGoal } = useAppContext();
   const [goalTitle, setGoalTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState<GoalPriority>('Vừa');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [startTime, setStartTime] = useState('09:00');
   const [endDate, setEndDate] = useState<Date | undefined>();
@@ -46,7 +49,9 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
       const goal = getGoalById(goalId);
       if (goal) {
         setGoalTitle(goal.title);
+        setDescription(goal.description || '');
         setStatus(goal.status);
+        setPriority(goal.priority || 'Vừa');
         
         const sDate = getDateFromFirestore(goal.startDate);
         if (sDate) {
@@ -83,7 +88,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
     if (goalTitle.trim()) {
       const finalStartDate = startDate ? combineDateTime(startDate, startTime) : undefined;
       const finalEndDate = endDate ? combineDateTime(endDate, endTime) : undefined;
-      updateGoal(goalId, goalTitle.trim(), finalStartDate, finalEndDate, status);
+      updateGoal(goalId, goalTitle.trim(), description, priority, finalStartDate, finalEndDate, status);
       setIsOpen(false);
     }
   };
@@ -103,7 +108,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             Cập nhật chi tiết mục tiêu của bạn.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-2">
+        <div className="space-y-4 py-2 max-h-[80vh] overflow-y-auto pr-4">
             <div className="space-y-2">
               <Label htmlFor="goal-title-edit">Mục tiêu</Label>
               <Input
@@ -112,6 +117,28 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                 onChange={(e) => setGoalTitle(e.target.value)}
                 placeholder="ví dụ: 'Thành thạo React Hooks'"
               />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="goal-description-edit">Mô tả (Tùy chọn)</Label>
+                <Textarea
+                  id="goal-description-edit"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Mô tả chi tiết hơn về mục tiêu này"
+                />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="priority-edit">Mức độ ưu tiên</Label>
+              <Select value={priority} onValueChange={(value: GoalPriority) => setPriority(value)}>
+                <SelectTrigger id="priority-edit">
+                  <SelectValue placeholder="Chọn mức độ ưu tiên" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Thấp">Thấp</SelectItem>
+                  <SelectItem value="Vừa">Vừa</SelectItem>
+                  <SelectItem value="Cao">Cao</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="start-date-edit">Ngày bắt đầu (Tùy chọn)</Label>

@@ -1,6 +1,8 @@
 
 export type GoalStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại';
 export type TaskStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại';
+export type GoalPriority = 'Thấp' | 'Vừa' | 'Cao';
+export type TaskDifficulty = 'Dễ' | 'Vừa' | 'Khó';
 
 // Note: The 'id' field will be automatically managed by Firestore.
 // The types here represent the data structure within the application logic.
@@ -8,7 +10,9 @@ export type TaskStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 
 export interface Task {
   id: string; // Firestore document ID
   text: string;
+  notes?: string;
   status: TaskStatus;
+  difficulty?: TaskDifficulty;
   goalId?: string | null; // Optional: Link to a goal
   topicId?: string | null; // Optional: Link directly to a topic
   startDate?: any; // Can be string or Firebase Timestamp
@@ -20,8 +24,10 @@ export interface Task {
 export interface Goal {
   id: string; // Firestore document ID
   title: string;
+  description?: string;
   topicId: string;
   status: GoalStatus;
+  priority?: GoalPriority;
   startDate?: any; // Can be string or Firebase Timestamp
   endDate?: any; // Can be string or Firebase Timestamp
   createdAt: any; // Can be string or Firebase Timestamp
@@ -31,6 +37,7 @@ export interface Goal {
 export interface Topic {
   id: string; // Firestore document ID
   name: string;
+  description?: string;
   interestId: string;
   imageId: string;
   createdAt: any; // Can be string or Firebase Timestamp

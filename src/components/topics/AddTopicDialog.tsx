@@ -4,7 +4,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -16,17 +15,20 @@ import { useAppContext } from '@/contexts/AppContext';
 import { AITopicSuggester } from '../ai/AITopicSuggester';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Separator } from '../ui/separator';
+import { Textarea } from '../ui/textarea';
 
 export function AddTopicDialog({ children }: { children: ReactNode }) {
   const { addTopic, selectedInterest } = useAppContext();
   const [topicName, setTopicName] = useState('');
+  const [description, setDescription] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
   const handleAddTopic = () => {
     if (topicName.trim() && selectedInterest) {
       const randomImageId = PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)].id;
-      addTopic(topicName.trim(), randomImageId);
+      addTopic(topicName.trim(), randomImageId, description);
       setTopicName('');
+      setDescription('');
       setIsOpen(false);
     }
   };
@@ -53,7 +55,15 @@ export function AddTopicDialog({ children }: { children: ReactNode }) {
               value={topicName}
               onChange={(e) => setTopicName(e.target.value)}
               placeholder="ví dụ: 'Kỹ thuật CSS nâng cao'"
-              onKeyDown={(e) => e.key === 'Enter' && handleAddTopic()}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="topic-description">Mô tả (Tùy chọn)</Label>
+            <Textarea
+              id="topic-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Mô tả ngắn gọn về chủ đề này"
             />
           </div>
           <div className="flex justify-end">

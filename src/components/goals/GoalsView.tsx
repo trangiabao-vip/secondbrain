@@ -11,13 +11,14 @@ import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from "../ui/dropdown-menu";
 import { Progress } from "../ui/progress";
 import { vi } from 'date-fns/locale';
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent, CardDescription } from "../ui/card";
 import { EditGoalDialog } from "./EditGoalDialog";
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
-import type { GoalStatus } from "@/lib/data";
+import type { GoalStatus, GoalPriority } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
 const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
@@ -64,12 +65,21 @@ export function GoalsView() {
     'hoàn thành': 'bg-green-500',
     'thất bại': 'bg-red-500',
   }
+
+  const priorityConfig: Record<GoalPriority, { color: string; icon: keyof typeof Icons }> = {
+    'Thấp': { color: 'text-gray-500', icon: 'down' },
+    'Vừa': { color: 'text-blue-500', icon: 'ellipsis' },
+    'Cao': { color: 'text-red-500', icon: 'up' },
+  };
   
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold">Mục tiêu &amp; Nhiệm vụ</h3>
-        <div className="flex gap-2">
+       <div className="flex items-start justify-between">
+        <div>
+            <h3 className="text-xl font-bold">Mục tiêu &amp; Nhiệm vụ</h3>
+            {selectedTopic.description && <p className="text-muted-foreground mt-1 max-w-2xl">{selectedTopic.description}</p>}
+        </div>
+        <div className="flex gap-2 flex-shrink-0">
           <AddOrEditTaskDialog mode="add">
             <Button variant="outline">
               <Icons.add className="mr-2 h-4 w-4" />
@@ -91,6 +101,10 @@ export function GoalsView() {
             const endDate = getDateFromFirestore(goal.endDate);
             const createdAt = getDateFromFirestore(goal.createdAt);
             const startDate = getDateFromFirestore(goal.startDate);
+            const priority = goal.priority || 'Vừa';
+            const { color: priorityColor, icon: PriorityIcon } = priorityConfig[priority];
+            const IconComponent = Icons[PriorityIcon] as React.ElementType;
+
             return (
               <AccordionItem value={goal.id} key={goal.id} className="border-b-0">
                 <Card className="mb-4 overflow-hidden">
@@ -98,20 +112,30 @@ export function GoalsView() {
                       <AccordionTrigger className="flex-1 text-left p-0 hover:no-underline">
                           <div className="flex flex-col gap-2">
                               <span className="font-semibold text-base">{goal.title}</span>
+                              {goal.description && <p className="text-sm text-muted-foreground line-clamp-2">{goal.description}</p>}
                               <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
                                   <Badge variant="secondary" className="capitalize w-fit">
                                       <div className={cn("w-2 h-2 rounded-full mr-2", statusColors[goal.status])}></div>
                                       {goal.status}
                                   </Badge>
+                                  <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                           <div className={`flex items-center gap-1 text-xs font-medium ${priorityColor}`}>
+                                                <IconComponent className="h-4 w-4" />
+                                                <span>Ưu tiên: {priority}</span>
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Mức độ ưu tiên: {priority}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                  </TooltipProvider>
+
                                   {endDate && (
                                       <span className="text-xs text-muted-foreground">
                                       Hết hạn {formatDistanceToNow(endDate, { addSuffix: true, locale: vi })} ({format(endDate, 'd MMM, yyyy', { locale: vi })})
                                       </span>
-                                  )}
-                                  {createdAt && (
-                                    <span className="text-xs text-muted-foreground">
-                                        Tạo lúc: {format(createdAt, "HH:mm, dd/MM/yyyy", { locale: vi })}
-                                    </span>
                                   )}
                               </div>
                               <Progress value={calculateProgress(goal.id)} className="h-2 w-full max-w-sm mt-1" />
@@ -136,10 +160,10 @@ export function GoalsView() {
                                   </DropdownMenuSubTrigger>
                                   <DropdownMenuPortal>
                                       <DropdownMenuSubContent>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, startDate || undefined, endDate || undefined, 'chưa bắt đầu')}>Chưa bắt đầu</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, startDate || undefined, endDate || undefined, 'đang làm')}>Đang làm</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, startDate || undefined, endDate || undefined, 'hoàn thành')}>Hoàn thành</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, goal.title, startDate || undefined, endDate || undefined, 'thất bại')}>Thất bại</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'chưa bắt đầu' })}>Chưa bắt đầu</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'đang làm' })}>Đang làm</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'hoàn thành' })}>Hoàn thành</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'thất bại' })}>Thất bại</DropdownMenuItem>
                                       </DropdownMenuSubContent>
                                   </DropdownMenuPortal>
                               </DropdownMenuSub>
