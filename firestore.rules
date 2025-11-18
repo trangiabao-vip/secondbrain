@@ -20,7 +20,6 @@ service cloud.firestore {
     // They can be created, updated, or deleted by their owner.
     match /interests/{interestId} {
       allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow list: if isSignedIn() && request.query.limit <= 100;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
@@ -28,7 +27,6 @@ service cloud.firestore {
     // They can be created, updated, or deleted by their owner.
     match /topics/{topicId} {
       allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow list: if isSignedIn() && request.query.limit <= 100;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
@@ -36,7 +34,6 @@ service cloud.firestore {
     // They can be created, updated, or deleted by their owner.
     match /goals/{goalId} {
       allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow list: if isSignedIn() && request.query.limit <= 100;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
@@ -44,7 +41,6 @@ service cloud.firestore {
     // They can be created, updated, or deleted by their owner.
     match /tasks/{taskId} {
        allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-       allow list: if isSignedIn() && request.query.limit <= 100;
        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
@@ -52,7 +48,6 @@ service cloud.firestore {
     // They can be created, updated, or deleted by their owner.
     match /wikiPages/{wikiPageId} {
        allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-       allow list: if isSignedIn() && request.query.limit <= 100;
        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
   }
