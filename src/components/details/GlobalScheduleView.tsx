@@ -20,7 +20,7 @@ const getDateFromFirestore = (date: any): Date | null => {
     return null;
 };
 
-type ScheduledItem = (Goal | Task) & { type: 'goal' | 'task', date: Date };
+type ScheduledItem = (Goal | Task) & { type: 'goal' | 'task', startDate: Date, endDate?: Date };
 
 export function GlobalScheduleView() {
   const { goals, tasks } = useAppContext();
@@ -32,32 +32,30 @@ export function GlobalScheduleView() {
   }, [currentDate]);
 
   const scheduledItems = useMemo((): ScheduledItem[] => {
-    const goalItems = goals
+    const goalItems: ScheduledItem[] = goals
         .filter(g => g.endDate)
-        .map(g => ({ ...g, type: 'goal' as const, date: getDateFromFirestore(g.endDate)! }))
-        .filter(item => item.date);
+        .map(g => ({ ...g, type: 'goal' as const, startDate: getDateFromFirestore(g.startDate)!, endDate: getDateFromFirestore(g.endDate)! }))
+        .filter(item => item.startDate);
 
-    const taskItems = tasks
+    const taskItems: ScheduledItem[] = tasks
         .filter(t => t.startDate)
-        .map(t => ({ ...t, type: 'task' as const, date: getDateFromFirestore(t.startDate)! }))
-        .filter(item => item.date);
+        .map(t => ({ ...t, type: 'task' as const, startDate: getDateFromFirestore(t.startDate)!, endDate: getDateFromFirestore(t.endDate) }))
+        .filter(item => item.startDate);
         
     return [...goalItems, ...taskItems];
   }, [goals, tasks]);
 
   const getItemsForHour = (day: Date, hour: number) => {
     return scheduledItems.filter(item => {
-      if (!isSameDay(item.date, day)) return false;
-      // For goals (all-day), we don't place them in hourly slots
+      if (!isSameDay(item.startDate, day)) return false;
       if (item.type === 'goal') return false;
-      // For tasks, check if they fall into this hour
-      return getHours(item.date) === hour;
+      return getHours(item.startDate) === hour;
     });
   };
   
   const getItemsForAllday = (day: Date) => {
     return scheduledItems.filter(item => 
-      isSameDay(item.date, day) && item.type === 'goal'
+        item.startDate && isSameDay(item.startDate, day) && item.type === 'goal'
     );
   }
 
@@ -133,17 +131,26 @@ export function GlobalScheduleView() {
                   <div className="relative">
                     {hours.map(hour => (
                       <div key={hour} className="h-16 border-b relative">
-                         {getItemsForHour(day, hour).map(item => (
-                            <EditTaskDialog taskId={item.id} key={`${item.type}-${item.id}`}>
-                              <div className="absolute inset-x-0.5 bg-secondary/80 rounded p-1 shadow z-10 border border-border cursor-pointer hover:bg-secondary">
-                                  <p className="text-xs font-bold truncate flex items-center gap-1">
-                                    <Icons.task className="h-3 w-3"/>
-                                    {(item as Task).text}
-                                  </p>
-                                  <p className="text-[10px] text-muted-foreground">{format(item.date, 'HH:mm')}</p>
-                              </div>
-                            </EditTaskDialog>
-                        ))}
+                         {getItemsForHour(day, hour).map(item => {
+                            const task = item as Task;
+                            const startDate = getDateFromFirestore(task.startDate);
+                            const endDate = getDateFromFirestore(task.endDate);
+
+                            return (
+                                <EditTaskDialog taskId={item.id} key={`${item.type}-${item.id}`}>
+                                  <div className="absolute inset-x-0.5 bg-secondary/80 rounded p-1 shadow z-10 border border-border cursor-pointer hover:bg-secondary">
+                                      <p className="text-xs font-bold truncate flex items-center gap-1">
+                                        <Icons.task className="h-3 w-3"/>
+                                        {task.text}
+                                      </p>
+                                      <p className="text-[10px] text-muted-foreground">
+                                        {startDate && format(startDate, 'HH:mm')}
+                                        {endDate && ` - ${format(endDate, 'HH:mm')}`}
+                                      </p>
+                                  </div>
+                                </EditTaskDialog>
+                            );
+                         })}
                       </div>
                     ))}
                   </div>
