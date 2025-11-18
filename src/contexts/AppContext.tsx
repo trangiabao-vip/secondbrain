@@ -18,14 +18,17 @@ interface AppContextType extends DataType {
   addInterest: (name: string) => void;
   addTopic: (name: string, imageId: string) => void;
   addGoal: (title: string, dueDate?: Date) => void;
+  updateGoal: (goalId: string, title: string, dueDate?: Date) => void;
   addTask: (text: string, goalId: string, scheduledDate?: Date) => void;
-  updateTask: (taskId: string, completed: boolean) => void;
+  updateTask: (taskId: string, completed: boolean, text?: string, scheduledDate?: Date) => void;
   deleteInterest: (id: string) => void;
   deleteTopic: (id: string) => void;
   deleteGoal: (id: string) => void;
   deleteTask: (id: string) => void;
   selectedInterest: Interest | null;
   selectedTopic: Topic | null;
+  getGoalById: (id: string) => Goal | undefined;
+  getTaskById: (id: string) => Task | undefined;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -69,15 +72,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Đã thêm mục tiêu", description: `"${title}" đã được thêm.` });
   };
 
+  const updateGoal = (goalId: string, title: string, dueDate?: Date) => {
+    setData((prev) => ({
+      ...prev,
+      goals: prev.goals.map((goal) =>
+        goal.id === goalId ? { ...goal, title, dueDate: dueDate?.toISOString() } : goal
+      ),
+    }));
+    toast({ title: "Mục tiêu đã được cập nhật", description: `"${title}" đã được cập nhật.` });
+  };
+
   const addTask = (text: string, goalId: string, scheduledDate?: Date) => {
     const newTask: Task = { id: generateId(), text, goalId, completed: false, scheduledDate: scheduledDate?.toISOString(), createdAt: new Date().toISOString() };
     setData((prev) => ({ ...prev, tasks: [...prev.tasks, newTask] }));
   };
 
-  const updateTask = (taskId: string, completed: boolean) => {
+  const updateTask = (taskId: string, completed: boolean, text?: string, scheduledDate?: Date) => {
     setData((prev) => ({
       ...prev,
-      tasks: prev.tasks.map((task) => (task.id === taskId ? { ...task, completed } : task)),
+      tasks: prev.tasks.map((task) => {
+        if (task.id === taskId) {
+          const updatedTask = { ...task, completed };
+          if (text !== undefined) updatedTask.text = text;
+          if (scheduledDate !== undefined) updatedTask.scheduledDate = scheduledDate?.toISOString();
+          return updatedTask;
+        }
+        return task;
+      }),
     }));
   };
   
@@ -157,6 +178,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const selectedInterest = useMemo(() => data.interests.find((i) => i.id === selectedInterestId) ?? null, [data.interests, selectedInterestId]);
   const selectedTopic = useMemo(() => data.topics.find((t) => t.id === selectedTopicId) ?? null, [data.topics, selectedTopicId]);
 
+  const getGoalById = (id: string) => data.goals.find(g => g.id === id);
+  const getTaskById = (id: string) => data.tasks.find(t => t.id === id);
 
   const value = {
     ...data,
@@ -169,6 +192,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addInterest,
     addTopic,
     addGoal,
+    updateGoal,
     addTask,
     updateTask,
     deleteInterest,
@@ -177,6 +201,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteTask,
     selectedInterest,
     selectedTopic,
+    getGoalById,
+    getTaskById,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

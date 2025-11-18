@@ -6,6 +6,8 @@ import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, s
 import { vi } from 'date-fns/locale';
 import { Icons } from "../icons";
 import { Button } from "../ui/button";
+import { EditGoalDialog } from "../goals/EditGoalDialog";
+import { EditTaskDialog } from "../tasks/EditTaskDialog";
 
 const hours = Array.from({ length: 24 }, (_, i) => i);
 
@@ -98,10 +100,12 @@ export function GlobalScheduleView() {
                   {/* All day section */}
                   <div className="h-10 border-b p-0.5 space-y-0.5 overflow-hidden">
                     {getItemsForAllday(day).map(item => (
-                      <div key={`${item.type}-${item.id}`} className="bg-primary/20 text-primary-foreground text-xs rounded-sm px-1 py-0.5 truncate border border-primary/50">
-                        <Icons.goal className="h-3 w-3 inline mr-1 align-middle"/>
-                        {item.title}
-                      </div>
+                      <EditGoalDialog goalId={item.id} key={`${item.type}-${item.id}`}>
+                        <div className="bg-primary/20 text-primary-foreground text-xs rounded-sm px-1 py-0.5 truncate border border-primary/50 cursor-pointer hover:bg-primary/30">
+                          <Icons.goal className="h-3 w-3 inline mr-1 align-middle"/>
+                          {item.title}
+                        </div>
+                      </EditGoalDialog>
                     ))}
                   </div>
 
@@ -110,13 +114,15 @@ export function GlobalScheduleView() {
                     {hours.map(hour => (
                       <div key={hour} className="h-16 border-b relative">
                          {getItemsForHour(day, hour).map(item => (
-                            <div key={`${item.type}-${item.id}`} className="absolute inset-x-0.5 bg-secondary/80 rounded p-1 shadow z-10 border border-border">
-                                <p className="text-xs font-bold truncate flex items-center gap-1">
-                                  <Icons.task className="h-3 w-3"/>
-                                  {item.text}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground">{format(item.date, 'HH:mm')}</p>
-                            </div>
+                            <EditTaskDialog taskId={item.id} key={`${item.type}-${item.id}`}>
+                              <div className="absolute inset-x-0.5 bg-secondary/80 rounded p-1 shadow z-10 border border-border cursor-pointer hover:bg-secondary">
+                                  <p className="text-xs font-bold truncate flex items-center gap-1">
+                                    <Icons.task className="h-3 w-3"/>
+                                    {item.text}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground">{format(item.date, 'HH:mm')}</p>
+                              </div>
+                            </EditTaskDialog>
                         ))}
                       </div>
                     ))}
