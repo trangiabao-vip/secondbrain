@@ -46,11 +46,9 @@ export function GlobalScheduleView() {
     return [...goalItems, ...taskItems];
   }, [goals, tasks]);
 
-  const getItemsForHour = (day: Date, hour: number) => {
+  const getTasksForDay = (day: Date) => {
     return scheduledItems.filter(item => {
-      if (!item.startDate || !isSameDay(item.startDate, day)) return false;
-      if (item.type === 'goal') return false;
-      return getHours(item.startDate) === hour;
+      return item.startDate && isSameDay(item.startDate, day) && item.type === 'task';
     });
   };
   
@@ -133,25 +131,29 @@ export function GlobalScheduleView() {
                     {hours.map(hour => (
                       <div key={hour} className="h-16 border-b relative"></div>
                     ))}
-                    {getItemsForHour(day, getHours(day)).map(item => {
+                    {getTasksForDay(day).map(item => {
                         const task = item as Task;
                         const startDate = getDateFromFirestore(task.startDate);
                         const endDate = getDateFromFirestore(task.endDate);
 
                         if (!startDate) return null;
                         
-                        const top = (getMinutes(startDate) / 60) * 64; // 64px is h-16
-                        const end = endDate ? endDate : setMinutes(startDate, getMinutes(startDate) + 30);
-                        const height = (differenceInMinutes(end, startDate) / 60) * 64;
                         const startHour = getHours(startDate);
+                        const startMinutes = getMinutes(startDate);
+
+                        const top = (startHour * 64) + (startMinutes / 60 * 64);
+                        
+                        const end = endDate ? endDate : setMinutes(startDate, startMinutes + 30);
+                        const durationMinutes = differenceInMinutes(end, startDate);
+                        const height = (durationMinutes / 60) * 64;
                         
                         return (
                             <EditTaskDialog taskId={item.id} key={`${item.type}-${item.id}`}>
                               <div 
                                 className="absolute inset-x-0.5 bg-secondary/80 rounded p-1 shadow z-10 border border-border cursor-pointer hover:bg-secondary overflow-hidden"
                                 style={{
-                                    top: `${startHour * 64 + top}px`,
-                                    height: `${height}px`
+                                    top: `${top}px`,
+                                    height: `${Math.max(height, 24)}px` // min height of 24px
                                 }}
                               >
                                   <p className="text-xs font-bold truncate flex items-center gap-1">
