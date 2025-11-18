@@ -15,16 +15,20 @@ import { useAppContext } from '@/contexts/AppContext';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Textarea } from '../ui/textarea';
 
-export function AddTopicDialog({ children }: { children: ReactNode }) {
+export function AddTopicDialog({ children, interestId }: { children: ReactNode, interestId?: string }) {
   const { addTopic, selectedInterest } = useAppContext();
   const [topicName, setTopicName] = useState('');
   const [description, setDescription] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
+  const finalInterestId = interestId || selectedInterest?.id;
+  const finalInterest = interestId ? { id: interestId, name: 'hiện tại' } : selectedInterest;
+
+
   const handleAddTopic = () => {
-    if (topicName.trim() && selectedInterest) {
+    if (topicName.trim() && finalInterestId) {
       const randomImageId = PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)].id;
-      addTopic(topicName.trim(), randomImageId, description);
+      addTopic(topicName.trim(), randomImageId, description, finalInterestId);
       setTopicName('');
       setDescription('');
       setIsOpen(false);
@@ -38,7 +42,7 @@ export function AddTopicDialog({ children }: { children: ReactNode }) {
         <DialogHeader>
           <DialogTitle>Thêm chủ đề mới</DialogTitle>
           <DialogDescription>
-            Thêm một chủ đề mới vào sở thích của bạn: "{selectedInterest?.name}"
+            Thêm một chủ đề mới vào sở thích của bạn: "{finalInterest?.name}"
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">

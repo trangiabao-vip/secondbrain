@@ -17,6 +17,7 @@ import type { GoalStatus, GoalPriority } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { AddTopicDialog } from "../topics/AddTopicDialog";
 
 const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
@@ -78,6 +79,12 @@ export function GoalsView() {
             {selectedTopic.description && <p className="text-muted-foreground mt-1 max-w-2xl">{selectedTopic.description}</p>}
         </div>
         <div className="flex gap-2 flex-shrink-0">
+           <AddTopicDialog interestId={selectedTopic.interestId}>
+            <Button variant="outline">
+              <Icons.add className="mr-2 h-4 w-4" />
+              Thêm chủ đề
+            </Button>
+          </AddTopicDialog>
           <AddOrEditTaskDialog mode="add">
             <Button variant="outline">
               <Icons.add className="mr-2 h-4 w-4" />

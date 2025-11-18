@@ -29,7 +29,7 @@ interface AppContextType {
   selectTopic: (id: string | null) => void;
   addInterest: (name: string) => void;
   updateInterest: (id: string, name: string) => void;
-  addTopic: (name: string, imageId: string, description?: string) => void;
+  addTopic: (name: string, imageId: string, description?: string, interestId?: string) => void;
   updateTopic: (topicId: string, name: string, description?: string) => void;
   addGoal: (goalData: Partial<Omit<Goal, 'id'>>) => void;
   updateGoal: (goalId: string, updatedData: Partial<Omit<Goal, 'id'>>) => void;
@@ -103,9 +103,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Sở thích đã được cập nhật", description: `Sở thích đã được đổi tên thành "${name}".` });
   }
 
-  const addTopic = (name: string, imageId: string, description?: string) => {
-    if (!selectedInterestId || !user) return;
-    const newTopic: Partial<Topic> = { name, imageId, interestId: selectedInterestId, userId: user.uid, createdAt: serverTimestamp() };
+  const addTopic = (name: string, imageId: string, description?: string, interestId?: string) => {
+    const finalInterestId = interestId || selectedInterestId;
+    if (!finalInterestId || !user) return;
+    const newTopic: Partial<Topic> = { name, imageId, interestId: finalInterestId, userId: user.uid, createdAt: serverTimestamp() };
     if (description) newTopic.description = description;
     addDocumentNonBlocking(collection(firestore, 'topics'), newTopic);
     toast({ title: "Đã thêm chủ đề", description: `"${name}" đã được thêm.` });
