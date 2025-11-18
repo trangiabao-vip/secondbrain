@@ -2,13 +2,14 @@
 import { useState, useMemo } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from "@/contexts/AppContext";
-import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, parseISO, getMinutes, differenceInMinutes, startOfDay, endOfDay, isWithinInterval, areIntervalsOverlapping } from "date-fns";
+import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, parseISO, getMinutes, differenceInMinutes, startOfDay, endOfDay, areIntervalsOverlapping } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Icons } from "../icons";
 import { Button } from "../ui/button";
 import { EditGoalDialog } from "../goals/EditGoalDialog";
 import { EditTaskDialog } from "../tasks/EditTaskDialog";
 import { Goal, Task } from "@/lib/data";
+import { cn } from "@/lib/utils";
 
 const hours = Array.from({ length: 24 }, (_, i) => i);
 
@@ -189,18 +190,26 @@ export function GlobalScheduleView() {
                         if (height <= 0) return null;
 
                         const content = (
-                            <div 
-                              className="absolute inset-x-0.5 rounded p-1 shadow z-10 border border-border cursor-pointer hover:bg-secondary overflow-hidden"
-                              style={{
-                                  top: `${top}px`,
-                                  height: `${Math.max(height, 24)}px`
-                              }}
+                            <div
+                                className={cn(
+                                    "absolute inset-x-0.5 rounded-lg p-2 shadow-lg z-10 border cursor-pointer hover:bg-opacity-40 overflow-hidden",
+                                    item.type === 'goal' 
+                                        ? "bg-blue-900/30 border-blue-700 text-blue-100 hover:bg-blue-900/40"
+                                        : "bg-slate-700/30 border-slate-500 text-slate-100 hover:bg-slate-700/40"
+                                )}
+                                style={{
+                                    top: `${top}px`,
+                                    height: `${Math.max(height, 24)}px`
+                                }}
                             >
-                                <p className="text-xs font-bold truncate flex items-center gap-1">
+                                <p className="text-xs font-bold truncate flex items-center gap-1.5">
                                   {item.type === 'goal' ? <Icons.goal className="h-3 w-3"/> : <Icons.task className="h-3 w-3"/>}
                                   {item.type === 'goal' ? (item as Goal).title : (item as Task).text}
                                 </p>
-                                <p className="text-[10px] text-muted-foreground">
+                                <p className={cn(
+                                  "text-[10px]",
+                                  item.type === 'goal' ? "text-blue-300" : "text-slate-300"
+                                )}>
                                   {startDate && format(startDate, 'HH:mm')}
                                   {item.endDate && ` - ${format(getDateFromFirestore(item.endDate)!, 'HH:mm')}`}
                                 </p>
