@@ -26,12 +26,9 @@ export function AddTaskForm({ goalId }: { goalId: string }) {
         onChange={(e) => setTaskText(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
       />
-      <Button onClick={handleAddTask} variant="secondary">
-        <Icons.add className="h-4 w-4" />
-      </Button>
       <AddOrEditTaskDialog mode="add" goalId={goalId}>
-        <Button variant="secondary" className="px-2.5">
-            <Icons.ellipsis className="h-4 w-4" />
+        <Button onClick={handleAddTask} variant="secondary">
+          <Icons.add className="h-4 w-4" />
         </Button>
       </AddOrEditTaskDialog>
     </div>
