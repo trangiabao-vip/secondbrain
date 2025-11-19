@@ -17,10 +17,13 @@ import { Avatar, AvatarFallback } from "../ui/avatar";
 import { AddTopicDialog } from "../topics/AddTopicDialog";
 import { AddGoalDialog } from "../goals/AddGoalDialog";
 import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 
 export function Header() {
   const { selectedInterest, selectedTopic, selectInterest, selectTopic, viewMode } = useAppContext();
   const { auth, user } = useFirebase();
+  const pathname = usePathname();
 
   const handleLogout = () => {
     signOut(auth);
@@ -29,6 +32,71 @@ export function Header() {
   const getInitials = (email: string) => {
     return email.charAt(0).toUpperCase();
   }
+
+  const renderBreadcrumbs = () => {
+    if (pathname.startsWith('/games')) {
+      const gameName = pathname.split('/').pop()?.replace(/-/g, ' ');
+      return (
+        <>
+          <Icons.right className="h-4 w-4" />
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="#" onClick={() => setViewMode('games')}>Game</Link>
+          </Button>
+          <Icons.right className="h-4 w-4" />
+          <Button variant="ghost" size="sm" className="text-foreground capitalize">
+            {gameName}
+          </Button>
+        </>
+      )
+    }
+    
+    if (viewMode === 'global-schedule') {
+      return (
+        <>
+          <Icons.right className="h-4 w-4" />
+          <Button variant="ghost" size="sm" className="text-foreground">
+            Lịch toàn cục
+          </Button>
+        </>
+      )
+    }
+
+    if (viewMode === 'games') {
+      return (
+        <>
+          <Icons.right className="h-4 w-4" />
+          <Button variant="ghost" size="sm" className="text-foreground">
+            Game
+          </Button>
+        </>
+      )
+    }
+
+    if (viewMode === 'interests') {
+       return (
+        <>
+          {selectedInterest && (
+            <>
+              <Icons.right className="h-4 w-4" />
+              <Button variant="ghost" size="sm" onClick={() => selectTopic(null)}>
+                {selectedInterest.name}
+              </Button>
+            </>
+          )}
+          {selectedTopic && (
+            <>
+              <Icons.right className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="text-foreground">
+                {selectedTopic.name}
+              </Button>
+            </>
+          )}
+        </>
+       )
+    }
+    return null;
+  }
+
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
@@ -39,38 +107,7 @@ export function Header() {
             <Icons.home className="h-4 w-4" />
             Trang chủ
           </Button>
-          {selectedInterest && viewMode === 'interests' && (
-            <>
-              <Icons.right className="h-4 w-4" />
-              <Button variant="ghost" size="sm" onClick={() => selectTopic(null)}>
-                {selectedInterest.name}
-              </Button>
-            </>
-          )}
-          {selectedTopic && viewMode === 'interests' && (
-            <>
-              <Icons.right className="h-4 w-4" />
-              <Button variant="ghost" size="sm" className="text-foreground">
-                {selectedTopic.name}
-              </Button>
-            </>
-          )}
-           {viewMode === 'global-schedule' && (
-            <>
-              <Icons.right className="h-4 w-4" />
-              <Button variant="ghost" size="sm" className="text-foreground">
-                Lịch toàn cục
-              </Button>
-            </>
-          )}
-           {viewMode === 'games' && (
-            <>
-              <Icons.right className="h-4 w-4" />
-              <Button variant="ghost" size="sm" className="text-foreground">
-                Game
-              </Button>
-            </>
-          )}
+          {renderBreadcrumbs()}
         </nav>
       </div>
 

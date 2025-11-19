@@ -8,11 +8,22 @@ import { TopicDetailView } from "@/components/details/TopicDetailView";
 import { Header } from "./Header";
 import { GlobalScheduleView } from "../details/GlobalScheduleView";
 import { GameView } from "../games/GameView";
+import { usePathname } from 'next/navigation';
 
-export function AppLayout() {
+export function AppLayout({ children }: { children?: React.ReactNode }) {
   const { selectedInterestId, selectedTopicId, viewMode } = useAppContext();
+  const pathname = usePathname();
 
   const renderContent = () => {
+    // If there are children (from a Next.js page), render them.
+    if (children) {
+      return children;
+    }
+
+    if (pathname.startsWith('/games')) {
+      return null;
+    }
+
     if (viewMode === 'global-schedule') {
       return <GlobalScheduleView />;
     }
