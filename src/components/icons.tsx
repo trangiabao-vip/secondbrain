@@ -8,6 +8,7 @@ import {
   ChevronUp,
   Copy,
   Edit,
+  Gamepad2,
   Home,
   LayoutGrid,
   Lightbulb,
@@ -42,4 +43,5 @@ export const Icons = {
   edit: Edit,
   grid: LayoutGrid,
   copy: Copy,
+  game: Gamepad2,
 };

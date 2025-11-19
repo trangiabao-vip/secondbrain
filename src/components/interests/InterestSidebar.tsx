@@ -61,6 +61,16 @@ export function InterestSidebar() {
                 <span>Lịch</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => setViewMode('games')}
+                isActive={viewMode === 'games'}
+                tooltip="Game"
+              >
+                <Icons.game />
+                <span>Game</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
         </SidebarMenu>
         <SidebarSeparator />
         <SidebarMenu>

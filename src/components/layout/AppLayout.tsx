@@ -7,6 +7,7 @@ import { TopicGrid } from "@/components/topics/TopicGrid";
 import { TopicDetailView } from "@/components/details/TopicDetailView";
 import { Header } from "./Header";
 import { GlobalScheduleView } from "../details/GlobalScheduleView";
+import { GameView } from "../games/GameView";
 
 export function AppLayout() {
   const { selectedInterestId, selectedTopicId, viewMode } = useAppContext();
@@ -14,6 +15,9 @@ export function AppLayout() {
   const renderContent = () => {
     if (viewMode === 'global-schedule') {
       return <GlobalScheduleView />;
+    }
+    if (viewMode === 'games') {
+      return <GameView />;
     }
     if (selectedTopicId) {
       return <TopicDetailView key={selectedTopicId} />;

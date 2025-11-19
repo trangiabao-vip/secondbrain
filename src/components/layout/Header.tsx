@@ -39,7 +39,7 @@ export function Header() {
             <Icons.home className="h-4 w-4" />
             Trang chủ
           </Button>
-          {selectedInterest && (
+          {selectedInterest && viewMode === 'interests' && (
             <>
               <Icons.right className="h-4 w-4" />
               <Button variant="ghost" size="sm" onClick={() => selectTopic(null)}>
@@ -47,7 +47,7 @@ export function Header() {
               </Button>
             </>
           )}
-          {selectedTopic && (
+          {selectedTopic && viewMode === 'interests' && (
             <>
               <Icons.right className="h-4 w-4" />
               <Button variant="ghost" size="sm" className="text-foreground">
@@ -60,6 +60,14 @@ export function Header() {
               <Icons.right className="h-4 w-4" />
               <Button variant="ghost" size="sm" className="text-foreground">
                 Lịch toàn cục
+              </Button>
+            </>
+          )}
+           {viewMode === 'games' && (
+            <>
+              <Icons.right className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="text-foreground">
+                Game
               </Button>
             </>
           )}

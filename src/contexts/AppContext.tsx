@@ -13,7 +13,7 @@ import {
 } from '@/firebase/non-blocking-updates';
 import { signOut } from 'firebase/auth';
 
-type ViewMode = 'interests' | 'global-schedule';
+type ViewMode = 'interests' | 'global-schedule' | 'games';
 
 interface AppContextType {
   interests: Interest[];
