@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
 import Link from "next/link";
+import { useAppContext } from "@/contexts/AppContext";
+import { useEffect } from "react";
 
 const games = [
   {
@@ -28,7 +30,13 @@ const games = [
   }
 ];
 
-export function GameView() {
+export default function GamePage() {
+  const { setViewMode } = useAppContext();
+
+  useEffect(() => {
+    setViewMode('games');
+  }, [setViewMode]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

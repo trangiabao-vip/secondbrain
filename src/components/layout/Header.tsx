@@ -21,7 +21,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 export function Header() {
-  const { selectedInterest, selectedTopic, selectInterest, selectTopic, viewMode, setViewMode } = useAppContext();
+  const { selectedInterest, selectedTopic, selectInterest, selectTopic, viewMode } = useAppContext();
   const { auth, user } = useFirebase();
   const pathname = usePathname();
 
@@ -40,12 +40,16 @@ export function Header() {
         <>
           <Icons.right className="h-4 w-4" />
           <Button variant="ghost" size="sm" asChild>
-            <Link href="#" onClick={() => setViewMode('games')}>Game</Link>
+            <Link href="/games">Game</Link>
           </Button>
-          <Icons.right className="h-4 w-4" />
-          <Button variant="ghost" size="sm" className="text-foreground capitalize">
-            {gameName}
-          </Button>
+          {pathname !== '/games' && (
+            <>
+              <Icons.right className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="text-foreground capitalize">
+                {gameName}
+              </Button>
+            </>
+          )}
         </>
       )
     }
@@ -56,17 +60,6 @@ export function Header() {
           <Icons.right className="h-4 w-4" />
           <Button variant="ghost" size="sm" className="text-foreground">
             Lịch toàn cục
-          </Button>
-        </>
-      )
-    }
-
-    if (viewMode === 'games') {
-      return (
-        <>
-          <Icons.right className="h-4 w-4" />
-          <Button variant="ghost" size="sm" className="text-foreground">
-            Game
           </Button>
         </>
       )

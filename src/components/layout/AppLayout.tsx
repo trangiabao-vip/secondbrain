@@ -6,7 +6,6 @@ import type { ReactNode } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { usePathname } from "next/navigation";
 import { GlobalScheduleView } from "../details/GlobalScheduleView";
-import { GameView } from "../games/GameView";
 import { TopicDetailView } from "../details/TopicDetailView";
 import { TopicGrid } from "../topics/TopicGrid";
 import { WelcomeScreen } from "../WelcomeScreen";
@@ -22,14 +21,18 @@ export function AppLayout({ children }: { children?: ReactNode }) {
   }
 
   const renderContent = () => {
-    // Priority 1: Handle view modes set by the sidebar, which override any page content.
+    // Priority 1: Handle non-interest view modes
     if (viewMode === 'global-schedule') {
       return <GlobalScheduleView />;
     }
-    if (viewMode === 'games') {
-      return <GameView />;
-    }
     
+    // Priority 2: Handle page-specific children for routes like /games/*
+    // The GameView is now its own page at /games, so it will be rendered as children.
+    if (pathname.startsWith('/games')) {
+      return children;
+    }
+
+    // Priority 3: Handle interests view mode
     if (viewMode === 'interests') {
       if (selectedTopicId) {
         return <TopicDetailView key={selectedTopicId} />;
@@ -39,21 +42,20 @@ export function AppLayout({ children }: { children?: ReactNode }) {
       }
     }
     
-    // Priority 2: If no overriding view mode, render page-specific children (e.g., for /games/lucky-pin)
-    // This will render the content from page.tsx for routes like /games/*
-    if (children) {
-       return children;
-    }
-    
-    // Priority 3: Fallback logic if no viewMode is active and no children are provided.
+    // Priority 4: Fallback logic
     if (!isDataLoading && interests.length === 0) {
       return <WelcomeScreen />;
     }
+    // This is the default view when no interest is selected.
     if (!selectedInterestId && viewMode === 'interests') {
        return <WelcomeScreen />;
     }
 
-    // This should not be reached in normal flow, but as a safe fallback.
+    // Fallback for any other case (e.g. root path '/')
+    if (children) {
+      return children;
+    }
+    
     return null;
   };
 

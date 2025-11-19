@@ -15,9 +15,11 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { EditInterestDialog } from "./EditInterestDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 
 export function InterestSidebar() {
   const { interests, selectedInterestId, selectInterest, deleteInterest, viewMode, setViewMode, isDataLoading } = useAppContext();
+  const isGameView = viewMode === 'games';
 
   if (isDataLoading) {
     return (
@@ -63,12 +65,14 @@ export function InterestSidebar() {
             </SidebarMenuItem>
              <SidebarMenuItem>
               <SidebarMenuButton
-                onClick={() => setViewMode('games')}
-                isActive={viewMode === 'games'}
+                asChild
+                isActive={isGameView}
                 tooltip="Game"
               >
-                <Icons.game />
-                <span>Game</span>
+                <Link href="/games" onClick={() => setViewMode('games')}>
+                  <Icons.game />
+                  <span>Game</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
         </SidebarMenu>
