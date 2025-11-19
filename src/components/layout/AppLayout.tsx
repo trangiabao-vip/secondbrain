@@ -29,6 +29,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
     if (viewMode === 'games') {
       return <GameView />;
     }
+    
     if (viewMode === 'interests') {
       if (selectedTopicId) {
         return <TopicDetailView key={selectedTopicId} />;
@@ -36,24 +37,19 @@ export function AppLayout({ children }: { children?: ReactNode }) {
       if (selectedInterestId) {
         return <TopicGrid key={selectedInterestId} />;
       }
-      // If viewMode is 'interests' but no interest is selected, show welcome screen
-      return <WelcomeScreen />;
     }
-
+    
     // Priority 2: If no overriding view mode, render page-specific children (e.g., for /games/lucky-pin)
+    // This will render the content from page.tsx for routes like /games/*
     if (children) {
-       // This will render the content from page.tsx for routes like /games/*
        return children;
     }
     
     // Priority 3: Fallback logic if no viewMode is active and no children are provided.
-    // This is the default state when landing on the root of the app.
     if (!isDataLoading && interests.length === 0) {
       return <WelcomeScreen />;
     }
-
-    // If there are interests but none is selected, show welcome screen.
-    if (!selectedInterestId) {
+    if (!selectedInterestId && viewMode === 'interests') {
        return <WelcomeScreen />;
     }
 
