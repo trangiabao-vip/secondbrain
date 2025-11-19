@@ -36,7 +36,7 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
             if (!hasTime) return null;
 
             let displayStart = startDate;
-            let displayEnd = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 30);
+            let displayEnd = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 60);
             
             const durationMinutes = differenceInMinutes(displayEnd, displayStart);
             if (durationMinutes <= 0) return null;
