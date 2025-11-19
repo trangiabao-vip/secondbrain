@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { InterestHubApp } from '@/components/InterestHubApp';
+import { AppProvider } from '@/contexts/AppContext';
 
 export const metadata: Metadata = {
   title: 'Trung tâm Sở thích',
@@ -23,7 +24,9 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          <AppLayout>{children}</AppLayout>
+          <AppProvider>
+            <InterestHubApp>{children}</InterestHubApp>
+          </AppProvider>
         </FirebaseClientProvider>
         <Toaster />
       </body>

@@ -11,25 +11,9 @@ import { GameView } from '@/components/games/GameView';
 export default function AppPage() {
   const { selectedInterestId, selectedTopicId, viewMode } = useAppContext();
   
-  const renderContent = () => {
-    if (viewMode === 'global-schedule') {
-      return <GlobalScheduleView />;
-    }
-    if (viewMode === 'games') {
-      return <GameView />;
-    }
-    if (selectedTopicId) {
-      return <TopicDetailView key={selectedTopicId} />;
-    }
-    if (selectedInterestId) {
-      return <TopicGrid key={selectedInterestId} />;
-    }
-    return <WelcomeScreen />;
-  };
-
   return (
     <AuthGuard>
-      {renderContent()}
+       <div />
     </AuthGuard>
   );
 }

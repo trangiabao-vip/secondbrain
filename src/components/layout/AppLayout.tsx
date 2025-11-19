@@ -1,34 +1,45 @@
 'use client';
 import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
 import { InterestSidebar } from "@/components/interests/InterestSidebar";
-import { useAppContext } from "@/contexts/AppContext";
-import { WelcomeScreen } from "@/components/WelcomeScreen";
-import { TopicGrid } from "@/components/topics/TopicGrid";
-import { TopicDetailView } from "@/components/details/TopicDetailView";
 import { Header } from "./Header";
+import type { ReactNode } from "react";
+import { useAppContext } from "@/contexts/AppContext";
+import { usePathname } from "next/navigation";
 import { GlobalScheduleView } from "../details/GlobalScheduleView";
 import { GameView } from "../games/GameView";
-import { usePathname } from 'next/navigation';
+import { TopicDetailView } from "../details/TopicDetailView";
+import { TopicGrid } from "../topics/TopicGrid";
+import { WelcomeScreen } from "../WelcomeScreen";
 
-export function AppLayout({ children }: { children?: React.ReactNode }) {
+export function AppLayout({ children }: { children?: ReactNode }) {
   const { selectedInterestId, selectedTopicId, viewMode } = useAppContext();
   const pathname = usePathname();
+  
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
+
+  if (isAuthPage) {
+    return <main>{children}</main>;
+  }
 
   const renderContent = () => {
     // If there are children (from a Next.js page), render them.
     if (children) {
-      return children;
+      // Check if we are on a specific page that should render its own content.
+      const isGamePage = pathname.startsWith('/games/');
+      if (isGamePage) {
+        return children;
+      }
     }
-
-    if (pathname.startsWith('/games')) {
-      return null;
-    }
-
+    
     if (viewMode === 'global-schedule') {
       return <GlobalScheduleView />;
     }
     if (viewMode === 'games') {
-      return <GameView />;
+        const isGameDetailsPage = pathname.startsWith('/games/');
+        if (isGameDetailsPage) {
+            return children;
+        }
+        return <GameView />;
     }
     if (selectedTopicId) {
       return <TopicDetailView key={selectedTopicId} />;
@@ -36,7 +47,12 @@ export function AppLayout({ children }: { children?: React.ReactNode }) {
     if (selectedInterestId) {
       return <TopicGrid key={selectedInterestId} />;
     }
-    return <WelcomeScreen />;
+    
+    if (pathname === '/') {
+        return <WelcomeScreen />;
+    }
+
+    return children;
   };
 
   return (
