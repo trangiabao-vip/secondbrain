@@ -30,7 +30,7 @@ const games = [
   }
 ];
 
-export default function GamePage() {
+export default function GamesPage() {
   const { setViewMode } = useAppContext();
 
   useEffect(() => {
