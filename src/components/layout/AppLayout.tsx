@@ -12,7 +12,7 @@ import { TopicGrid } from "../topics/TopicGrid";
 import { WelcomeScreen } from "../WelcomeScreen";
 
 export function AppLayout({ children }: { children?: ReactNode }) {
-  const { selectedInterestId, selectedTopicId, viewMode, interests } = useAppContext();
+  const { selectedInterestId, selectedTopicId, viewMode, interests, isDataLoading } = useAppContext();
   const pathname = usePathname();
   
   const isAuthPage = pathname === '/login' || pathname === '/signup';
@@ -22,23 +22,13 @@ export function AppLayout({ children }: { children?: ReactNode }) {
   }
 
   const renderContent = () => {
-    // Priority 1: Handle explicit view modes from sidebar first.
+    // Priority 1: Handle view modes set by the sidebar, which override any page content.
     if (viewMode === 'global-schedule') {
       return <GlobalScheduleView />;
     }
     if (viewMode === 'games') {
-      // If the view mode is 'games', always show the main game menu.
-      // The individual game pages are handled by the next condition.
       return <GameView />;
     }
-
-    // Priority 2: If not in a specific view mode, check if we are on a page with specific children content.
-    // This handles rendering for individual game pages like /games/lucky-pin.
-    if (pathname.startsWith('/games/')) {
-      return children;
-    }
-    
-    // Priority 3: Interest-based views
     if (viewMode === 'interests') {
       if (selectedTopicId) {
         return <TopicDetailView key={selectedTopicId} />;
@@ -46,21 +36,29 @@ export function AppLayout({ children }: { children?: ReactNode }) {
       if (selectedInterestId) {
         return <TopicGrid key={selectedInterestId} />;
       }
-    }
-    
-    // Priority 4: Fallback to welcome screen.
-    // If no interest is selected and there are interests, it means we are at the root
-    if (interests.length === 0) {
+      // If viewMode is 'interests' but no interest is selected, show welcome screen
       return <WelcomeScreen />;
     }
+
+    // Priority 2: If no overriding view mode, render page-specific children (e.g., for /games/lucky-pin)
+    if (children) {
+       // This will render the content from page.tsx for routes like /games/*
+       return children;
+    }
     
-    // If we land on a page that is not handled by a view mode and has no children.
+    // Priority 3: Fallback logic if no viewMode is active and no children are provided.
+    // This is the default state when landing on the root of the app.
+    if (!isDataLoading && interests.length === 0) {
+      return <WelcomeScreen />;
+    }
+
+    // If there are interests but none is selected, show welcome screen.
     if (!selectedInterestId) {
        return <WelcomeScreen />;
     }
 
-    // Default to welcome screen if nothing else matches
-    return <WelcomeScreen />;
+    // This should not be reached in normal flow, but as a safe fallback.
+    return null;
   };
 
   return (
