@@ -21,18 +21,11 @@ export function AppLayout({ children }: { children?: ReactNode }) {
   }
 
   const renderContent = () => {
-    // Priority 1: Handle non-interest view modes
+    // Priority 1: Handle explicit view modes set by sidebar clicks
     if (viewMode === 'global-schedule') {
       return <GlobalScheduleView />;
     }
-    
-    // Priority 2: Handle page-specific children for routes like /games/*
-    // The GameView is now its own page at /games, so it will be rendered as children.
-    if (pathname.startsWith('/games')) {
-      return children;
-    }
 
-    // Priority 3: Handle interests view mode
     if (viewMode === 'interests') {
       if (selectedTopicId) {
         return <TopicDetailView key={selectedTopicId} />;
@@ -40,22 +33,19 @@ export function AppLayout({ children }: { children?: ReactNode }) {
       if (selectedInterestId) {
         return <TopicGrid key={selectedInterestId} />;
       }
-    }
-    
-    // Priority 4: Fallback logic
-    if (!isDataLoading && interests.length === 0) {
-      return <WelcomeScreen />;
-    }
-    // This is the default view when no interest is selected.
-    if (!selectedInterestId && viewMode === 'interests') {
+       if (!isDataLoading && interests.length === 0) {
+        return <WelcomeScreen />;
+      }
        return <WelcomeScreen />;
     }
 
-    // Fallback for any other case (e.g. root path '/')
+    // Priority 2: Handle content from Next.js pages (like /games/*)
+    // This will render if no specific viewMode above is active.
     if (children) {
       return children;
     }
     
+    // Fallback if no content is determined
     return null;
   };
 
