@@ -36,7 +36,7 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
             if (!hasTime) return null;
 
             let displayStart = startDate;
-            let displayEnd = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 60);
+            let displayEnd = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 15);
             
             const durationMinutes = differenceInMinutes(displayEnd, displayStart);
             if (durationMinutes <= 0) return null;
@@ -136,7 +136,7 @@ export function GlobalScheduleView() {
       .filter(item => {
         const startDate = getDateFromFirestore(item.startDate);
         if (!startDate) return false;
-        const endDate = getDateFromFirestore(item.endDate) || startDate;
+        const endDate = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 15);
         
         const itemInterval = { start: startDate, end: endDate };
         const dayInterval = { start: dayStart, end: dayEnd };
@@ -145,7 +145,7 @@ export function GlobalScheduleView() {
       })
       .map(item => {
         const itemStart = getDateFromFirestore(item.startDate)!;
-        const itemEnd = getDateFromFirestore(item.endDate) || itemStart;
+        const itemEnd = getDateFromFirestore(item.endDate) || setMinutes(itemStart, getMinutes(itemStart) + 15);
 
         // Clamp the event's start and end times to the current day
         const displayStart = max([itemStart, dayStart]);
