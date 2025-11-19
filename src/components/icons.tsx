@@ -15,6 +15,8 @@ import {
   MoreHorizontal,
   Plus,
   Sparkles,
+  Star,
+  Swords,
   Target,
   Trash2,
   X,
@@ -44,4 +46,6 @@ export const Icons = {
   grid: LayoutGrid,
   copy: Copy,
   game: Gamepad2,
+  trueOrDare: Swords,
+  luckyPin: Star,
 };
