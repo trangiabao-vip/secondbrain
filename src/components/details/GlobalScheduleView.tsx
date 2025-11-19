@@ -2,7 +2,7 @@
 import { useState, useMemo } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from "@/contexts/AppContext";
-import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, parseISO, getMinutes, differenceInMinutes, startOfDay, endOfDay, areIntervalsOverlapping } from "date-fns";
+import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, parseISO, getMinutes, differenceInMinutes, startOfDay, endOfDay, areIntervalsOverlapping, max, min } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Icons } from "../icons";
 import { Button } from "../ui/button";
@@ -25,11 +25,9 @@ const getDateFromFirestore = (date: any): Date | null => {
 type ScheduledItem = (Goal | Task) & { type: 'goal' | 'task', startDate: Date, endDate?: Date };
 type PositionedItem = ScheduledItem & { top: number; height: number; left: number; width: number; };
 
-const calculateLayout = (items: ScheduledItem[], day: Date): PositionedItem[] => {
+const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
     const positionedItems: PositionedItem[] = [];
-    const dayStart = startOfDay(day);
-    const dayEnd = endOfDay(day);
-
+    
     const timedItems = items
         .map(item => {
             const startDate = getDateFromFirestore(item.startDate);
@@ -40,9 +38,6 @@ const calculateLayout = (items: ScheduledItem[], day: Date): PositionedItem[] =>
             let displayStart = startDate;
             let displayEnd = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 30);
             
-            if (displayStart < dayStart) displayStart = dayStart;
-            if (displayEnd > dayEnd) displayEnd = dayEnd;
-
             const durationMinutes = differenceInMinutes(displayEnd, displayStart);
             if (durationMinutes <= 0) return null;
 
@@ -134,23 +129,34 @@ export function GlobalScheduleView() {
   }, [goals, tasks]);
 
   const getScheduledItemsForDay = (day: Date) => {
-    return scheduledItems.filter(item => {
-      const startDate = getDateFromFirestore(item.startDate);
-      if (!startDate) return false;
+    const dayStart = startOfDay(day);
+    const dayEnd = endOfDay(day);
 
-      // Check if the item's interval overlaps with the given day
-      const itemInterval = {
-        start: startDate,
-        end: getDateFromFirestore(item.endDate) || startDate,
-      };
+    return scheduledItems
+      .filter(item => {
+        const startDate = getDateFromFirestore(item.startDate);
+        if (!startDate) return false;
+        const endDate = getDateFromFirestore(item.endDate) || startDate;
+        
+        const itemInterval = { start: startDate, end: endDate };
+        const dayInterval = { start: dayStart, end: dayEnd };
 
-      const dayInterval = {
-        start: startOfDay(day),
-        end: endOfDay(day),
-      }
+        return areIntervalsOverlapping(itemInterval, dayInterval);
+      })
+      .map(item => {
+        const itemStart = getDateFromFirestore(item.startDate)!;
+        const itemEnd = getDateFromFirestore(item.endDate) || itemStart;
 
-      return areIntervalsOverlapping(itemInterval, dayInterval);
-    });
+        // Clamp the event's start and end times to the current day
+        const displayStart = max([itemStart, dayStart]);
+        const displayEnd = min([itemEnd, dayEnd]);
+
+        return {
+          ...item,
+          startDate: displayStart,
+          endDate: displayEnd,
+        };
+      });
   };
   
   const getItemsForAllday = (day: Date) => {
@@ -216,7 +222,7 @@ export function GlobalScheduleView() {
             <div className="grid grid-cols-7">
               {week.map(day => {
                 const dayItems = getScheduledItemsForDay(day);
-                const layout = calculateLayout(dayItems, day);
+                const layout = calculateLayout(dayItems);
                 return (
                   <div key={day.toISOString()} className="border-l">
                     <div className={`h-10 border-b text-center py-1 sticky top-0 bg-background z-10 ${isSameDay(day, new Date()) ? 'text-primary' : ''}`}>
