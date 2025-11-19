@@ -21,7 +21,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 export function Header() {
-  const { selectedInterest, selectedTopic, selectInterest, selectTopic, viewMode } = useAppContext();
+  const { selectedInterest, selectedTopic, selectInterest, selectTopic, viewMode, setViewMode } = useAppContext();
   const { auth, user } = useFirebase();
   const pathname = usePathname();
 
