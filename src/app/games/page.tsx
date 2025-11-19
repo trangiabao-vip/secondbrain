@@ -5,6 +5,12 @@ import { Icons } from "@/components/icons";
 import Link from "next/link";
 import { useAppContext } from "@/contexts/AppContext";
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { AuthGuard } from "@/components/auth/AuthGuard";
+import { GlobalScheduleView } from "@/components/details/GlobalScheduleView";
+import { TopicDetailView } from "@/components/details/TopicDetailView";
+import { TopicGrid } from "@/components/topics/TopicGrid";
+import { WelcomeScreen } from "@/components/WelcomeScreen";
 
 const games = [
   {
@@ -30,12 +36,16 @@ const games = [
   }
 ];
 
-export default function GamesPage() {
+function GamesView() {
   const { setViewMode } = useAppContext();
+  const pathname = usePathname();
 
   useEffect(() => {
-    setViewMode('games');
-  }, [setViewMode]);
+    // Set viewMode to games only if we are on the main games page
+    if (pathname === '/games') {
+      setViewMode('games');
+    }
+  }, [setViewMode, pathname]);
 
   return (
     <div className="space-y-6">
@@ -67,5 +77,38 @@ export default function GamesPage() {
         ))}
       </div>
     </div>
+  );
+}
+
+// This is the component that will be rendered by the Next.js router for this page.
+export default function GamesPage() {
+  const { 
+    viewMode, 
+    selectedInterestId, 
+    selectedTopicId, 
+    interests, 
+    isDataLoading 
+  } = useAppContext();
+
+  // If viewMode has been changed by the sidebar, render the corresponding view.
+  if (viewMode === 'global-schedule') {
+    return <GlobalScheduleView />;
+  }
+
+  if (viewMode === 'interests') {
+    if (selectedTopicId) {
+      return <TopicDetailView key={selectedTopicId} />;
+    }
+    if (selectedInterestId) {
+      return <TopicGrid key={selectedInterestId} />;
+    }
+    return <WelcomeScreen />;
+  }
+
+  // Otherwise, render the games view.
+  return (
+    <AuthGuard>
+        <GamesView />
+    </AuthGuard>
   );
 }

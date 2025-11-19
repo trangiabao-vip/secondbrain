@@ -13,7 +13,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
   if (isAuthPage) {
     return <main>{children}</main>;
   }
-
+  
   return (
     <SidebarProvider>
       <Sidebar>
