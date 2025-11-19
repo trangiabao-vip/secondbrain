@@ -1,3 +1,4 @@
+'use client';
 import {
   BookOpen,
   Calendar,
@@ -8,6 +9,7 @@ import {
   ChevronUp,
   Copy,
   Edit,
+  Film,
   Gamepad2,
   Home,
   LayoutGrid,
@@ -48,4 +50,5 @@ export const Icons = {
   game: Gamepad2,
   trueOrDare: Swords,
   luckyPin: Star,
+  watchTogether: Film,
 };

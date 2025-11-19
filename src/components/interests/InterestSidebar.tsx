@@ -71,6 +71,16 @@ export function InterestSidebar() {
                 <span>Game</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => setViewMode('watch-together')}
+                isActive={viewMode === 'watch-together'}
+                tooltip="Xem phim chung"
+              >
+                <Icons.watchTogether />
+                <span>Xem phim chung</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
         </SidebarMenu>
         <SidebarSeparator />
         <SidebarMenu>

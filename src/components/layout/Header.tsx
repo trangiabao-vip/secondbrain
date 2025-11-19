@@ -71,6 +71,14 @@ export function Header() {
               </Button>
             </>
           )}
+           {viewMode === 'watch-together' && (
+            <>
+              <Icons.right className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="text-foreground">
+                Xem phim chung
+              </Button>
+            </>
+          )}
         </nav>
       </div>
 

@@ -13,7 +13,7 @@ import {
 } from '@/firebase/non-blocking-updates';
 import { signOut } from 'firebase/auth';
 
-type ViewMode = 'interests' | 'global-schedule' | 'games';
+type ViewMode = 'interests' | 'global-schedule' | 'games' | 'watch-together';
 
 interface AppContextType {
   interests: Interest[];
@@ -139,6 +139,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       status: 'chưa bắt đầu',
       userId: user.uid,
       createdAt: serverTimestamp(),
+      startDate: goalData.startDate || null,
+      endDate: goalData.endDate || null,
       ...goalData
     };
     addDocumentNonBlocking(collection(firestore, 'goals'), newGoal);
