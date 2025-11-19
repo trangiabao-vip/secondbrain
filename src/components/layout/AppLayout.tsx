@@ -8,7 +8,6 @@ import { TopicDetailView } from "@/components/details/TopicDetailView";
 import { Header } from "./Header";
 import { GlobalScheduleView } from "../details/GlobalScheduleView";
 import { GameView } from "../games/GameView";
-import { WatchTogetherView } from "../watch-together/WatchTogetherView";
 
 export function AppLayout() {
   const { selectedInterestId, selectedTopicId, viewMode } = useAppContext();
@@ -19,9 +18,6 @@ export function AppLayout() {
     }
     if (viewMode === 'games') {
       return <GameView />;
-    }
-    if (viewMode === 'watch-together') {
-      return <WatchTogetherView />;
     }
     if (selectedTopicId) {
       return <TopicDetailView key={selectedTopicId} />;

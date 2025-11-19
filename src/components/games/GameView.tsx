@@ -15,6 +15,12 @@ const games = [
     title: 'Lucky Pin',
     description: 'Quay bánh xe may mắn để xem ai là người được chọn cho thử thách tiếp theo.',
     icon: Icons.luckyPin,
+  },
+  {
+    id: 'watch-together',
+    title: 'Xem phim chung',
+    description: 'Cùng bạn bè và người thân xem những bộ phim yêu thích trong thời gian thực.',
+    icon: Icons.watchTogether,
   }
 ];
 
