@@ -22,20 +22,23 @@ export function AppLayout({ children }: { children?: ReactNode }) {
   }
 
   const renderContent = () => {
-    // Priority 1: Specific view modes set by the sidebar
+    // Priority 1: Handle explicit view modes from sidebar first.
     if (viewMode === 'global-schedule') {
       return <GlobalScheduleView />;
     }
     if (viewMode === 'games') {
-      // If we are on a specific game page, render its content
-      if (pathname.startsWith('/games/')) {
-        return children;
-      }
-      // Otherwise, show the main game menu
+      // If the view mode is 'games', always show the main game menu.
+      // The individual game pages are handled by the next condition.
       return <GameView />;
     }
+
+    // Priority 2: If not in a specific view mode, check if we are on a page with specific children content.
+    // This handles rendering for individual game pages like /games/lucky-pin.
+    if (pathname.startsWith('/games/')) {
+      return children;
+    }
     
-    // Priority 2: Interest-based views
+    // Priority 3: Interest-based views
     if (viewMode === 'interests') {
       if (selectedTopicId) {
         return <TopicDetailView key={selectedTopicId} />;
@@ -45,15 +48,15 @@ export function AppLayout({ children }: { children?: ReactNode }) {
       }
     }
     
-    // Priority 3: Fallback to welcome screen or other page children
+    // Priority 4: Fallback to welcome screen.
     // If no interest is selected and there are interests, it means we are at the root
-    if (pathname === '/' && interests.length === 0) {
+    if (interests.length === 0) {
       return <WelcomeScreen />;
     }
     
-    // If we land on a page that is not handled by a view mode (like a game page initially)
-    if (children) {
-      return children;
+    // If we land on a page that is not handled by a view mode and has no children.
+    if (!selectedInterestId) {
+       return <WelcomeScreen />;
     }
 
     // Default to welcome screen if nothing else matches
