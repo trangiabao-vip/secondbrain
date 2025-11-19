@@ -12,7 +12,7 @@ import { TopicGrid } from "../topics/TopicGrid";
 import { WelcomeScreen } from "../WelcomeScreen";
 
 export function AppLayout({ children }: { children?: ReactNode }) {
-  const { selectedInterestId, selectedTopicId, viewMode } = useAppContext();
+  const { selectedInterestId, selectedTopicId, viewMode, interests } = useAppContext();
   const pathname = usePathname();
   
   const isAuthPage = pathname === '/login' || pathname === '/signup';
@@ -22,37 +22,42 @@ export function AppLayout({ children }: { children?: ReactNode }) {
   }
 
   const renderContent = () => {
-    // If there are children (from a Next.js page), render them.
-    if (children) {
-      // Check if we are on a specific page that should render its own content.
-      const isGamePage = pathname.startsWith('/games/');
-      if (isGamePage) {
-        return children;
-      }
-    }
-    
+    // Priority 1: Specific view modes set by the sidebar
     if (viewMode === 'global-schedule') {
       return <GlobalScheduleView />;
     }
     if (viewMode === 'games') {
-        const isGameDetailsPage = pathname.startsWith('/games/');
-        if (isGameDetailsPage) {
-            return children;
-        }
-        return <GameView />;
-    }
-    if (selectedTopicId) {
-      return <TopicDetailView key={selectedTopicId} />;
-    }
-    if (selectedInterestId) {
-      return <TopicGrid key={selectedInterestId} />;
+      // If we are on a specific game page, render its content
+      if (pathname.startsWith('/games/')) {
+        return children;
+      }
+      // Otherwise, show the main game menu
+      return <GameView />;
     }
     
-    if (pathname === '/') {
-        return <WelcomeScreen />;
+    // Priority 2: Interest-based views
+    if (viewMode === 'interests') {
+      if (selectedTopicId) {
+        return <TopicDetailView key={selectedTopicId} />;
+      }
+      if (selectedInterestId) {
+        return <TopicGrid key={selectedInterestId} />;
+      }
+    }
+    
+    // Priority 3: Fallback to welcome screen or other page children
+    // If no interest is selected and there are interests, it means we are at the root
+    if (pathname === '/' && interests.length === 0) {
+      return <WelcomeScreen />;
+    }
+    
+    // If we land on a page that is not handled by a view mode (like a game page initially)
+    if (children) {
+      return children;
     }
 
-    return children;
+    // Default to welcome screen if nothing else matches
+    return <WelcomeScreen />;
   };
 
   return (
