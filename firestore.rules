@@ -57,7 +57,8 @@ service cloud.firestore {
       allow list: if isSignedIn();
       allow get, write: if isSignedIn();
       
-      // Messages can be read and created by any authenticated user who is the owner.
+      // Messages can be read and created by any authenticated user.
+      // We check ownership on create to prevent spoofing.
       match /messages/{messageId} {
         allow read: if isSignedIn();
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
