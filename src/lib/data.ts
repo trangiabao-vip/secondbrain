@@ -70,9 +70,13 @@ export interface Participant {
 
 export interface WatchRoom {
   id: string; // Firestore document ID
+  name: string;
+  description?: string;
   videoUrl?: string;
   isPlaying: boolean;
   currentTime: number;
+  isPublic?: boolean;
+  showtime?: any;
   lastUpdatedBy?: string;
   participants: Participant[];
   createdAt: any;

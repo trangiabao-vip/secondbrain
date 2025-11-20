@@ -1,20 +1,22 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useFirebase, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, serverTimestamp, arrayUnion, arrayRemove, collection, addDoc, query, orderBy } from 'firebase/firestore';
+import { doc, serverTimestamp, arrayUnion, arrayRemove, collection, addDoc, query, orderBy, where } from 'firebase/firestore';
 import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import ReactPlayer from 'react-player/youtube';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import { type WatchRoom, type ChatMessage, type Participant } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import { generateId } from '@/lib/utils';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { CreateRoomDialog } from '@/components/games/watch-together/CreateRoomDialog';
+import { formatDistanceToNow } from 'date-fns';
+import { vi } from 'date-fns/locale';
 
 const SYNC_THRESHOLD = 2; // seconds
 
@@ -94,10 +96,93 @@ function ChatBox({ roomId }: { roomId: string }) {
   );
 }
 
+function WatchRoomLobby() {
+    const { firestore } = useFirebase();
+    const router = useRouter();
+    const pathname = usePathname();
+
+    const publicRoomsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(
+            collection(firestore, 'watchRooms'),
+            where('isPublic', '==', true),
+            orderBy('showtime', 'asc')
+        );
+    }, [firestore]);
+
+    const { data: publicRooms, isLoading } = useCollection<WatchRoom>(publicRoomsQuery);
+
+    const getDateFromFirestore = (date: any): Date | null => {
+        if (!date) return null;
+        if (date.seconds) return new Date(date.seconds * 1000);
+        return null;
+    };
+
+    const joinRoom = (roomId: string) => {
+        router.push(`${pathname}?roomId=${roomId}`);
+    }
+
+    return (
+        <div className="container mx-auto p-4">
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Xem phim chung</h1>
+                    <p className="text-muted-foreground">Tham gia một phòng công khai hoặc tạo phòng riêng của bạn.</p>
+                </div>
+                <CreateRoomDialog />
+            </div>
+
+            <h2 className="text-xl font-semibold mb-4">Phòng công chiếu</h2>
+            {isLoading && <p>Đang tải phòng...</p>}
+            {!isLoading && publicRooms && publicRooms.length === 0 && (
+                 <div className="flex h-64 flex-col items-center justify-center text-center border-2 border-dashed rounded-lg">
+                    <Icons.watchTogether className="h-16 w-16 mb-4 text-primary" />
+                    <h2 className="text-xl font-bold mb-2">Không có phòng công chiếu</h2>
+                    <p className="text-muted-foreground mb-6">Chưa có phòng nào được lên lịch. Hãy là người đầu tiên!</p>
+                </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {publicRooms?.map(room => {
+                    const showtime = getDateFromFirestore(room.showtime);
+                    return (
+                        <Card key={room.id} className="flex flex-col">
+                            <CardHeader>
+                                <CardTitle>{room.name}</CardTitle>
+                                <CardDescription>{room.description}</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-grow">
+                                {showtime && (
+                                    <div className="text-sm text-muted-foreground">
+                                        <p>
+                                            Công chiếu {' '}
+                                            <span className="font-semibold text-foreground">
+                                                {formatDistanceToNow(showtime, { addSuffix: true, locale: vi })}
+                                            </span>
+                                        </p>
+                                        <p className="text-xs">
+                                            ({showtime.toLocaleString('vi-VN')})
+                                        </p>
+                                    </div>
+                                )}
+                            </CardContent>
+                            <CardFooter className="flex justify-between items-center">
+                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Icons.users className="h-4 w-4" />
+                                  <span>{room.participants?.length || 0} người</span>
+                               </div>
+                               <Button onClick={() => joinRoom(room.id)}>Tham gia</Button>
+                            </CardFooter>
+                        </Card>
+                    )
+                })}
+            </div>
+        </div>
+    );
+}
+
 function WatchTogetherPage() {
   const { firestore, user } = useFirebase();
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const playerRef = useRef<ReactPlayer>(null);
@@ -111,6 +196,8 @@ function WatchTogetherPage() {
     const queryRoomId = searchParams.get('roomId');
     if (queryRoomId) {
       setRoomId(queryRoomId);
+    } else {
+      setRoomId(null);
     }
   }, [searchParams]);
 
@@ -130,16 +217,21 @@ function WatchTogetherPage() {
     updateDocumentNonBlocking(roomRef, { participants: arrayUnion(participant) });
 
     return () => {
-      updateDocumentNonBlocking(roomRef, { participants: arrayRemove(participant) });
+      // Create a new ref inside the cleanup to avoid stale reference issues
+      const cleanupRoomRef = doc(firestore, 'watchRooms', roomRef.id);
+      updateDocumentNonBlocking(cleanupRoomRef, { participants: arrayRemove(participant) });
     };
-  }, [user, roomRef]);
+  }, [user, roomRef, firestore]);
 
   useEffect(() => {
     if (roomData && playerRef.current && isReady) {
       isUpdatingFromFirestore.current = true;
+
+      // Set videoUrl from roomData if it exists and is different
       if (roomData.videoUrl && videoUrl !== roomData.videoUrl) {
-        setVideoUrl(roomData.videoUrl);
+          setVideoUrl(roomData.videoUrl);
       }
+
       const playerCurrentTime = playerRef.current.getCurrentTime() || 0;
       if (Math.abs(playerCurrentTime - roomData.currentTime) > SYNC_THRESHOLD) {
         playerRef.current.seekTo(roomData.currentTime, 'seconds');
@@ -149,21 +241,6 @@ function WatchTogetherPage() {
       }, 500);
     }
   }, [roomData, isReady, videoUrl]);
-
-  const createRoom = () => {
-    if (!firestore || !user) return;
-    const newRoomId = generateId();
-    const newRoomRef = doc(firestore, 'watchRooms', newRoomId);
-    setDocumentNonBlocking(newRoomRef, {
-      isPlaying: false,
-      currentTime: 0,
-      createdAt: serverTimestamp(),
-      lastUpdatedBy: user.uid,
-      participants: [],
-    }, {});
-    router.push(`${pathname}?roomId=${newRoomId}`);
-    setRoomId(newRoomId);
-  };
   
   const updateVideoUrl = () => {
     if (!roomRef || !user) return;
@@ -197,17 +274,7 @@ function WatchTogetherPage() {
   const getInitials = (name: string) => name.charAt(0).toUpperCase();
 
   if (!roomId) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center text-center">
-        <Icons.watchTogether className="h-24 w-24 mb-4 text-primary" />
-        <h1 className="text-2xl font-bold mb-2">Xem phim chung</h1>
-        <p className="text-muted-foreground mb-6">Tạo một phòng mới để bắt đầu xem video với bạn bè.</p>
-        <Button onClick={createRoom}>
-            <Icons.add className="mr-2 h-4 w-4" />
-            Tạo phòng mới
-        </Button>
-      </div>
-    );
+    return <WatchRoomLobby />;
   }
 
   return (
@@ -215,8 +282,8 @@ function WatchTogetherPage() {
       <div className="lg:col-span-2 flex flex-col gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Phòng xem phim chung</CardTitle>
-            <CardDescription>Dán một link video YouTube để bắt đầu. Mời bạn bè bằng cách chia sẻ đường dẫn URL.</CardDescription>
+            <CardTitle>{roomData?.name || "Phòng xem phim chung"}</CardTitle>
+            <CardDescription>{roomData?.description || "Dán một link video YouTube để bắt đầu. Mời bạn bè bằng cách chia sẻ đường dẫn URL."}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
               <div className="flex gap-2">
@@ -232,10 +299,10 @@ function WatchTogetherPage() {
                   </Button>
               </div>
               <div className="aspect-video w-full bg-slate-900/50 rounded-lg overflow-hidden">
-                  {videoUrl && ReactPlayer.canPlay(videoUrl) ? (
+                  {(roomData?.videoUrl && ReactPlayer.canPlay(roomData.videoUrl)) ? (
                       <ReactPlayer
                           ref={playerRef}
-                          url={videoUrl}
+                          url={roomData.videoUrl}
                           width="100%"
                           height="100%"
                           controls

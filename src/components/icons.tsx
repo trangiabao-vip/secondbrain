@@ -22,6 +22,7 @@ import {
   Swords,
   Target,
   Trash2,
+  Users,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -53,4 +54,5 @@ export const Icons = {
   luckyPin: Star,
   watchTogether: Film,
   send: Send,
+  users: Users,
 };

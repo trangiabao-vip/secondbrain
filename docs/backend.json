@@ -231,6 +231,23 @@
       "type": "object",
       "description": "Represents a room for watching videos together.",
       "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the watch room."
+        },
+        "description": {
+          "type": "string",
+          "description": "A short description for the watch room."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Whether the room is visible to everyone."
+        },
+        "showtime": {
+          "type": "string",
+          "description": "The scheduled time for the video to start.",
+          "format": "date-time"
+        },
         "videoUrl": {
           "type": "string",
           "description": "The URL of the video to watch."
@@ -265,7 +282,7 @@
           "format": "date-time"
         }
       },
-      "required": ["isPlaying", "currentTime", "createdAt", "participants"]
+      "required": ["name", "isPlaying", "currentTime", "createdAt", "participants"]
     },
     "ChatMessage": {
       "title": "Chat Message",
