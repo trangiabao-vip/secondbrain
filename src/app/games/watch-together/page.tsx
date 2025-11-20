@@ -46,7 +46,7 @@ function WatchTogetherPage() {
 
   // Effect to handle state synchronization from Firestore
   useEffect(() => {
-    if (roomData && playerRef.current) {
+    if (roomData && playerRef.current && isReady) {
       isUpdatingFromFirestore.current = true;
 
       // Sync video URL
@@ -54,23 +54,19 @@ function WatchTogetherPage() {
         setVideoUrl(roomData.videoUrl);
       }
 
-      // Sync isPlaying state
-      if (roomData.isPlaying !== playerRef.current.getInternalPlayer()?.getPlayerState() === 1) {
-        // We let the player handle this via the `playing` prop
-      }
-
-      // Sync currentTime
+      // Sync currentTime - seek if the difference is significant
       const playerCurrentTime = playerRef.current.getCurrentTime() || 0;
       if (Math.abs(playerCurrentTime - roomData.currentTime) > SYNC_THRESHOLD) {
         playerRef.current.seekTo(roomData.currentTime, 'seconds');
       }
       
       // Let subsequent updates be from the user
+      // A small delay helps prevent race conditions
       setTimeout(() => {
         isUpdatingFromFirestore.current = false;
       }, 500);
     }
-  }, [roomData, videoUrl]);
+  }, [roomData, isReady]);
 
 
   const createRoom = () => {
@@ -92,20 +88,18 @@ function WatchTogetherPage() {
     updateDocumentNonBlocking(roomRef, { videoUrl, lastUpdatedBy: user.uid });
   };
   
-  const handlePlayerStateChange = (state: { payload?: any, type: string }) => {
-      if (isUpdatingFromFirestore.current || !roomRef || !user) return;
+  const handlePlayerStateChange = (state: 'play' | 'pause') => {
+      if (isUpdatingFromFirestore.current || !roomRef || !user || !isReady) return;
       
-      let isPlaying;
-      if (state.type === 'play') isPlaying = true;
-      if (state.type === 'pause') isPlaying = false;
+      const isPlaying = state === 'play';
 
-      if (isPlaying !== undefined && roomData?.isPlaying !== isPlaying) {
+      if (roomData?.isPlaying !== isPlaying) {
           updateDocumentNonBlocking(roomRef, { isPlaying, lastUpdatedBy: user.uid });
       }
   };
 
   const handleSeek = (seconds: number) => {
-    if (isUpdatingFromFirestore.current || !roomRef || !user) return;
+    if (isUpdatingFromFirestore.current || !roomRef || !user || !isReady) return;
      if (Math.abs((roomData?.currentTime || 0) - seconds) > SYNC_THRESHOLD) {
         updateDocumentNonBlocking(roomRef, { currentTime: seconds, lastUpdatedBy: user.uid });
      }
@@ -165,8 +159,8 @@ function WatchTogetherPage() {
                         controls
                         playing={roomData?.isPlaying}
                         onReady={() => setIsReady(true)}
-                        onPlay={() => handlePlayerStateChange({ type: 'play' })}
-                        onPause={() => handlePlayerStateChange({ type: 'pause' })}
+                        onPlay={() => handlePlayerStateChange('play')}
+                        onPause={() => handlePlayerStateChange('pause')}
                         onSeek={handleSeek}
                         config={{
                             youtube: {
@@ -180,7 +174,7 @@ function WatchTogetherPage() {
                     />
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                        <Icons.film className="h-16 w-16 mb-4"/>
+                        <Icons.watchTogether className="h-16 w-16 mb-4"/>
                         <p>Đang chờ video...</p>
                     </div>
                 )}
