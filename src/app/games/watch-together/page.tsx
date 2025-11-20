@@ -108,6 +108,20 @@ function ChatBox({ roomId }: { roomId: string }) {
 }
 
 function WatchRoomLobby() {
+    const { firestore } = useFirebase();
+    const router = useRouter();
+
+    const publicRoomsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'watchRooms'), where('isPublic', '==', true), orderBy('createdAt', 'desc'));
+    }, [firestore]);
+
+    const { data: publicRooms, isLoading } = useCollection<WatchRoom>(publicRoomsQuery);
+
+    const handleJoinRoom = (roomId: string) => {
+        router.push(`/games/watch-together?roomId=${roomId}`);
+    }
+
     return (
         <div className="container mx-auto p-4">
             <div className="flex items-center justify-between mb-6">
@@ -118,8 +132,43 @@ function WatchRoomLobby() {
                 <CreateRoomDialog />
             </div>
 
-             <div className="text-center py-16">
-                <p className="text-muted-foreground mt-2 mb-6">Tính năng sảnh chờ đang được bảo trì. <br/> Bạn vẫn có thể tạo phòng mới và mời bạn bè qua đường dẫn trực tiếp!</p>
+            {isLoading && <p>Đang tải các phòng...</p>}
+            
+            {!isLoading && (!publicRooms || publicRooms.length === 0) && (
+                 <div className="text-center py-16 border-2 border-dashed rounded-lg">
+                    <Icons.users className="h-12 w-12 mx-auto text-muted-foreground" />
+                    <h3 className="mt-4 text-lg font-semibold">Chưa có phòng công khai nào</h3>
+                    <p className="text-muted-foreground mt-2 mb-6">Hãy là người đầu tiên tạo một phòng và mời mọi người!</p>
+                    <CreateRoomDialog />
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {publicRooms?.map(room => (
+                    <Card key={room.id} className="flex flex-col">
+                        <CardHeader>
+                            <CardTitle className="truncate">{room.name}</CardTitle>
+                            <CardDescription className="truncate">{room.description || 'Không có mô tả'}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-grow space-y-2">
+                           {room.showtime && (
+                             <div className="text-sm text-muted-foreground flex items-center gap-2">
+                               <Icons.calendar className="h-4 w-4" />
+                               <span>Công chiếu: {format(room.showtime.toDate(), "HH:mm, dd/MM/yyyy", { locale: vi })}</span>
+                             </div>
+                           )}
+                           <div className="text-sm text-muted-foreground flex items-center gap-2">
+                               <Icons.users className="h-4 w-4" />
+                               <span>{room.participants?.length || 0} người đang xem</span>
+                           </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button className="w-full" onClick={() => handleJoinRoom(room.id)}>
+                                Tham gia phòng
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                ))}
             </div>
         </div>
     );
