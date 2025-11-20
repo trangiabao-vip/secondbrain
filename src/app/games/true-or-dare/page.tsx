@@ -62,6 +62,40 @@ const questionsByCategory = {
       "Nhìn vào mắt một người trong nhóm và nói một điều bạn ngưỡng mộ ở họ.",
     ],
   },
+  'ban-be': {
+    name: 'Bạn bè',
+    truths: [
+      "Kỷ niệm đáng nhớ nhất của bạn với người ngồi bên phải là gì?",
+      "Nếu phải chọn một người trong nhóm để cùng bị kẹt trên đảo hoang, bạn sẽ chọn ai và tại sao?",
+      "Bạn có bao giờ nói dối một người trong nhóm chưa? Nếu có, đó là gì?",
+      "Ấn tượng đầu tiên của bạn về người ngồi đối diện là gì?",
+      "Điều gì ở một người bạn trong nhóm làm bạn khó chịu nhưng bạn chưa bao giờ nói ra?",
+    ],
+    dares: [
+      "Kể một câu chuyện cười và phải làm ít nhất 3 người trong nhóm cười.",
+      "Bắt chước một người trong nhóm cho đến khi người khác đoán ra đó là ai.",
+      "Gửi tin nhắn cho crush của bạn bè và nói 'Tớ nghĩ bạn của tớ thích cậu đấy'.",
+      "Hãy để nhóm chọn một bức ảnh trong điện thoại của bạn và đăng nó lên story.",
+      "Khen ngợi từng người trong nhóm một câu chân thành.",
+    ],
+  },
+  'cap-doi': {
+    name: 'Cặp đôi',
+    truths: [
+      "Điều gì ở đối phương làm bạn yêu ngay từ cái nhìn đầu tiên?",
+      "Đâu là lần hẹn hò mà bạn nhớ nhất?",
+      "Bạn có một bí mật nhỏ nào chưa từng kể cho đối phương không?",
+      "Nếu có thể thay đổi một điều ở đối phương, bạn sẽ thay đổi điều gì?",
+      "Mục tiêu lớn nhất trong tương lai của hai bạn là gì?",
+    ],
+    dares: [
+      "Nhìn vào mắt đối phương và nói 'Anh yêu em' (hoặc 'Em yêu anh') một cách chân thành nhất trong 30 giây.",
+      "Hát một bài hát tình yêu cho đối phương nghe.",
+      "Đăng một bức ảnh chung của hai bạn lên mạng xã hội với caption 'My everything'.",
+      "Chuẩn bị một món ăn nhẹ cho đối phương ngay bây giờ.",
+      "Massage cho đối phương trong 5 phút.",
+    ],
+  },
 };
 
 type GameMode = 'truth' | 'dare' | null;
