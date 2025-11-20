@@ -5,10 +5,10 @@ import { GlobalScheduleView } from '@/components/details/GlobalScheduleView';
 import { TopicDetailView } from '@/components/details/TopicDetailView';
 import { TopicGrid } from '@/components/topics/TopicGrid';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
+import { AppLayout } from '@/components/layout/AppLayout';
 import { useAppContext } from '@/contexts/AppContext';
-import { usePathname } from 'next/navigation';
 
-export default function Page() {
+function AppPage() {
   const { 
     viewMode, 
     selectedInterestId, 
@@ -18,11 +18,10 @@ export default function Page() {
   } = useAppContext();
 
   const renderMainContent = () => {
-    // Logic to render content based on viewMode from context
     if (viewMode === 'global-schedule') {
       return <GlobalScheduleView />;
     }
-
+  
     // Default to 'interests' view logic
     if (selectedTopicId) {
       return <TopicDetailView key={selectedTopicId} />;
@@ -46,4 +45,13 @@ export default function Page() {
       {renderMainContent()}
     </AuthGuard>
   );
+}
+
+
+export default function Home() {
+  return (
+    <AppLayout>
+      <AppPage />
+    </AppLayout>
+  )
 }

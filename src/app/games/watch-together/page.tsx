@@ -2,12 +2,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useFirebase, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, serverTimestamp, arrayUnion, arrayRemove, collection, addDoc, query, orderBy, where } from 'firebase/firestore';
+import { doc, serverTimestamp, arrayUnion, arrayRemove, collection, addDoc, query, orderBy } from 'firebase/firestore';
 import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import ReactPlayer from 'react-player/youtube';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import { type WatchRoom, type ChatMessage, type Participant } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
@@ -15,9 +15,6 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CreateRoomDialog } from '@/components/games/watch-together/CreateRoomDialog';
-import { formatDistanceToNow, format } from 'date-fns';
-import { vi } from 'date-fns/locale';
-import Link from 'next/link';
 
 const SYNC_THRESHOLD = 2; // seconds
 
@@ -32,6 +29,7 @@ function ChatBox({ roomId }: { roomId: string }) {
   }, [firestore, roomId]);
 
   const { data: messages } = useCollection<ChatMessage>(messagesQuery);
+  const { toast } = useToast();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -108,16 +106,7 @@ function ChatBox({ roomId }: { roomId: string }) {
 }
 
 function WatchRoomLobby() {
-    const { firestore } = useFirebase();
     const router = useRouter();
-
-    // Temporarily disable public rooms query to avoid permission errors
-    const publicRoomsQuery = null;
-    const { data: publicRooms, isLoading } = useCollection<WatchRoom>(publicRoomsQuery);
-
-    const handleJoinRoom = (roomId: string) => {
-        router.push(`/games/watch-together?roomId=${roomId}`);
-    }
 
     return (
         <div className="container mx-auto p-4">
@@ -141,7 +130,6 @@ function WatchRoomLobby() {
 
 function WatchTogetherRoom() {
   const { firestore, user } = useFirebase();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const playerRef = useRef<ReactPlayer>(null);
