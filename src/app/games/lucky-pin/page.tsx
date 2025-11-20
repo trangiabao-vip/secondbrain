@@ -7,30 +7,30 @@ import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 
 export default function LuckyPinPage() {
-  const [players, setPlayers] = useState<string[]>(['Bảo', 'Trang', 'Ninh', 'Linh']);
-  const [newPlayer, setNewPlayer] = useState('');
+  const [items, setItems] = useState<string[]>(['Ăn sáng', 'Xem phim', 'Đọc sách', 'Chơi game']);
+  const [newItem, setNewItem] = useState('');
   const [spinning, setSpinning] = useState(false);
-  const [winner, setWinner] = useState<string | null>(null);
+  const [result, setResult] = useState<string | null>(null);
 
-  const addPlayer = () => {
-    if (newPlayer.trim() && !players.includes(newPlayer.trim())) {
-      setPlayers([...players, newPlayer.trim()]);
-      setNewPlayer('');
+  const addItem = () => {
+    if (newItem.trim() && !items.includes(newItem.trim())) {
+      setItems([...items, newItem.trim()]);
+      setNewItem('');
     }
   };
 
-  const removePlayer = (playerToRemove: string) => {
-    setPlayers(players.filter(p => p !== playerToRemove));
+  const removeItem = (itemToRemove: string) => {
+    setItems(items.filter(p => p !== itemToRemove));
   };
 
   const spinWheel = () => {
-    if (players.length < 2) return;
+    if (items.length < 2) return;
     setSpinning(true);
-    setWinner(null);
+    setResult(null);
     const spinDuration = Math.random() * 2000 + 2000; // 2-4 seconds
     setTimeout(() => {
-      const winnerIndex = Math.floor(Math.random() * players.length);
-      setWinner(players[winnerIndex]);
+      const winnerIndex = Math.floor(Math.random() * items.length);
+      setResult(items[winnerIndex]);
       setSpinning(false);
     }, spinDuration);
   };
@@ -42,23 +42,23 @@ export default function LuckyPinPage() {
         <div className="md:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle>Người chơi</CardTitle>
+              <CardTitle>Các lựa chọn</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
                 <Input
-                  value={newPlayer}
-                  onChange={(e) => setNewPlayer(e.target.value)}
-                  placeholder="Thêm người chơi mới"
-                  onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
+                  value={newItem}
+                  onChange={(e) => setNewItem(e.target.value)}
+                  placeholder="Thêm lựa chọn mới"
+                  onKeyDown={(e) => e.key === 'Enter' && addItem()}
                 />
-                <Button onClick={addPlayer}>Thêm</Button>
+                <Button onClick={addItem}>Thêm</Button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {players.map((player) => (
-                  <Badge key={player} variant="secondary" className="text-base">
-                    {player}
-                    <button onClick={() => removePlayer(player)} className="ml-2 rounded-full hover:bg-muted-foreground/20 p-0.5">
+                {items.map((item) => (
+                  <Badge key={item} variant="secondary" className="text-base">
+                    {item}
+                    <button onClick={() => removeItem(item)} className="ml-2 rounded-full hover:bg-muted-foreground/20 p-0.5">
                       <Icons.close className="h-3 w-3" />
                     </button>
                   </Badge>
@@ -71,10 +71,10 @@ export default function LuckyPinPage() {
         <div className="md:col-span-2">
           <Card className="min-h-[400px] flex flex-col items-center justify-center">
             <CardContent className="flex flex-col items-center justify-center text-center p-6 flex-grow">
-              {!spinning && !winner && (
+              {!spinning && !result && (
                 <div className="text-muted-foreground">
                   <Icons.luckyPin className="h-24 w-24 mx-auto mb-4" />
-                  <p>Thêm ít nhất 2 người chơi và bắt đầu quay!</p>
+                  <p>Thêm ít nhất 2 lựa chọn và bắt đầu quay!</p>
                 </div>
               )}
               {spinning && (
@@ -83,15 +83,15 @@ export default function LuckyPinPage() {
                     <p className="text-lg font-semibold">Đang quay...</p>
                  </div>
               )}
-              {!spinning && winner && (
+              {!spinning && result && (
                 <div className="flex flex-col items-center gap-4 text-center">
-                  <p className="text-lg text-muted-foreground">Người được chọn là:</p>
-                  <h2 className="text-5xl font-bold text-primary animate-pulse">{winner}</h2>
+                  <p className="text-lg text-muted-foreground">Kết quả là:</p>
+                  <h2 className="text-5xl font-bold text-primary animate-pulse">{result}</h2>
                 </div>
               )}
             </CardContent>
             <CardFooter className="w-full">
-              <Button onClick={spinWheel} disabled={spinning || players.length < 2} className="w-full text-lg py-6">
+              <Button onClick={spinWheel} disabled={spinning || items.length < 2} className="w-full text-lg py-6">
                 {spinning ? 'Đang quay...' : 'Quay'}
               </Button>
             </CardFooter>
