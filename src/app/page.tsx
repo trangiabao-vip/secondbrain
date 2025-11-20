@@ -21,7 +21,6 @@ export default function AppPage() {
       return <GlobalScheduleView />;
     }
 
-    // This handles the 'interests' view mode
     if (viewMode === 'interests') {
       if (selectedTopicId) {
         return <TopicDetailView key={selectedTopicId} />;
@@ -31,15 +30,16 @@ export default function AppPage() {
         return <TopicGrid key={selectedInterestId} />;
       }
     
-      if (!isDataLoading && interests.length === 0) {
+      // This will show welcome screen if data is loading OR if there are no interests.
+      if (isDataLoading || interests.length === 0) {
         return <WelcomeScreen />;
       }
     
-      // Default view when data is loading or when no specific item is selected
+      // Default view for 'interests' when no specific item is selected but data is loaded.
       return <WelcomeScreen />;
     }
-
-    // Fallback for when no viewmode matches.
+    
+    // Fallback for any other viewMode or initial state.
     return <WelcomeScreen />;
   };
 

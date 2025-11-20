@@ -90,11 +90,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
 
   const selectInterest = (id: string | null) => {
+    setViewMode('interests');
     setSelectedInterestId(id);
     setSelectedTopicId(null);
-    if (id !== null) {
-      setViewMode('interests');
-    }
   };
 
   const selectTopic = (id: string | null) => {

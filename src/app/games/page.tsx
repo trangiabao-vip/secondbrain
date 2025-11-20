@@ -30,7 +30,15 @@ const games = [
   }
 ];
 
-function GamesPage() {
+export default function GamesPage() {
+  const { setViewMode } = useAppContext();
+
+  // Ensure viewMode is set to 'games' when this page is rendered.
+  // This is important if navigating from a different view.
+  React.useEffect(() => {
+    setViewMode('games');
+  }, [setViewMode]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -52,7 +60,7 @@ function GamesPage() {
                 <CardDescription>{game.description}</CardDescription>
               </CardContent>
               <CardFooter className="p-4 pt-0 mt-auto">
-                  <Button className="w-full" disabled={game.href === '#'}>
+                  <Button className="w-full">
                       Chơi ngay
                   </Button>
               </CardFooter>
@@ -62,17 +70,4 @@ function GamesPage() {
       </div>
     </div>
   );
-}
-
-// This is the component that will be rendered by the Next.js router for this page.
-export default function GamesPageContainer() {
-  const { viewMode } = useAppContext();
-
-  // If viewMode has been changed by the sidebar, render the main content dispatcher.
-  if (viewMode === 'global-schedule' || viewMode === 'interests') {
-    return <AppPage />;
-  }
-
-  // Otherwise, render the games view.
-  return <GamesPage />;
 }

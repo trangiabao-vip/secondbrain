@@ -16,10 +16,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { EditInterestDialog } from "./EditInterestDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function InterestSidebar() {
   const { interests, selectedInterestId, selectInterest, deleteInterest, viewMode, setViewMode, isDataLoading } = useAppContext();
-  const isGameView = viewMode === 'games';
+  const pathname = usePathname();
+  const isGameView = pathname.startsWith('/games');
 
   if (isDataLoading) {
     return (
@@ -56,7 +58,7 @@ export function InterestSidebar() {
            <SidebarMenuItem>
               <SidebarMenuButton
                 onClick={() => setViewMode('global-schedule')}
-                isActive={viewMode === 'global-schedule'}
+                isActive={viewMode === 'global-schedule' && !isGameView}
                 tooltip="Lịch"
               >
                 <Icons.calendar />
@@ -69,7 +71,7 @@ export function InterestSidebar() {
                 isActive={isGameView}
                 tooltip="Game"
               >
-                <Link href="/games" onClick={() => setViewMode('games')}>
+                <Link href="/games">
                   <Icons.game />
                   <span>Game</span>
                 </Link>
@@ -82,7 +84,7 @@ export function InterestSidebar() {
             <SidebarMenuItem key={interest.id}>
               <SidebarMenuButton
                 onClick={() => selectInterest(interest.id)}
-                isActive={selectedInterestId === interest.id && viewMode === 'interests'}
+                isActive={selectedInterestId === interest.id && viewMode === 'interests' && !isGameView}
                 tooltip={interest.name}
               >
                 <Icons.interest />
