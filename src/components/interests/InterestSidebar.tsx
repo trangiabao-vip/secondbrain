@@ -22,6 +22,7 @@ export function InterestSidebar() {
   const { interests, selectedInterestId, selectInterest, deleteInterest, viewMode, setViewMode, isDataLoading } = useAppContext();
   const pathname = usePathname();
   const isGameView = pathname.startsWith('/games');
+  const isScheduleView = viewMode === 'global-schedule' && !isGameView;
 
   if (isDataLoading) {
     return (
@@ -56,13 +57,15 @@ export function InterestSidebar() {
       <SidebarContent className="p-2">
         <SidebarMenu>
            <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={() => setViewMode('global-schedule')}
-                isActive={viewMode === 'global-schedule' && !isGameView}
+             <SidebarMenuButton
+                asChild
+                isActive={isScheduleView}
                 tooltip="Lịch"
               >
-                <Icons.calendar />
-                <span>Lịch</span>
+                <Link href="/" onClick={() => setViewMode('global-schedule')}>
+                  <Icons.calendar />
+                  <span>Lịch</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
@@ -71,7 +74,7 @@ export function InterestSidebar() {
                 isActive={isGameView}
                 tooltip="Game"
               >
-                <Link href="/games">
+                <Link href="/games" onClick={() => setViewMode('games')}>
                   <Icons.game />
                   <span>Game</span>
                 </Link>
@@ -82,14 +85,16 @@ export function InterestSidebar() {
         <SidebarMenu>
           {interests.map((interest) => (
             <SidebarMenuItem key={interest.id}>
-              <SidebarMenuButton
-                onClick={() => selectInterest(interest.id)}
-                isActive={selectedInterestId === interest.id && viewMode === 'interests' && !isGameView}
-                tooltip={interest.name}
-              >
-                <Icons.interest />
-                <span>{interest.name}</span>
-              </SidebarMenuButton>
+               <SidebarMenuButton
+                  asChild
+                  isActive={selectedInterestId === interest.id && !isGameView && !isScheduleView}
+                  tooltip={interest.name}
+                >
+                  <Link href="/" onClick={() => selectInterest(interest.id)}>
+                    <Icons.interest />
+                    <span>{interest.name}</span>
+                  </Link>
+                </SidebarMenuButton>
               <div className="absolute top-1.5 right-1">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

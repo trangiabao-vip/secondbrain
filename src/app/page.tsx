@@ -6,6 +6,7 @@ import { TopicDetailView } from '@/components/details/TopicDetailView';
 import { TopicGrid } from '@/components/topics/TopicGrid';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { useAppContext } from '@/contexts/AppContext';
+import { usePathname } from 'next/navigation';
 
 export default function Page() {
   const { 
@@ -22,25 +23,21 @@ export default function Page() {
       return <GlobalScheduleView />;
     }
 
-    if (viewMode === 'interests') {
-      if (selectedTopicId) {
-        return <TopicDetailView key={selectedTopicId} />;
-      }
-    
-      if (selectedInterestId) {
-        return <TopicGrid key={selectedInterestId} />;
-      }
-    
-      // This will show welcome screen if data is loading OR if there are no interests.
-      if (isDataLoading || interests.length === 0) {
-        return <WelcomeScreen />;
-      }
-    
-      // Default view for 'interests' when no specific item is selected but data is loaded.
+    // Default to 'interests' view logic
+    if (selectedTopicId) {
+      return <TopicDetailView key={selectedTopicId} />;
+    }
+  
+    if (selectedInterestId) {
+      return <TopicGrid key={selectedInterestId} />;
+    }
+  
+    // This will show welcome screen if data is loading OR if there are no interests.
+    if (isDataLoading || interests.length === 0) {
       return <WelcomeScreen />;
     }
-    
-    // Fallback for any other viewMode or initial state.
+  
+    // Default view when no specific item is selected but data is loaded.
     return <WelcomeScreen />;
   };
 
