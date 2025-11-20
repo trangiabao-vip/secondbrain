@@ -225,6 +225,35 @@
         }
       },
       "required": ["title", "content", "topicId", "createdAt", "updatedAt", "userId"]
+    },
+    "WatchRoom": {
+      "title": "Watch Room",
+      "type": "object",
+      "description": "Represents a room for watching videos together.",
+      "properties": {
+        "videoUrl": {
+          "type": "string",
+          "description": "The URL of the video to watch."
+        },
+        "isPlaying": {
+          "type": "boolean",
+          "description": "The current playback state."
+        },
+        "currentTime": {
+          "type": "number",
+          "description": "The current playback time in seconds."
+        },
+        "lastUpdatedBy": {
+          "type": "string",
+          "description": "The UID of the user who last updated the state."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the room was created.",
+          "format": "date-time"
+        }
+      },
+      "required": ["isPlaying", "currentTime", "createdAt"]
     }
   },
   "auth": {
@@ -256,6 +285,10 @@
     "/wikiPages/{wikiPageId}": {
       "schema": { "$ref": "#/entities/WikiPage" },
       "description": "Top-level collection for wiki pages. Contains a userId for security rules."
+    },
+    "/watchRooms/{roomId}": {
+      "schema": { "$ref": "#/entities/WatchRoom" },
+      "description": "Collection for synchronized video watch rooms."
     }
   }
 }

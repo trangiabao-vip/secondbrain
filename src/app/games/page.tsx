@@ -4,13 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
 import Link from "next/link";
 import { useAppContext } from "@/contexts/AppContext";
-import { useEffect } from "react";
-import { usePathname } from "next/navigation";
-import { AuthGuard } from "@/components/auth/AuthGuard";
-import { GlobalScheduleView } from "@/components/details/GlobalScheduleView";
-import { TopicDetailView } from "@/components/details/TopicDetailView";
-import { TopicGrid } from "@/components/topics/TopicGrid";
-import { WelcomeScreen } from "@/components/WelcomeScreen";
+import { MainContent } from "../page";
 
 const games = [
   {
@@ -32,21 +26,11 @@ const games = [
     title: 'Xem phim chung',
     description: 'Cùng bạn bè và người thân xem những bộ phim yêu thích trong thời gian thực.',
     icon: Icons.watchTogether,
-    href: '#', // Placeholder link
+    href: '/games/watch-together',
   }
 ];
 
 function GamesView() {
-  const { setViewMode } = useAppContext();
-  const pathname = usePathname();
-
-  useEffect(() => {
-    // Set viewMode to games only if we are on the main games page
-    if (pathname === '/games') {
-      setViewMode('games');
-    }
-  }, [setViewMode, pathname]);
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -82,33 +66,13 @@ function GamesView() {
 
 // This is the component that will be rendered by the Next.js router for this page.
 export default function GamesPage() {
-  const { 
-    viewMode, 
-    selectedInterestId, 
-    selectedTopicId, 
-    interests, 
-    isDataLoading 
-  } = useAppContext();
+  const { viewMode } = useAppContext();
 
-  // If viewMode has been changed by the sidebar, render the corresponding view.
-  if (viewMode === 'global-schedule') {
-    return <GlobalScheduleView />;
-  }
-
-  if (viewMode === 'interests') {
-    if (selectedTopicId) {
-      return <TopicDetailView key={selectedTopicId} />;
-    }
-    if (selectedInterestId) {
-      return <TopicGrid key={selectedInterestId} />;
-    }
-    return <WelcomeScreen />;
+  // If viewMode has been changed by the sidebar, render the main content dispatcher.
+  if (viewMode === 'global-schedule' || viewMode === 'interests') {
+    return <MainContent />;
   }
 
   // Otherwise, render the games view.
-  return (
-    <AuthGuard>
-        <GamesView />
-    </AuthGuard>
-  );
+  return <GamesView />;
 }

@@ -63,6 +63,16 @@ export interface WikiPage {
   userId: string;
 }
 
+export interface WatchRoom {
+  id: string; // Firestore document ID
+  videoUrl?: string;
+  isPlaying: boolean;
+  currentTime: number;
+  lastUpdatedBy?: string;
+  createdAt: any;
+}
+
+
 export type DataType = {
   interests: Interest[];
   topics: Topic[];
