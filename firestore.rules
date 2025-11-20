@@ -51,7 +51,8 @@ service cloud.firestore {
        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
-    // WatchRooms can be read and written to by any authenticated user.
+    // WatchRooms can be listed by any signed in user.
+    // They can be read and written to by any authenticated user.
     match /watchRooms/{roomId} {
       allow list: if isSignedIn();
       allow get, write: if isSignedIn();
