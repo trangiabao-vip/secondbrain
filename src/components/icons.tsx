@@ -51,4 +51,5 @@ export const Icons = {
   trueOrDare: Swords,
   luckyPin: Star,
   watchTogether: Film,
+  film: Film,
 };
