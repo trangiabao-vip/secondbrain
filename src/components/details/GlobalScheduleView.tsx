@@ -26,75 +26,86 @@ type ScheduledItem = (Goal | Task) & { type: 'goal' | 'task', startDate: Date, e
 type PositionedItem = ScheduledItem & { top: number; height: number; left: number; width: number; };
 
 const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
-    if (items.length === 0) {
-        return [];
-    }
-
     const timedItems = items
         .map(item => {
             const startDate = getDateFromFirestore(item.startDate);
             if (!startDate) return null;
             const hasTime = getHours(startDate) !== 0 || getMinutes(startDate) !== 0;
             if (!hasTime) return null;
-
-            let displayStart = startDate;
-            let displayEnd = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 30); // Default to 30 min duration
-            
-            const durationMinutes = differenceInMinutes(displayEnd, displayStart);
-            if (durationMinutes <= 0) return null;
-
-            const startHour = getHours(displayStart);
-            const startMinutes = getMinutes(displayStart);
-            const top = (startHour * 64) + (startMinutes / 60 * 64);
-            const height = (durationMinutes / 60) * 64;
-            
-            return { ...item, top, height, startDate: displayStart, endDate: displayEnd };
+            let endDate = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 30);
+            return { ...item, startDate, endDate, top: 0, height: 0, left: 0, width: 0 };
         })
         .filter((item): item is NonNullable<typeof item> => item !== null)
         .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-    
+
+    if (timedItems.length === 0) return [];
+
     let eventGroups: PositionedItem[][] = [];
+    let currentGroup: PositionedItem[] = [];
 
     timedItems.forEach(event => {
-        let placed = false;
-        for (const group of eventGroups) {
-            const lastEventInGroup = group[group.length - 1];
-            if (event.startDate < lastEventInGroup.endDate!) {
-                group.push({ ...event, left: 0, width: 0 }); // Temporary values
-                placed = true;
-                break;
+        if (currentGroup.length === 0) {
+            currentGroup.push(event);
+        } else {
+            const lastEventInGroup = currentGroup[currentGroup.length - 1];
+            // Check if current event overlaps with the last event in the current group
+            const overlaps = currentGroup.some(groupedEvent => 
+                areIntervalsOverlapping(
+                    { start: event.startDate, end: event.endDate },
+                    { start: groupedEvent.startDate, end: groupedEvent.endDate }
+                )
+            );
+
+            if (overlaps) {
+                currentGroup.push(event);
+            } else {
+                eventGroups.push(currentGroup);
+                currentGroup = [event];
             }
         }
-        if (!placed) {
-            eventGroups.push([{ ...event, left: 0, width: 0 }]);
-        }
     });
+    if (currentGroup.length > 0) {
+        eventGroups.push(currentGroup);
+    }
+    
+    const finalLayout: PositionedItem[] = [];
 
-    let finalLayout: PositionedItem[] = [];
     eventGroups.forEach(group => {
-        let columns: PositionedItem[][] = [];
+        const columns: PositionedItem[][] = [];
+        group.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+
         group.forEach(event => {
-            let placedInColumn = false;
-            for (const column of columns) {
+            let placed = false;
+            for (let i = 0; i < columns.length; i++) {
+                const column = columns[i];
                 const lastEventInColumn = column[column.length - 1];
-                if (event.startDate >= lastEventInColumn.endDate!) {
+                if (event.startDate >= lastEventInColumn.endDate) {
                     column.push(event);
-                    placedInColumn = true;
+                    placed = true;
                     break;
                 }
             }
-            if (!placedInColumn) {
+            if (!placed) {
                 columns.push([event]);
             }
         });
 
-        const groupWidth = 100 / columns.length;
+        const numColumns = columns.length;
         columns.forEach((column, colIndex) => {
             column.forEach(event => {
+                const startHour = getHours(event.startDate);
+                const startMinutes = getMinutes(event.startDate);
+                const top = (startHour * 64) + (startMinutes / 60 * 64);
+
+                const durationMinutes = differenceInMinutes(event.endDate, event.startDate);
+                const height = (durationMinutes / 60) * 64;
+
                 finalLayout.push({
                     ...event,
-                    width: groupWidth,
-                    left: colIndex * groupWidth
+                    top,
+                    height,
+                    left: (100 / numColumns) * colIndex,
+                    width: 100 / numColumns,
                 });
             });
         });
