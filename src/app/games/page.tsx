@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
 import Link from "next/link";
-import { useAppContext } from "@/contexts/AppContext";
 
 const games = [
   {
@@ -31,14 +30,6 @@ const games = [
 ];
 
 export default function GamesPage() {
-  const { setViewMode } = useAppContext();
-
-  // Ensure viewMode is set to 'games' when this page is rendered.
-  // This is important if navigating from a different view.
-  React.useEffect(() => {
-    setViewMode('games');
-  }, [setViewMode]);
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
