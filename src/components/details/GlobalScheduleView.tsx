@@ -27,7 +27,7 @@ type PositionedItem = ScheduledItem & { top: number; height: number; left: numbe
 
 const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
     const positionedItems: PositionedItem[] = [];
-    
+
     const timedItems = items
         .map(item => {
             const startDate = getDateFromFirestore(item.startDate);
@@ -36,7 +36,7 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
             if (!hasTime) return null;
 
             let displayStart = startDate;
-            let displayEnd = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 15);
+            let displayEnd = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 30); // Default to 30 min duration
             
             const durationMinutes = differenceInMinutes(displayEnd, displayStart);
             if (durationMinutes <= 0) return null;
@@ -51,57 +51,101 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
         .filter((item): item is NonNullable<typeof item> => item !== null)
         .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 
-    let columns: Array<typeof timedItems> = [];
-    let lastEventEnding: Date | null = null;
+    // This function will hold groups of overlapping events
+    const eventGroups: (typeof timedItems)[] = [];
 
     timedItems.forEach(event => {
-        if (lastEventEnding && event.startDate >= lastEventEnding) {
-            packColumns(columns, positionedItems);
-            columns = [];
-            lastEventEnding = null;
-        }
-
         let placed = false;
-        for (let i = 0; i < columns.length; i++) {
-            const col = columns[i];
-            const lastInCol = col[col.length - 1];
-            if (lastInCol.endDate! <= event.startDate) {
-                col.push(event);
-                placed = true;
-                break;
+        // Try to place the event in an existing group
+        for (const group of eventGroups) {
+            // An event can belong to a group if it doesn't overlap with any event already in it.
+            // This is a simplification. A better approach is needed.
+            const overlaps = group.some(e => areIntervalsOverlapping(
+                { start: e.startDate, end: e.endDate! },
+                { start: event.startDate, end: event.endDate! }
+            ));
+
+            if (!overlaps) {
+                // This logic is flawed. We need to rethink.
+            }
+        }
+        
+        // A simple algorithm to find overlapping events and group them.
+        let groupFound = false;
+        if(eventGroups.length === 0){
+             eventGroups.push([event]);
+             groupFound = true;
+        } else {
+            for (const group of eventGroups) {
+                const lastEventInGroup = group[group.length -1];
+                 if(areIntervalsOverlapping(
+                    { start: lastEventInGroup.startDate, end: lastEventInGroup.endDate! },
+                    { start: event.startDate, end: event.endDate! }
+                 )) {
+                     group.push(event)
+                     groupFound = true;
+                     break;
+                 }
             }
         }
 
-        if (!placed) {
-            columns.push([event]);
-        }
-
-        if (!lastEventEnding || event.endDate! > lastEventEnding) {
-            lastEventEnding = event.endDate;
+        if(!groupFound) {
+             eventGroups.push([event]);
         }
     });
 
-    if (columns.length > 0) {
-        packColumns(columns, positionedItems);
+    const processGroup = (group: typeof timedItems) => {
+        const columns: (typeof timedItems)[] = [];
+        group.forEach(event => {
+            let placed = false;
+            for (const col of columns) {
+                const lastEvent = col[col.length - 1];
+                if (lastEvent.endDate! <= event.startDate) {
+                    col.push(event);
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed) {
+                columns.push([event]);
+            }
+        });
+        
+        const numColumns = columns.length;
+        columns.forEach((col, colIndex) => {
+            col.forEach(event => {
+                positionedItems.push({
+                    ...event,
+                    width: 100 / numColumns,
+                    left: (colIndex * 100) / numColumns,
+                });
+            });
+        });
     }
+
+    // This groups events that are overlapping in any way.
+    const groups: (typeof timedItems)[] = [];
+    timedItems.forEach(event => {
+        let addedToGroup = false;
+        for (const group of groups) {
+            const doesOverlap = group.some(e => areIntervalsOverlapping(
+                { start: event.startDate, end: event.endDate! },
+                { start: e.startDate, end: e.endDate! }
+            ));
+            if (doesOverlap) {
+                group.push(event);
+                addedToGroup = true;
+                break;
+            }
+        }
+        if (!addedToGroup) {
+            groups.push([event]);
+        }
+    });
+
+    groups.forEach(processGroup);
 
     return positionedItems;
-};
-
-
-const packColumns = (columns: any[][], positionedItems: any[]) => {
-    const numColumns = columns.length;
-    for (let i = 0; i < numColumns; i++) {
-        const col = columns[i];
-        for (let j = 0; j < col.length; j++) {
-            const event = col[j];
-            positionedItems.push({
-                ...event,
-                width: 100 / numColumns,
-                left: (i * 100) / numColumns,
-            });
-        }
-    }
 };
 
 
@@ -261,16 +305,16 @@ export function GlobalScheduleView() {
                           const content = (
                               <div
                                   className={cn(
-                                      "absolute rounded-lg p-2 shadow-lg z-10 border cursor-pointer hover:bg-opacity-40 overflow-hidden",
+                                      "absolute rounded-lg p-2 shadow-sm z-10 border cursor-pointer hover:bg-opacity-40 overflow-hidden text-white",
                                       item.type === 'goal' 
-                                          ? "bg-blue-900/30 border-blue-700 text-blue-100 hover:bg-blue-900/40"
-                                          : "bg-slate-700/30 border-slate-500 text-slate-100 hover:bg-slate-700/40"
+                                          ? "bg-blue-500/80 border-blue-700 hover:bg-blue-500"
+                                          : "bg-gray-600/80 border-gray-800 hover:bg-gray-600"
                                   )}
                                   style={{
                                       top: `${item.top}px`,
                                       height: `${Math.max(item.height - 2, 24)}px`,
-                                      left: `${item.left}%`,
-                                      width: `${item.width}%`,
+                                      left: `calc(${item.left}% + 1px)`,
+                                      width: `calc(${item.width}% - 2px)`,
                                   }}
                               >
                                   <p className="text-xs font-bold truncate flex items-center gap-1.5">
@@ -278,8 +322,7 @@ export function GlobalScheduleView() {
                                     {item.type === 'goal' ? (item as Goal).title : (item as Task).text}
                                   </p>
                                   <p className={cn(
-                                    "text-[10px]",
-                                    item.type === 'goal' ? "text-blue-300" : "text-slate-300"
+                                    "text-[10px] opacity-80"
                                   )}>
                                     {item.startDate && format(item.startDate, 'HH:mm')}
                                     {item.endDate && ` - ${format(getDateFromFirestore(item.endDate)!, 'HH:mm')}`}
