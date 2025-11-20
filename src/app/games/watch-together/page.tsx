@@ -97,84 +97,15 @@ function ChatBox({ roomId }: { roomId: string }) {
 }
 
 function WatchRoomLobby() {
-    const { firestore } = useFirebase();
-    const router = useRouter();
-    const pathname = usePathname();
-
-    const publicRoomsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return query(
-            collection(firestore, 'watchRooms'),
-            where('isPublic', '==', true),
-            orderBy('showtime', 'asc')
-        );
-    }, [firestore]);
-
-    const { data: publicRooms, isLoading } = useCollection<WatchRoom>(publicRoomsQuery);
-
-    const getDateFromFirestore = (date: any): Date | null => {
-        if (!date) return null;
-        if (date.seconds) return new Date(date.seconds * 1000);
-        return null;
-    };
-
-    const joinRoom = (roomId: string) => {
-        router.push(`${pathname}?roomId=${roomId}`);
-    }
-
     return (
-        <div className="container mx-auto p-4">
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Xem phim chung</h1>
-                    <p className="text-muted-foreground">Tham gia một phòng công khai hoặc tạo phòng riêng của bạn.</p>
+        <div className="container mx-auto p-4 flex items-center justify-center h-full">
+            <div className="text-center">
+                <div className="flex justify-center items-center mb-6">
+                    <Icons.watchTogether className="h-16 w-16 text-primary" />
                 </div>
+                <h1 className="text-2xl font-bold">Xem phim chung</h1>
+                <p className="text-muted-foreground mt-2 mb-6">Tạo một phòng mới để bắt đầu xem video với bạn bè.</p>
                 <CreateRoomDialog />
-            </div>
-
-            <h2 className="text-xl font-semibold mb-4">Phòng công chiếu</h2>
-            {isLoading && <p>Đang tải phòng...</p>}
-            {!isLoading && publicRooms && publicRooms.length === 0 && (
-                 <div className="flex h-64 flex-col items-center justify-center text-center border-2 border-dashed rounded-lg">
-                    <Icons.watchTogether className="h-16 w-16 mb-4 text-primary" />
-                    <h2 className="text-xl font-bold mb-2">Không có phòng công chiếu</h2>
-                    <p className="text-muted-foreground mb-6">Chưa có phòng nào được lên lịch. Hãy là người đầu tiên!</p>
-                </div>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {publicRooms?.map(room => {
-                    const showtime = getDateFromFirestore(room.showtime);
-                    return (
-                        <Card key={room.id} className="flex flex-col">
-                            <CardHeader>
-                                <CardTitle>{room.name}</CardTitle>
-                                <CardDescription>{room.description}</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                                {showtime && (
-                                    <div className="text-sm text-muted-foreground">
-                                        <p>
-                                            Công chiếu {' '}
-                                            <span className="font-semibold text-foreground">
-                                                {formatDistanceToNow(showtime, { addSuffix: true, locale: vi })}
-                                            </span>
-                                        </p>
-                                        <p className="text-xs">
-                                            ({showtime.toLocaleString('vi-VN')})
-                                        </p>
-                                    </div>
-                                )}
-                            </CardContent>
-                            <CardFooter className="flex justify-between items-center">
-                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <Icons.users className="h-4 w-4" />
-                                  <span>{room.participants?.length || 0} người</span>
-                               </div>
-                               <Button onClick={() => joinRoom(room.id)}>Tham gia</Button>
-                            </CardFooter>
-                        </Card>
-                    )
-                })}
             </div>
         </div>
     );
