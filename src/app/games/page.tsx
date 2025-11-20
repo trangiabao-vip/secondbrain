@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
 import Link from "next/link";
 import { useAppContext } from "@/contexts/AppContext";
-import { MainContent } from "../page";
+import AppPage from "../page";
 
 const games = [
   {
@@ -30,7 +30,7 @@ const games = [
   }
 ];
 
-function GamesView() {
+function GamesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -65,14 +65,14 @@ function GamesView() {
 }
 
 // This is the component that will be rendered by the Next.js router for this page.
-export default function GamesPage() {
+export default function GamesPageContainer() {
   const { viewMode } = useAppContext();
 
   // If viewMode has been changed by the sidebar, render the main content dispatcher.
   if (viewMode === 'global-schedule' || viewMode === 'interests') {
-    return <MainContent />;
+    return <AppPage />;
   }
 
   // Otherwise, render the games view.
-  return <GamesView />;
+  return <GamesPage />;
 }
