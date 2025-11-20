@@ -108,26 +108,6 @@ function ChatBox({ roomId }: { roomId: string }) {
 }
 
 function WatchRoomLobby() {
-    const { firestore } = useFirebase();
-
-    const publicRoomsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return query(
-            collection(firestore, 'watchRooms'),
-            where('isPublic', '==', true),
-            orderBy('createdAt', 'desc')
-        );
-    }, [firestore]);
-
-    const { data: publicRooms, isLoading } = useCollection<WatchRoom>(publicRoomsQuery);
-
-    const getDateFromFirestore = (date: any): Date | null => {
-        if (!date) return null;
-        if (typeof date === 'string') return new Date(date);
-        if (date.seconds) return new Date(date.seconds * 1000);
-        return null;
-    };
-
     return (
         <div className="container mx-auto p-4">
             <div className="flex items-center justify-between mb-6">
@@ -138,40 +118,8 @@ function WatchRoomLobby() {
                 <CreateRoomDialog />
             </div>
 
-            {isLoading && <p>Đang tải danh sách phòng...</p>}
-            
-            {!isLoading && (!publicRooms || publicRooms.length === 0) && (
-                 <div className="text-center py-16">
-                    <p className="text-muted-foreground mt-2 mb-6">Hiện chưa có phòng công khai nào. <br/> Hãy tạo một phòng mới và mời bạn bè!</p>
-                </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {publicRooms?.map(room => (
-                    <Card key={room.id}>
-                        <CardHeader>
-                            <CardTitle>{room.name}</CardTitle>
-                            <CardDescription>{room.description || 'Không có mô tả'}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                             {room.showtime && getDateFromFirestore(room.showtime) && (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <Icons.calendar className="h-4 w-4" />
-                                    <span>Công chiếu: {format(getDateFromFirestore(room.showtime)!, "HH:mm, dd/MM/yyyy", { locale: vi })}</span>
-                                </div>
-                            )}
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Icons.users className="h-4 w-4" />
-                                <span>{room.participants.length} người đang tham gia</span>
-                            </div>
-                        </CardContent>
-                        <CardFooter>
-                            <Button asChild className="w-full">
-                                <Link href={`/games/watch-together?roomId=${room.id}`}>Tham gia</Link>
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                ))}
+             <div className="text-center py-16">
+                <p className="text-muted-foreground mt-2 mb-6">Tính năng sảnh chờ đang được bảo trì. <br/> Bạn vẫn có thể tạo phòng mới và mời bạn bè qua đường dẫn trực tiếp!</p>
             </div>
         </div>
     );
