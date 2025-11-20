@@ -6,7 +6,6 @@ import { TopicDetailView } from '@/components/details/TopicDetailView';
 import { TopicGrid } from '@/components/topics/TopicGrid';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { useAppContext } from '@/contexts/AppContext';
-import { usePathname } from 'next/navigation';
 
 export default function Page() {
   const { 
@@ -17,15 +16,8 @@ export default function Page() {
     isDataLoading 
   } = useAppContext();
 
-  const pathname = usePathname();
-
   const renderMainContent = () => {
-    // If we are on a different page (like /games), let that page's content render.
-    // The main page logic should only run for the root path.
-    if (pathname !== '/') {
-        return null;
-    }
-
+    // Logic to render content based on viewMode from context
     if (viewMode === 'global-schedule') {
       return <GlobalScheduleView />;
     }
