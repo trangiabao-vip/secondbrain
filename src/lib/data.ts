@@ -63,13 +63,27 @@ export interface WikiPage {
   userId: string;
 }
 
+export interface Participant {
+  uid: string;
+  displayName: string;
+}
+
 export interface WatchRoom {
   id: string; // Firestore document ID
   videoUrl?: string;
   isPlaying: boolean;
   currentTime: number;
   lastUpdatedBy?: string;
+  participants: Participant[];
   createdAt: any;
+}
+
+export interface ChatMessage {
+    id: string;
+    text: string;
+    userId: string;
+    displayName: string;
+    createdAt: any;
 }
 
 

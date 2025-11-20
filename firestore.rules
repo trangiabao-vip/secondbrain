@@ -54,6 +54,12 @@ service cloud.firestore {
     // WatchRooms can be read and written to by any authenticated user.
     match /watchRooms/{roomId} {
       allow read, write: if isSignedIn();
+      
+      // Messages can be read and created by any authenticated user.
+      match /messages/{messageId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      }
     }
   }
 }

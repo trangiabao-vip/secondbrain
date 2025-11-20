@@ -16,6 +16,7 @@ import {
   Lightbulb,
   MoreHorizontal,
   Plus,
+  Send,
   Sparkles,
   Star,
   Swords,
@@ -51,5 +52,5 @@ export const Icons = {
   trueOrDare: Swords,
   luckyPin: Star,
   watchTogether: Film,
-  film: Film,
+  send: Send,
 };

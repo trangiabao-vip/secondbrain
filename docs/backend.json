@@ -247,13 +247,40 @@
           "type": "string",
           "description": "The UID of the user who last updated the state."
         },
+        "participants": {
+          "type": "array",
+          "description": "List of users currently in the room.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "uid": { "type": "string" },
+              "displayName": { "type": "string" }
+            },
+            "required": ["uid", "displayName"]
+          }
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp indicating when the room was created.",
           "format": "date-time"
         }
       },
-      "required": ["isPlaying", "currentTime", "createdAt"]
+      "required": ["isPlaying", "currentTime", "createdAt", "participants"]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "type": "object",
+      "description": "Represents a chat message in a watch room.",
+      "properties": {
+        "text": { "type": "string" },
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["text", "userId", "displayName", "createdAt"]
     }
   },
   "auth": {
@@ -289,6 +316,10 @@
     "/watchRooms/{roomId}": {
       "schema": { "$ref": "#/entities/WatchRoom" },
       "description": "Collection for synchronized video watch rooms."
+    },
+    "/watchRooms/{roomId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Sub-collection for chat messages within a watch room."
     }
   }
 }
