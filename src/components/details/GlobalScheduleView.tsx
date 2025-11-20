@@ -26,7 +26,9 @@ type ScheduledItem = (Goal | Task) & { type: 'goal' | 'task', startDate: Date, e
 type PositionedItem = ScheduledItem & { top: number; height: number; left: number; width: number; };
 
 const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
-    const positionedItems: PositionedItem[] = [];
+    if (items.length === 0) {
+        return [];
+    }
 
     const timedItems = items
         .map(item => {
@@ -50,102 +52,55 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
         })
         .filter((item): item is NonNullable<typeof item> => item !== null)
         .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-
-    // This function will hold groups of overlapping events
-    const eventGroups: (typeof timedItems)[] = [];
+    
+    let eventGroups: PositionedItem[][] = [];
 
     timedItems.forEach(event => {
         let placed = false;
-        // Try to place the event in an existing group
         for (const group of eventGroups) {
-            // An event can belong to a group if it doesn't overlap with any event already in it.
-            // This is a simplification. A better approach is needed.
-            const overlaps = group.some(e => areIntervalsOverlapping(
-                { start: e.startDate, end: e.endDate! },
-                { start: event.startDate, end: event.endDate! }
-            ));
-
-            if (!overlaps) {
-                // This logic is flawed. We need to rethink.
-            }
-        }
-        
-        // A simple algorithm to find overlapping events and group them.
-        let groupFound = false;
-        if(eventGroups.length === 0){
-             eventGroups.push([event]);
-             groupFound = true;
-        } else {
-            for (const group of eventGroups) {
-                const lastEventInGroup = group[group.length -1];
-                 if(areIntervalsOverlapping(
-                    { start: lastEventInGroup.startDate, end: lastEventInGroup.endDate! },
-                    { start: event.startDate, end: event.endDate! }
-                 )) {
-                     group.push(event)
-                     groupFound = true;
-                     break;
-                 }
-            }
-        }
-
-        if(!groupFound) {
-             eventGroups.push([event]);
-        }
-    });
-
-    const processGroup = (group: typeof timedItems) => {
-        const columns: (typeof timedItems)[] = [];
-        group.forEach(event => {
-            let placed = false;
-            for (const col of columns) {
-                const lastEvent = col[col.length - 1];
-                if (lastEvent.endDate! <= event.startDate) {
-                    col.push(event);
-                    placed = true;
-                    break;
-                }
-            }
-            if (!placed) {
-                columns.push([event]);
-            }
-        });
-        
-        const numColumns = columns.length;
-        columns.forEach((col, colIndex) => {
-            col.forEach(event => {
-                positionedItems.push({
-                    ...event,
-                    width: 100 / numColumns,
-                    left: (colIndex * 100) / numColumns,
-                });
-            });
-        });
-    }
-
-    // This groups events that are overlapping in any way.
-    const groups: (typeof timedItems)[] = [];
-    timedItems.forEach(event => {
-        let addedToGroup = false;
-        for (const group of groups) {
-            const doesOverlap = group.some(e => areIntervalsOverlapping(
-                { start: event.startDate, end: event.endDate! },
-                { start: e.startDate, end: e.endDate! }
-            ));
-            if (doesOverlap) {
-                group.push(event);
-                addedToGroup = true;
+            const lastEventInGroup = group[group.length - 1];
+            if (event.startDate < lastEventInGroup.endDate!) {
+                group.push({ ...event, left: 0, width: 0 }); // Temporary values
+                placed = true;
                 break;
             }
         }
-        if (!addedToGroup) {
-            groups.push([event]);
+        if (!placed) {
+            eventGroups.push([{ ...event, left: 0, width: 0 }]);
         }
     });
 
-    groups.forEach(processGroup);
+    let finalLayout: PositionedItem[] = [];
+    eventGroups.forEach(group => {
+        let columns: PositionedItem[][] = [];
+        group.forEach(event => {
+            let placedInColumn = false;
+            for (const column of columns) {
+                const lastEventInColumn = column[column.length - 1];
+                if (event.startDate >= lastEventInColumn.endDate!) {
+                    column.push(event);
+                    placedInColumn = true;
+                    break;
+                }
+            }
+            if (!placedInColumn) {
+                columns.push([event]);
+            }
+        });
 
-    return positionedItems;
+        const groupWidth = 100 / columns.length;
+        columns.forEach((column, colIndex) => {
+            column.forEach(event => {
+                finalLayout.push({
+                    ...event,
+                    width: groupWidth,
+                    left: colIndex * groupWidth
+                });
+            });
+        });
+    });
+
+    return finalLayout;
 };
 
 
