@@ -52,7 +52,7 @@ service cloud.firestore {
     }
 
     // WatchRooms can be listed by any signed in user.
-    // They can be read and written to by any authenticated user.
+    // They can be read (get) and written to by any authenticated user.
     match /watchRooms/{roomId} {
       allow list: if isSignedIn();
       allow get, write: if isSignedIn();
