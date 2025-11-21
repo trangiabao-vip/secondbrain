@@ -26,6 +26,13 @@ const games = [
     description: 'Cùng bạn bè và người thân xem những bộ phim yêu thích trong thời gian thực.',
     icon: Icons.watchTogether,
     href: '/games/watch-together',
+  },
+  {
+    id: 'business-card',
+    title: 'Danh thiếp',
+    description: 'Tạo và xem trước danh thiếp cá nhân của bạn một cách nhanh chóng và đơn giản.',
+    icon: Icons.businessCard,
+    href: '/games/business-card',
   }
 ];
 

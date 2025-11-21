@@ -24,6 +24,7 @@ import {
   Trash2,
   Users,
   X,
+  BookUser,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -55,4 +56,5 @@ export const Icons = {
   watchTogether: Film,
   send: Send,
   users: Users,
+  businessCard: BookUser,
 };
