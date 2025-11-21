@@ -44,8 +44,7 @@ export default function GamesPage() {
       </div>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {games.map((game) => (
-          <Link href={game.href} key={game.id} className="no-underline">
-            <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg h-full">
+            <Card key={game.id} className="flex flex-col overflow-hidden transition-all hover:shadow-lg h-full">
               <CardHeader className="p-4">
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -58,12 +57,11 @@ export default function GamesPage() {
                 <CardDescription>{game.description}</CardDescription>
               </CardContent>
               <CardFooter className="p-4 pt-0 mt-auto">
-                  <Button className="w-full">
-                      Chơi ngay
+                  <Button asChild className="w-full">
+                      <Link href={game.href}>Chơi ngay</Link>
                   </Button>
               </CardFooter>
             </Card>
-          </Link>
         ))}
       </div>
     </div>
