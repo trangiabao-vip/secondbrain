@@ -67,8 +67,7 @@ service cloud.firestore {
     // Business cards can be read by anyone (publicly shareable).
     // They can only be created, updated, or deleted by their owner.
     match /businessCards/{cardId} {
-      allow get;
-      allow list: if isSignedIn() && request.query.where.userId == request.auth.uid;
+      allow read; // Allow public read access for both get and list
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
