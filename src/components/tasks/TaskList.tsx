@@ -12,6 +12,7 @@ import type { Task, TaskDifficulty, TaskStatus } from "@/lib/data";
 import { Badge } from "../ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { Label } from "../ui/label";
 
 const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
@@ -106,13 +107,26 @@ export function TaskList({ goalId, tasks: customTasks }: { goalId?: string, task
                 {task.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.notes}</p>}
                 
                 {task.customProperties && Object.keys(task.customProperties).length > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap mt-2">
-                    {Object.entries(task.customProperties).map(([key, value]) => (
-                      <Badge key={key} variant="outline" className="font-normal text-xs">
-                        <span className="font-semibold mr-1">{key}:</span>
-                        <span>{value}</span>
-                      </Badge>
-                    ))}
+                  <div className="flex items-center gap-x-4 gap-y-2 flex-wrap mt-2">
+                    {Object.entries(task.customProperties).map(([key, value]) => {
+                       const lowerValue = String(value).toLowerCase();
+                       if (lowerValue === 'true' || lowerValue === 'false') {
+                         return (
+                           <div key={key} className="flex items-center gap-2">
+                             <Checkbox checked={lowerValue === 'true'} disabled id={`task-prop-${task.id}-${key}`} />
+                             <Label htmlFor={`task-prop-${task.id}-${key}`} className="text-xs font-medium text-muted-foreground">
+                               {key}
+                             </Label>
+                           </div>
+                         );
+                       }
+                       return (
+                         <Badge key={key} variant="outline" className="font-normal text-xs">
+                           <span className="font-semibold mr-1">{key}:</span>
+                           <span>{String(value)}</span>
+                         </Badge>
+                       );
+                    })}
                   </div>
                 )}
               </div>

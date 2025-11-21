@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { AddTopicDialog } from "../topics/AddTopicDialog";
+import { Checkbox } from "../ui/checkbox";
 
 const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
@@ -142,13 +143,26 @@ export function GoalsView() {
                                   )}
                               </div>
                                {goal.customProperties && Object.keys(goal.customProperties).length > 0 && (
-                                <div className="flex items-center gap-2 flex-wrap mt-2">
-                                  {Object.entries(goal.customProperties).map(([key, value]) => (
-                                    <Badge key={key} variant="outline" className="font-normal">
-                                      <span className="font-semibold mr-1">{key}:</span>
-                                      <span>{value}</span>
-                                    </Badge>
-                                  ))}
+                                <div className="flex items-center gap-x-4 gap-y-2 flex-wrap mt-2">
+                                  {Object.entries(goal.customProperties).map(([key, value]) => {
+                                      const lowerValue = String(value).toLowerCase();
+                                      if (lowerValue === 'true' || lowerValue === 'false') {
+                                        return (
+                                          <div key={key} className="flex items-center gap-2">
+                                            <Checkbox checked={lowerValue === 'true'} disabled id={`goal-prop-${goal.id}-${key}`} />
+                                            <Label htmlFor={`goal-prop-${goal.id}-${key}`} className="text-sm font-medium text-muted-foreground">
+                                              {key}
+                                            </Label>
+                                          </div>
+                                        );
+                                      }
+                                      return (
+                                        <Badge key={key} variant="outline" className="font-normal">
+                                          <span className="font-semibold mr-1">{key}:</span>
+                                          <span>{String(value)}</span>
+                                        </Badge>
+                                      );
+                                  })}
                                 </div>
                               )}
                               <Progress value={calculateProgress(goal.id)} className="h-2 w-full max-w-sm mt-1" />
