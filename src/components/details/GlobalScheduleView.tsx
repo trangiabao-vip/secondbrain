@@ -31,7 +31,9 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
             const startDate = getDateFromFirestore(item.startDate);
             if (!startDate) return null;
             const hasTime = getHours(startDate) !== 0 || getMinutes(startDate) !== 0;
-            if (!hasTime) return null;
+            // Only process items that have a specific time. All-day items are handled separately.
+            if (!hasTime && differenceInMinutes(getDateFromFirestore(item.endDate)!, startDate) >= 1440) return null;
+
             let endDate = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 30);
             return { ...item, startDate, endDate, top: 0, height: 0, left: 0, width: 0 };
         })
@@ -45,9 +47,7 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
         let currentGroup: PositionedItem[] = [timedItems[0]];
         for (let i = 1; i < timedItems.length; i++) {
             const event = timedItems[i];
-            const lastEventInGroup = currentGroup[currentGroup.length - 1];
-            
-            const groupEndTime = currentGroup.reduce((maxEnd, ev) => ev.endDate > maxEnd ? ev.endDate : maxEnd, currentGroup[0].endDate);
+            const groupEndTime = currentGroup.reduce((maxEnd, ev) => (ev.endDate && ev.endDate > maxEnd ? ev.endDate : maxEnd), currentGroup[0].endDate!);
 
             if (event.startDate < groupEndTime) {
                 currentGroup.push(event);
@@ -70,7 +70,7 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
             for (let i = 0; i < columns.length; i++) {
                 const column = columns[i];
                 const lastEventInColumn = column[column.length - 1];
-                if (!areIntervalsOverlapping({start: event.startDate, end: event.endDate}, {start: lastEventInColumn.startDate, end: lastEventInColumn.endDate})) {
+                if (!lastEventInColumn || !areIntervalsOverlapping({start: event.startDate, end: event.endDate!}, {start: lastEventInColumn.startDate, end: lastEventInColumn.endDate!})) {
                     column.push(event);
                     placed = true;
                     break;
@@ -88,7 +88,7 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
                 const startMinutes = getMinutes(event.startDate);
                 const top = (startHour * 64) + (startMinutes / 60 * 64);
 
-                const durationMinutes = differenceInMinutes(event.endDate, event.startDate);
+                const durationMinutes = differenceInMinutes(event.endDate!, event.startDate);
                 const height = (durationMinutes / 60) * 64;
 
                 finalLayout.push({
@@ -137,7 +137,8 @@ export function GlobalScheduleView() {
       .filter(item => {
         const startDate = getDateFromFirestore(item.startDate);
         if (!startDate) return false;
-        const endDate = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 15);
+        // Use a default duration (e.g., 30 mins) if endDate is not present
+        const endDate = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 30);
         
         const itemInterval = { start: startDate, end: endDate };
         const dayInterval = { start: dayStart, end: dayEnd };
@@ -146,9 +147,9 @@ export function GlobalScheduleView() {
       })
       .map(item => {
         const itemStart = getDateFromFirestore(item.startDate)!;
-        const itemEnd = getDateFromFirestore(item.endDate) || setMinutes(itemStart, getMinutes(itemStart) + 15);
+        const itemEnd = getDateFromFirestore(item.endDate) || setMinutes(itemStart, getMinutes(itemStart) + 30);
 
-        // Clamp the event's start and end times to the current day
+        // Clamp the event's start and end times to the current day for correct visualization
         const displayStart = max([itemStart, dayStart]);
         const displayEnd = min([itemEnd, dayEnd]);
 
@@ -165,14 +166,19 @@ export function GlobalScheduleView() {
         const startDate = getDateFromFirestore(item.startDate);
         if (!startDate) return false;
         
-        const hasTime = getHours(startDate) !== 0 || getMinutes(startDate) !== 0;
+        const endDate = getDateFromFirestore(item.endDate);
+        const duration = endDate ? differenceInMinutes(endDate, startDate) : 0;
         
+        // It's an all-day event if it has no time or spans 24h or more, and it overlaps with the current day
+        const isAllDayLike = (getHours(startDate) === 0 && getMinutes(startDate) === 0 && duration >= 1439) || isSameDay(startDate, day);
+        const hasTime = getHours(startDate) !== 0 || getMinutes(startDate) !== 0;
+
         return isSameDay(startDate, day) && !hasTime;
     });
   }
 
   const goToPreviousWeek = () => setCurrentDate(prev => addDays(prev, -7));
-  const goToNextWeek = () => setCurrentDate(prev => addDays(prev, 6));
+  const goToNextWeek = () => setCurrentDate(prev => addDays(prev, 7));
   const goToToday = () => setCurrentDate(new Date());
 
   const statusColors: Record<GoalStatus, string> = {
