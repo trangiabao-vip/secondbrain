@@ -90,6 +90,29 @@ export interface ChatMessage {
     createdAt: any;
 }
 
+export interface SocialLinks {
+  github?: string;
+  linkedin?: string;
+  facebook?: string;
+  instagram?: string;
+  x?: string;
+}
+
+export interface BusinessCard {
+    id: string;
+    name: string;
+    title: string;
+    company?: string;
+    phone?: string;
+    email?: string;
+    website?: string;
+    accentColor?: string;
+    socials?: SocialLinks;
+    userId: string;
+    createdAt: any;
+    updatedAt?: any;
+}
+
 
 export type DataType = {
   interests: Interest[];
@@ -108,3 +131,5 @@ export const initialData: DataType = {
   tasks: [],
   wikiPages: [],
 };
+
+    

@@ -298,6 +298,33 @@
         }
       },
       "required": ["text", "userId", "displayName", "createdAt"]
+    },
+    "BusinessCard": {
+      "title": "Business Card",
+      "type": "object",
+      "description": "Represents a user's digital business card.",
+      "properties": {
+        "name": { "type": "string" },
+        "title": { "type": "string" },
+        "company": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "website": { "type": "string" },
+        "accentColor": { "type": "string", "description": "A hex color code." },
+        "socials": {
+          "type": "object",
+          "properties": {
+            "github": { "type": "string" },
+            "linkedin": { "type": "string" },
+            "facebook": { "type": "string" },
+            "instagram": { "type": "string" },
+            "x": { "type": "string" }
+          }
+        },
+        "userId": { "type": "string", "description": "The ID of the user who owns this card." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "title", "userId", "createdAt"]
     }
   },
   "auth": {
@@ -337,6 +364,12 @@
     "/watchRooms/{roomId}/messages/{messageId}": {
       "schema": { "$ref": "#/entities/ChatMessage" },
       "description": "Sub-collection for chat messages within a watch room."
+    },
+    "/businessCards/{cardId}": {
+      "schema": { "$ref": "#/entities/BusinessCard" },
+      "description": "Collection for digital business cards."
     }
   }
 }
+
+    
