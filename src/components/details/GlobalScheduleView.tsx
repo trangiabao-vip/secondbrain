@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from "@/contexts/AppContext";
 import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, parseISO, getMinutes, differenceInMinutes, startOfDay, endOfDay, areIntervalsOverlapping, max, min } from "date-fns";
@@ -109,6 +109,14 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
 export function GlobalScheduleView() {
   const { goals, tasks } = useAppContext();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+        setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    return () => clearInterval(timer);
+  }, []);
 
   const week = useMemo(() => {
     const start = startOfWeek(currentDate, { locale: vi });
@@ -175,7 +183,7 @@ export function GlobalScheduleView() {
 
         return isSameDay(startDate, day) && !hasTime;
     });
-  }
+  };
 
   const goToPreviousWeek = () => setCurrentDate(prev => addDays(prev, -7));
   const goToNextWeek = () => setCurrentDate(prev => addDays(prev, 7));
@@ -187,6 +195,8 @@ export function GlobalScheduleView() {
     'hoàn thành': 'bg-green-500/80 border-green-700 hover:bg-green-500',
     'thất bại': 'bg-red-500/80 border-red-700 hover:bg-red-500',
   }
+
+  const timeIndicatorTop = (getHours(currentTime) + getMinutes(currentTime) / 60) * 64;
 
   return (
     <div className="flex gap-6 h-full">
@@ -237,9 +247,10 @@ export function GlobalScheduleView() {
               {week.map(day => {
                 const dayItems = getScheduledItemsForDay(day);
                 const layout = calculateLayout(dayItems);
+                const isToday = isSameDay(day, new Date());
                 return (
-                  <div key={day.toISOString()} className="border-l">
-                    <div className={`h-10 border-b text-center py-1 sticky top-0 bg-background z-10 ${isSameDay(day, new Date()) ? 'text-primary' : ''}`}>
+                  <div key={day.toISOString()} className="border-l relative">
+                    <div className={`h-10 border-b text-center py-1 sticky top-0 bg-background z-10 ${isToday ? 'text-primary' : ''}`}>
                       <p className="text-xs">{format(day, 'eee', { locale: vi })}</p>
                       <p className="font-semibold text-lg">{format(day, 'd')}</p>
                     </div>
@@ -271,6 +282,14 @@ export function GlobalScheduleView() {
                       {hours.map(hour => (
                         <div key={hour} className="h-16 border-b relative"></div>
                       ))}
+                       {isToday && (
+                          <div className="absolute w-full z-20" style={{ top: `${timeIndicatorTop}px` }}>
+                              <div className="relative">
+                                  <div className="h-0.5 bg-red-500"></div>
+                                  <div className="absolute -left-1 -top-1 w-2 h-2 rounded-full bg-red-500"></div>
+                              </div>
+                          </div>
+                      )}
                       {layout.map(item => {
                           const content = (
                               <div
