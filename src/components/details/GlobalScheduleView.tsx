@@ -8,7 +8,7 @@ import { Icons } from "../icons";
 import { Button } from "../ui/button";
 import { EditGoalDialog } from "../goals/EditGoalDialog";
 import { EditTaskDialog } from "../tasks/EditTaskDialog";
-import { Goal, Task } from "@/lib/data";
+import { Goal, Task, GoalStatus } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -41,30 +41,21 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
     if (timedItems.length === 0) return [];
 
     let eventGroups: PositionedItem[][] = [];
-    let currentGroup: PositionedItem[] = [];
-
-    timedItems.forEach(event => {
-        if (currentGroup.length === 0) {
-            currentGroup.push(event);
-        } else {
+    if (timedItems.length > 0) {
+        let currentGroup: PositionedItem[] = [timedItems[0]];
+        for (let i = 1; i < timedItems.length; i++) {
+            const event = timedItems[i];
             const lastEventInGroup = currentGroup[currentGroup.length - 1];
-            // Check if current event overlaps with the last event in the current group
-            const overlaps = currentGroup.some(groupedEvent => 
-                areIntervalsOverlapping(
-                    { start: event.startDate, end: event.endDate },
-                    { start: groupedEvent.startDate, end: groupedEvent.endDate }
-                )
-            );
+            
+            const groupEndTime = currentGroup.reduce((maxEnd, ev) => ev.endDate > maxEnd ? ev.endDate : maxEnd, currentGroup[0].endDate);
 
-            if (overlaps) {
+            if (event.startDate < groupEndTime) {
                 currentGroup.push(event);
             } else {
                 eventGroups.push(currentGroup);
                 currentGroup = [event];
             }
         }
-    });
-    if (currentGroup.length > 0) {
         eventGroups.push(currentGroup);
     }
     
@@ -79,7 +70,7 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
             for (let i = 0; i < columns.length; i++) {
                 const column = columns[i];
                 const lastEventInColumn = column[column.length - 1];
-                if (event.startDate >= lastEventInColumn.endDate) {
+                if (!areIntervalsOverlapping({start: event.startDate, end: event.endDate}, {start: lastEventInColumn.startDate, end: lastEventInColumn.endDate})) {
                     column.push(event);
                     placed = true;
                     break;
@@ -184,6 +175,13 @@ export function GlobalScheduleView() {
   const goToNextWeek = () => setCurrentDate(prev => addDays(prev, 6));
   const goToToday = () => setCurrentDate(new Date());
 
+  const statusColors: Record<GoalStatus, string> = {
+    'chưa bắt đầu': 'bg-gray-500/80 border-gray-700 hover:bg-gray-500',
+    'đang làm': 'bg-blue-500/80 border-blue-700 hover:bg-blue-500',
+    'hoàn thành': 'bg-green-500/80 border-green-700 hover:bg-green-500',
+    'thất bại': 'bg-red-500/80 border-red-700 hover:bg-red-500',
+  }
+
   return (
     <div className="flex gap-6 h-full">
       <div className="w-64 hidden @5xl/main:block">
@@ -271,10 +269,8 @@ export function GlobalScheduleView() {
                           const content = (
                               <div
                                   className={cn(
-                                      "absolute rounded-lg p-2 shadow-sm z-10 border cursor-pointer hover:bg-opacity-40 overflow-hidden text-white",
-                                      item.type === 'goal' 
-                                          ? "bg-blue-500/80 border-blue-700 hover:bg-blue-500"
-                                          : "bg-gray-600/80 border-gray-800 hover:bg-gray-600"
+                                      "absolute rounded-lg p-2 shadow-sm z-10 border cursor-pointer hover:bg-opacity-90 overflow-hidden text-white",
+                                      statusColors[item.status]
                                   )}
                                   style={{
                                       top: `${item.top}px`,
