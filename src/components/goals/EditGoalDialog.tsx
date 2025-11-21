@@ -210,7 +210,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                 </Popover>
                  {startDate && (
                   <Input 
-                    type="time" _
+                    type="time"
                     value={startTime}
                     onChange={e => setStartTime(e.target.value)}
                     className="w-32"
@@ -273,7 +273,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
               <div className="space-y-2">
                 {customProperties.map((prop) => (
                   <div key={prop.id} className="flex items-center gap-2">
-                    <Input 
+                    <Input
                       placeholder="Tên thuộc tính" 
                       value={prop.key}
                       onChange={(e) => handlePropertyChange(prop.id, 'key', e.target.value)}

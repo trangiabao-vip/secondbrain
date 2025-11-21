@@ -209,7 +209,7 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
               <div className="space-y-2">
                 {customProperties.map((prop) => (
                   <div key={prop.id} className="flex items-center gap-2">
-                    <Input _
+                    <Input
                       placeholder="Tên thuộc tính" 
                       value={prop.key}
                       onChange={(e) => handlePropertyChange(prop.id, 'key', e.target.value)}
