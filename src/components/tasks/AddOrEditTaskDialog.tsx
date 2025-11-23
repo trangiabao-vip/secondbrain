@@ -248,6 +248,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
                     <SelectItem value="đang làm">Đang làm</SelectItem>
                     <SelectItem value="hoàn thành">Hoàn thành</SelectItem>
                     <SelectItem value="thất bại">Thất bại</SelectItem>
+                    <SelectItem value="huỷ">Huỷ</SelectItem>
                     </SelectContent>
                 </Select>
                 </div>

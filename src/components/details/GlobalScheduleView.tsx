@@ -194,6 +194,7 @@ export function GlobalScheduleView() {
     'đang làm': 'bg-blue-500/80 border-blue-700 hover:bg-blue-500',
     'hoàn thành': 'bg-green-500/80 border-green-700 hover:bg-green-500',
     'thất bại': 'bg-red-500/80 border-red-700 hover:bg-red-500',
+    'huỷ': 'bg-orange-500/80 border-orange-700 hover:bg-orange-500',
   }
 
   const timeIndicatorTop = (getHours(currentTime) + getMinutes(currentTime) / 60) * 64;

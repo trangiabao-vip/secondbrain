@@ -33,6 +33,7 @@ const statusConfig: Record<TaskStatus, { color: string; label: string }> = {
     'đang làm': { color: 'bg-blue-500', label: 'Đang làm' },
     'hoàn thành': { color: 'bg-green-500', label: 'Hoàn thành' },
     'thất bại': { color: 'bg-red-500', label: 'Thất bại' },
+    'huỷ': { color: 'bg-orange-500', label: 'Huỷ' },
 };
 
 export function TaskList({ goalId, tasks: customTasks }: { goalId?: string, tasks?: Task[] }) {

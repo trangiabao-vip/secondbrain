@@ -1,6 +1,6 @@
 
-export type GoalStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại';
-export type TaskStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại';
+export type GoalStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại' | 'huỷ';
+export type TaskStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại' | 'huỷ';
 export type GoalPriority = 'Thấp' | 'Vừa' | 'Cao';
 export type TaskDifficulty = 'Dễ' | 'Vừa' | 'Khó';
 

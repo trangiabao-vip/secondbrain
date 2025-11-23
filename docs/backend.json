@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -106,7 +107,7 @@
         "status": {
           "type": "string",
           "description": "The current status of the goal.",
-          "enum": ["chưa bắt đầu", "đang làm", "hoàn thành", "thất bại"]
+          "enum": ["chưa bắt đầu", "đang làm", "hoàn thành", "thất bại", "huỷ"]
         },
         "priority": {
           "type": "string",
@@ -166,7 +167,7 @@
         "status": {
           "type": "string",
           "description": "The current status of the task.",
-          "enum": ["chưa bắt đầu", "đang làm", "hoàn thành", "thất bại"]
+          "enum": ["chưa bắt đầu", "đang làm", "hoàn thành", "thất bại", "huỷ"]
         },
         "difficulty": {
             "type": "string",
@@ -371,5 +372,3 @@
     }
   }
 }
-
-    
