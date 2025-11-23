@@ -104,6 +104,7 @@ export default function WhoIsTheSpyPage() {
     const [numPlayers, setNumPlayers] = useState(4);
     const [numSpies, setNumSpies] = useState(1);
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
+    const [isRevealed, setIsRevealed] = useState(false);
 
     const [wordPair, setWordPair] = useState({ civilian: '', spy: '' });
     const [revealedPlayer, setRevealedPlayer] = useState<Player | null>(null);
@@ -142,10 +143,12 @@ export default function WhoIsTheSpyPage() {
         
         setPlayers(playerList);
         setCurrentPlayerIndex(0);
+        setIsRevealed(false);
         setGameState('distribution');
     };
 
     const handleNextPlayer = () => {
+        setIsRevealed(false); // Hide word for next player
         if (currentPlayerIndex < players.length - 1) {
             setCurrentPlayerIndex(prev => prev + 1);
         } else {
@@ -215,15 +218,34 @@ export default function WhoIsTheSpyPage() {
                 whileHover={{ scale: 1.05 }}
                 className="w-full max-w-sm mx-auto"
             >
-                <Card className="min-h-[200px] flex items-center justify-center cursor-pointer group" onClick={(e) => (e.currentTarget.querySelector('.back')?.classList.toggle('hidden'))}>
-                    <div className="front text-center p-6">
-                        <Icons.whoIsTheSpy className="h-16 w-16 mx-auto mb-4 text-primary" />
-                        <h3 className="text-xl font-bold">Nhấn để xem từ khóa</h3>
-                    </div>
-                    <div className="back hidden absolute p-6 text-center">
-                         <h3 className="text-3xl font-bold tracking-widest">{players[currentPlayerIndex].word}</h3>
-                         <p className="text-sm text-muted-foreground mt-2">Ghi nhớ từ này và nhấn Tiếp tục</p>
-                    </div>
+                <Card className="min-h-[200px] flex items-center justify-center cursor-pointer group" onClick={() => setIsRevealed(!isRevealed)}>
+                    <AnimatePresence mode="wait">
+                        {isRevealed ? (
+                            <motion.div
+                                key="back"
+                                initial={{ opacity: 0, rotateY: -90 }}
+                                animate={{ opacity: 1, rotateY: 0 }}
+                                exit={{ opacity: 0, rotateY: 90 }}
+                                transition={{ duration: 0.3 }}
+                                className="p-6 text-center"
+                            >
+                                <h3 className="text-3xl font-bold tracking-widest">{players[currentPlayerIndex].word}</h3>
+                                <p className="text-sm text-muted-foreground mt-2">Ghi nhớ từ này và nhấn Tiếp tục</p>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="front"
+                                initial={{ opacity: 0, rotateY: -90 }}
+                                animate={{ opacity: 1, rotateY: 0 }}
+                                exit={{ opacity: 0, rotateY: 90 }}
+                                transition={{ duration: 0.3 }}
+                                className="text-center p-6"
+                            >
+                                <Icons.whoIsTheSpy className="h-16 w-16 mx-auto mb-4 text-primary" />
+                                <h3 className="text-xl font-bold">Nhấn để xem từ khóa</h3>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </Card>
             </motion.div>
             <Button className="mt-8" onClick={handleNextPlayer}>
