@@ -65,6 +65,23 @@ export const Icons = {
   linkedin: Linkedin,
   facebook: Facebook,
   instagram: Instagram,
+  whoIsTheSpy: ({ className }: { className?: string }) => (
+    <svg 
+      className={className}
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    >
+      <path d="M12 2a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h0a3 3 0 0 0 3-3V5a3 3 0 0 0-3-3Z" />
+      <path d="M18.7 13.3a9 9 0 1 0-13.4 0" />
+      <path d="M12 12v10" />
+      <path d="M12 12a6 6 0 0 0-6 6" />
+      <path d="M12 12a6 6 0 0 1 6 6" />
+    </svg>
+  ),
   x: ({ className }: { className?: string }) => (
     <svg
       className={className}
@@ -83,5 +100,3 @@ export const Icons = {
     </svg>
   ),
 };
-
-    

@@ -33,6 +33,13 @@ const games = [
     description: 'Tạo và xem trước danh thiếp cá nhân của bạn một cách nhanh chóng và đơn giản.',
     icon: Icons.businessCard,
     href: '/games/business-card',
+  },
+  {
+    id: 'who-is-the-spy',
+    title: 'Ai là gián điệp',
+    description: 'Một trò chơi suy luận xã hội, nơi người thường phải tìm ra gián điệp có từ khóa khác biệt.',
+    icon: Icons.whoIsTheSpy,
+    href: '/games/who-is-the-spy',
   }
 ];
 
