@@ -12,17 +12,88 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Users, AlertTriangle } from 'lucide-react';
 
 const wordPairs = [
-    { civilian: "Mặt trời", spy: "Mặt trăng" },
-    { civilian: "Sữa", spy: "Nước" },
-    { civilian: "Điện thoại", spy: "Máy tính bảng" },
-    { civilian: "Ghế", spy: "Bàn" },
-    { civilian: "Sách", spy: "Tạp chí" },
-    { civilian: "Chó", spy: "Mèo" },
-    { civilian: "Cà phê", spy: "Trà" },
-    { civilian: "Bóng đá", spy: "Bóng rổ" },
-    { civilian: "Guitar", spy: "Piano" },
-    { civilian: "Mùa hè", spy: "Mùa đông" },
+  // Đồ vật
+  { civilian: "Ghế", spy: "Bàn" },
+  { civilian: "Sách", spy: "Tạp chí" },
+  { civilian: "Điện thoại", spy: "Máy tính bảng" },
+  { civilian: "Kính", spy: "Gương" },
+  { civilian: "Giường", spy: "Sofa" },
+  { civilian: "Chìa khóa", spy: "Ổ khóa" },
+  { civilian: "Bút", spy: "Bút chì" },
+  { civilian: "Dao", spy: "Kéo" },
+  { civilian: "TV", spy: "Màn hình máy tính" },
+  { civilian: "Tủ lạnh", spy: "Tủ đông" },
+
+  // Động vật
+  { civilian: "Chó", spy: "Mèo" },
+  { civilian: "Sư tử", spy: "Hổ" },
+  { civilian: "Voi", spy: "Tê giác" },
+  { civilian: "Cá mập", spy: "Cá heo" },
+  { civilian: "Đại bàng", spy: "Diều hâu" },
+  { civilian: "Gà", spy: "Vịt" },
+  { civilian: "Ngựa", spy: "Lừa" },
+  { civilian: "Rắn", spy: "Lươn" },
+  { civilian: "Khỉ", spy: "Vượn" },
+  { civilian: "Gấu", spy: "Sói" },
+
+  // Thực phẩm & Đồ uống
+  { civilian: "Sữa", spy: "Nước" },
+  { civilian: "Cà phê", spy: "Trà" },
+  { civilian: "Cơm", spy: "Phở" },
+  { civilian: "Táo", spy: "Cam" },
+  { civilian: "Bánh mì", spy: "Bánh quy" },
+  { civilian: "Kem", spy: "Sữa chua" },
+  { civilian: "Pizza", spy: "Hamburger" },
+  { civilian: "Nước ngọt", spy: "Nước ép" },
+  { civilian: "Khoai tây", spy: "Khoai lang" },
+  { civilian: "Sô cô la", spy: "Kẹo" },
+
+  // Thiên nhiên & Hiện tượng
+  { civilian: "Mặt trời", spy: "Mặt trăng" },
+  { civilian: "Mùa hè", spy: "Mùa đông" },
+  { civilian: "Sông", spy: "Biển" },
+  { civilian: "Núi", spy: "Đồi" },
+  { civilian: "Mưa", spy: "Tuyết" },
+  { civilian: "Ngày", spy: "Đêm" },
+  { civilian: "Lửa", spy: "Băng" },
+  { civilian: "Sa mạc", spy: "Rừng rậm" },
+  { civilian: "Gió", spy: "Bão" },
+  { civilian: "Sao", spy: "Hành tinh" },
+
+  // Nghề nghiệp
+  { civilian: "Bác sĩ", spy: "Y tá" },
+  { civilian: "Giáo viên", spy: "Giảng viên" },
+  { civilian: "Cảnh sát", spy: "Lính cứu hỏa" },
+  { civilian: "Đầu bếp", spy: "Thợ làm bánh" },
+  { civilian: "Ca sĩ", spy: "Nhạc sĩ" },
+  { civilian: "Diễn viên", spy: "Đạo diễn" },
+  { civilian: "Lập trình viên", spy: "Nhà thiết kế web" },
+  { civilian: "Luật sư", spy: "Thẩm phán" },
+  { civilian: "Phi công", spy: "Tiếp viên hàng không" },
+  { civilian: "Nhà báo", spy: "Nhiếp ảnh gia" },
+
+  // Phương tiện
+  { civilian: "Ô tô", spy: "Xe máy" },
+  { civilian: "Xe đạp", spy: "Ván trượt" },
+  { civilian: "Máy bay", spy: "Trực thăng" },
+  { civilian: "Tàu hỏa", spy: "Tàu điện ngầm" },
+  { civilian: "Thuyền", spy: "Du thuyền" },
+
+  // Thể thao
+  { civilian: "Bóng đá", spy: "Bóng rổ" },
+  { civilian: "Bơi lội", spy: "Lặn" },
+  { civilian: "Cầu lông", spy: "Quần vợt" },
+  { civilian: "Chạy bộ", spy: "Đi bộ" },
+  { civilian: "Cờ vua", spy: "Cờ tướng" },
+
+  // Trừu tượng
+  { civilian: "Tình yêu", spy: "Tình bạn" },
+  { civilian: "Hạnh phúc", spy: "Nỗi buồn" },
+  { civilian: "Giấc mơ", spy: "Hiện thực" },
+  { civilian: "Quá khứ", spy: "Tương lai" },
+  { civilian: "Khoa học", spy: "Nghệ thuật" }
 ];
+
 
 type GameState = 'setup' | 'distribution' | 'playing' | 'reveal';
 type Player = { name: string; word: string; isSpy: boolean; revealed: boolean };
