@@ -1,5 +1,5 @@
 'use client';
-import { useState, type ReactNode, useEffect } from 'react';
+import { useState, type ReactNode, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -54,11 +54,12 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
   const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(initialGoalId);
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const isInitialized = useRef(false);
 
   const topicGoals = goals.filter(g => g.topicId === selectedTopic?.id);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !isInitialized.current) {
       if (mode === 'edit' && taskId) {
         const task = getTaskById(taskId);
         if (task) {
@@ -93,6 +94,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
           } else {
             setCustomProperties([]);
           }
+          isInitialized.current = true;
         }
       } else {
         // Reset for 'add' mode
@@ -106,7 +108,12 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
         setEndTime('10:00');
         setSelectedGoalId(initialGoalId);
         setCustomProperties([]);
+        isInitialized.current = true;
       }
+    }
+
+    if (!isOpen) {
+        isInitialized.current = false;
     }
   }, [isOpen, taskId, getTaskById, mode, initialGoalId]);
 

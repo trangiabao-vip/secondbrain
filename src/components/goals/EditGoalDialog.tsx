@@ -1,5 +1,5 @@
 'use client';
-import { useState, type ReactNode, useEffect } from 'react';
+import { useState, type ReactNode, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -46,9 +46,10 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
   const [status, setStatus] = useState<GoalStatus>('chưa bắt đầu');
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const isInitialized = useRef(false);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !isInitialized.current) {
       const goal = getGoalById(goalId);
       if (goal) {
         setGoalTitle(goal.title);
@@ -81,7 +82,11 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
         } else {
           setCustomProperties([]);
         }
+        isInitialized.current = true;
       }
+    }
+    if (!isOpen) {
+      isInitialized.current = false;
     }
   }, [isOpen, goalId, getGoalById]);
 
