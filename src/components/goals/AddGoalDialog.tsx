@@ -7,6 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -154,6 +156,7 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
                         mode="single"
                         selected={startDate}
                         onSelect={setStartDate}
+                        month={startDate}
                         initialFocus
                     />
                     </PopoverContent>
@@ -188,6 +191,7 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
                         mode="single"
                         selected={endDate}
                         onSelect={setEndDate}
+                        month={endDate}
                         initialFocus
                     />
                     </PopoverContent>
@@ -230,12 +234,15 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
                 Thêm thuộc tính
               </Button>
             </div>
-            <div className="flex justify-end pt-2">
-                <Button type="submit" onClick={handleAddGoal}>
-                    Thêm mục tiêu
-                </Button>
-            </div>
         </div>
+        <DialogFooter>
+            <DialogClose asChild>
+                <Button variant="outline">Hủy</Button>
+            </DialogClose>
+            <Button type="submit" onClick={handleAddGoal}>
+                Thêm mục tiêu
+            </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

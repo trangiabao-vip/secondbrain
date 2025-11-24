@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -272,6 +273,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
                         mode="single"
                         selected={startDate}
                         onSelect={setStartDate}
+                        month={startDate}
                         initialFocus
                     />
                     </PopoverContent>
@@ -306,6 +308,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
                         mode="single"
                         selected={endDate}
                         onSelect={setEndDate}
+                        month={endDate}
                         initialFocus
                     />
                     </PopoverContent>
@@ -362,9 +365,14 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
                     </Button>
                 </div>
             ) : <div></div>}
-            <Button type="submit" onClick={handleSubmit}>
-                {mode === 'edit' ? 'Lưu thay đổi' : 'Thêm nhiệm vụ'}
-            </Button>
+            <div className='flex gap-2'>
+                <DialogClose asChild>
+                    <Button variant="outline">Hủy</Button>
+                </DialogClose>
+                <Button type="submit" onClick={handleSubmit}>
+                    {mode === 'edit' ? 'Lưu thay đổi' : 'Thêm nhiệm vụ'}
+                </Button>
+            </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -204,6 +205,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                         mode="single"
                         selected={startDate}
                         onSelect={setStartDate}
+                        month={startDate}
                         initialFocus
                     />
                     </PopoverContent>
@@ -238,6 +240,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                         mode="single"
                         selected={endDate}
                         onSelect={setEndDate}
+                        month={endDate}
                         initialFocus
                     />
                     </PopoverContent>
@@ -307,9 +310,14 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                   Nhân bản
               </Button>
           </div>
-          <Button type="submit" onClick={handleUpdateGoal}>
-              Lưu thay đổi
-          </Button>
+          <div className="flex gap-2">
+            <DialogClose asChild>
+                <Button variant="outline">Hủy</Button>
+            </DialogClose>
+            <Button type="submit" onClick={handleUpdateGoal}>
+                Lưu thay đổi
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
