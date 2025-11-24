@@ -108,12 +108,12 @@ export function WikiPageDialog({ mode, pageId, children }: WikiPageDialogProps) 
               </div>
             </>
           ) : (
-            <div className="prose dark:prose-invert max-w-none">
+            <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
               <p>{content}</p>
             </div>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="sm:justify-between pt-2">
           {mode === 'view' && !isEditing && (
             <Button onClick={() => setIsEditing(true)}>
                 <Icons.edit className="mr-2 h-4 w-4" /> Chỉnh sửa
@@ -125,7 +125,7 @@ export function WikiPageDialog({ mode, pageId, children }: WikiPageDialogProps) 
                 <Button onClick={handleSubmit}>Lưu thay đổi</Button>
              </>
           )}
-           {mode !== 'view' && (
+           {(mode !== 'view' && !isEditing) && (
              <DialogClose asChild>
                 <Button variant="outline">Hủy</Button>
              </DialogClose>
