@@ -49,7 +49,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
   const isInitialized = useRef(false);
 
   useEffect(() => {
-    if (isOpen && !isInitialized.current) {
+    if (isOpen) {
       const goal = getGoalById(goalId);
       if (goal) {
         setGoalTitle(goal.title);
@@ -58,20 +58,18 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
         setPriority(goal.priority || 'Vừa');
         
         const sDate = getDateFromFirestore(goal.startDate);
+        setStartDate(sDate);
         if (sDate) {
-          setStartDate(sDate);
           setStartTime(format(sDate, "HH:mm"));
         } else {
-          setStartDate(undefined);
           setStartTime('09:00');
         }
 
         const eDate = getDateFromFirestore(goal.endDate);
+        setEndDate(eDate);
         if (eDate) {
-          setEndDate(eDate);
           setEndTime(format(eDate, "HH:mm"));
         } else {
-          setEndDate(undefined);
           setEndTime('10:00');
         }
 
@@ -82,11 +80,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
         } else {
           setCustomProperties([]);
         }
-        isInitialized.current = true;
       }
-    }
-    if (!isOpen) {
-      isInitialized.current = false;
     }
   }, [isOpen, goalId, getGoalById]);
 
@@ -210,7 +204,6 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                         mode="single"
                         selected={startDate}
                         onSelect={setStartDate}
-                        month={startDate}
                         initialFocus
                     />
                     </PopoverContent>
@@ -245,7 +238,6 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                         mode="single"
                         selected={endDate}
                         onSelect={setEndDate}
-                        month={endDate}
                         initialFocus
                     />
                     </PopoverContent>

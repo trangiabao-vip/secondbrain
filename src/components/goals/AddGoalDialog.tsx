@@ -156,7 +156,6 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
                         mode="single"
                         selected={startDate}
                         onSelect={setStartDate}
-                        month={startDate}
                         initialFocus
                     />
                     </PopoverContent>
@@ -191,7 +190,6 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
                         mode="single"
                         selected={endDate}
                         onSelect={setEndDate}
-                        month={endDate}
                         initialFocus
                     />
                     </PopoverContent>

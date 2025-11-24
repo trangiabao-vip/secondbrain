@@ -59,7 +59,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
   const topicGoals = goals.filter(g => g.topicId === selectedTopic?.id);
 
   useEffect(() => {
-    if (isOpen && !isInitialized.current) {
+    if (isOpen) {
       if (mode === 'edit' && taskId) {
         const task = getTaskById(taskId);
         if (task) {
@@ -70,20 +70,18 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
           setSelectedGoalId(task.goalId || undefined);
           
           const sDate = getDateFromFirestore(task.startDate);
+          setStartDate(sDate);
           if (sDate) {
-            setStartDate(sDate);
             setStartTime(format(sDate, "HH:mm"));
           } else {
-            setStartDate(undefined);
             setStartTime('09:00');
           }
 
           const eDate = getDateFromFirestore(task.endDate);
+          setEndDate(eDate);
           if (eDate) {
-            setEndDate(eDate);
             setEndTime(format(eDate, "HH:mm"));
           } else {
-            setEndDate(undefined);
             setEndTime('10:00');
           }
 
@@ -94,7 +92,6 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
           } else {
             setCustomProperties([]);
           }
-          isInitialized.current = true;
         }
       } else {
         // Reset for 'add' mode
@@ -108,12 +105,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
         setEndTime('10:00');
         setSelectedGoalId(initialGoalId);
         setCustomProperties([]);
-        isInitialized.current = true;
       }
-    }
-
-    if (!isOpen) {
-        isInitialized.current = false;
     }
   }, [isOpen, taskId, getTaskById, mode, initialGoalId]);
 
@@ -280,7 +272,6 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
                         mode="single"
                         selected={startDate}
                         onSelect={setStartDate}
-                        month={startDate}
                         initialFocus
                     />
                     </PopoverContent>
@@ -315,7 +306,6 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
                         mode="single"
                         selected={endDate}
                         onSelect={setEndDate}
-                        month={endDate}
                         initialFocus
                     />
                     </PopoverContent>
