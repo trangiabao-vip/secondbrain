@@ -7,6 +7,7 @@ import { TopicGrid } from '@/components/topics/TopicGrid';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAppContext } from '@/contexts/AppContext';
+import { DashboardView } from '@/components/dashboard/DashboardView';
 
 function AppPage() {
   const { 
@@ -20,6 +21,10 @@ function AppPage() {
   const renderMainContent = () => {
     if (viewMode === 'global-schedule') {
       return <GlobalScheduleView />;
+    }
+    
+    if (viewMode === 'dashboard') {
+      return <DashboardView />;
     }
   
     // Default to 'interests' view logic

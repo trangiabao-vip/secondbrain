@@ -65,6 +65,7 @@ export const Icons = {
   linkedin: Linkedin,
   facebook: Facebook,
   instagram: Instagram,
+  dashboard: LayoutGrid,
   whoIsTheSpy: ({ className }: { className?: string }) => (
     <svg 
       className={className}

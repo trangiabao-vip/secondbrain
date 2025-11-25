@@ -21,8 +21,13 @@ import { usePathname } from "next/navigation";
 export function InterestSidebar() {
   const { interests, selectedInterestId, selectInterest, deleteInterest, viewMode, setViewMode, isDataLoading } = useAppContext();
   const pathname = usePathname();
-  const isGameView = pathname.startsWith('/games');
-  const isScheduleView = viewMode === 'global-schedule' && !isGameView;
+  const isGameView = viewMode === 'games';
+  const isScheduleView = viewMode === 'global-schedule';
+  const isDashboardView = viewMode === 'dashboard';
+
+  const isActive = (id: string) => {
+    return selectedInterestId === id && !isGameView && !isScheduleView && !isDashboardView
+  }
 
   if (isDataLoading) {
     return (
@@ -80,6 +85,18 @@ export function InterestSidebar() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={isDashboardView}
+                tooltip="Tổng hợp"
+              >
+                <Link href="/" onClick={() => setViewMode('dashboard')}>
+                  <Icons.dashboard />
+                  <span>Tổng hợp</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
         </SidebarMenu>
         <SidebarSeparator />
         <SidebarMenu>
@@ -87,7 +104,7 @@ export function InterestSidebar() {
             <SidebarMenuItem key={interest.id}>
                <SidebarMenuButton
                   asChild
-                  isActive={selectedInterestId === interest.id && !isGameView && !isScheduleView}
+                  isActive={isActive(interest.id)}
                   tooltip={interest.name}
                 >
                   <Link href="/" onClick={() => selectInterest(interest.id)}>
