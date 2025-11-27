@@ -65,7 +65,7 @@ export default function GamesPage() {
               </CardContent>
               <CardFooter className="p-4 pt-0 mt-auto">
                   <Button asChild className="w-full">
-                      <Link href={game.href}>Chơi ngay</Link>
+                      <Link href={game.href} prefetch={false}>Chơi ngay</Link>
                   </Button>
               </CardFooter>
             </Card>
