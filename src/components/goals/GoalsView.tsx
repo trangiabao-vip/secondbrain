@@ -1,4 +1,5 @@
 'use client';
+import { useState } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { TaskList } from "@/components/tasks/TaskList";
@@ -6,7 +7,7 @@ import { AddGoalDialog } from "@/components/goals/AddGoalDialog";
 import { Button } from "../ui/button";
 import { Icons } from "../icons";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from "../ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent, DropdownMenuSeparator } from "../ui/dropdown-menu";
 import { Progress } from "../ui/progress";
 import { vi } from 'date-fns/locale';
 import { Card, CardContent } from "../ui/card";
@@ -28,12 +29,27 @@ const getDateFromFirestore = (date: any): Date | null => {
     return null;
 };
 
+const statusOptions: Record<GoalStatus | 'all', string> = {
+    'all': 'Tất cả trạng thái',
+    'chưa bắt đầu': 'Chưa bắt đầu',
+    'đang làm': 'Đang làm',
+    'hoàn thành': 'Hoàn thành',
+    'thất bại': 'Thất bại',
+    'huỷ': 'Huỷ',
+};
+
 export function GoalsView() {
   const { goals, tasks, selectedTopic, deleteGoal, updateGoal, isDataLoading, duplicateGoal } = useAppContext();
+  const [statusFilter, setStatusFilter] = useState<GoalStatus | 'all'>('all');
   
   if (!selectedTopic) return null;
   
-  const topicGoals = goals.filter(goal => goal.topicId === selectedTopic?.id);
+  const topicGoals = goals.filter(goal => {
+    if (goal.topicId !== selectedTopic?.id) return false;
+    if (statusFilter === 'all') return true;
+    return goal.status === statusFilter;
+  });
+
   const standaloneTasks = tasks.filter(task => task.topicId === selectedTopic?.id && !task.goalId);
 
 
@@ -100,6 +116,27 @@ export function GoalsView() {
             </Button>
           </AddGoalDialog>
         </div>
+      </div>
+
+      <div className="flex items-center">
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                    Lọc: {statusOptions[statusFilter]}
+                    <Icons.down className="ml-2 h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+                {Object.entries(statusOptions).map(([key, value]) => (
+                    <DropdownMenuItem 
+                        key={key} 
+                        onSelect={() => setStatusFilter(key as GoalStatus | 'all')}
+                    >
+                        {value}
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {topicGoals.length > 0 && (
@@ -232,9 +269,11 @@ export function GoalsView() {
       {topicGoals.length === 0 && standaloneTasks.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-card p-12 text-center">
             <Icons.goal className="h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">Chưa có mục tiêu hoặc nhiệm vụ nào</h3>
+            <h3 className="mt-4 text-lg font-semibold">
+                {statusFilter === 'all' ? 'Chưa có mục tiêu hoặc nhiệm vụ nào' : `Không có mục tiêu nào với trạng thái "${statusOptions[statusFilter]}"`}
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-                Đặt mục tiêu hoặc thêm nhiệm vụ để bắt đầu tiến bộ về chủ đề này.
+                {statusFilter === 'all' ? 'Đặt mục tiêu hoặc thêm nhiệm vụ để bắt đầu tiến bộ về chủ đề này.' : 'Hãy thử thay đổi bộ lọc hoặc tạo một mục tiêu mới.'}
             </p>
             <div className="mt-6 flex gap-4">
                 <AddGoalDialog>
@@ -243,12 +282,11 @@ export function GoalsView() {
                         Mục tiêu mới
                     </Button>
                 </AddGoalDialog>
-                <AddOrEditTaskDialog mode="add">
-                  <Button variant="outline">
-                    <Icons.add className="mr-2 h-4 w-4" />
-                    Thêm nhiệm vụ
+                 {statusFilter !== 'all' && (
+                  <Button variant="outline" onClick={() => setStatusFilter('all')}>
+                    Xóa bộ lọc
                   </Button>
-                </AddOrEditTaskDialog>
+                )}
             </div>
         </div>
       )}
