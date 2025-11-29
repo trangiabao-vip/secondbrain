@@ -26,9 +26,10 @@ service cloud.firestore {
 
     // Topics can be read by their owner.
     // They can be created, updated, or deleted by their owner.
+    // A user can only create a sub-topic if they own the parent topic.
     match /topics/{topicId} {
       allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && (request.resource.data.parentId == null || get(/databases/$(database)/documents/topics/$(request.resource.data.parentId)).data.userId == request.auth.uid);
     }
 
     // Goals can be read by their owner.

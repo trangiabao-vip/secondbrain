@@ -1,3 +1,4 @@
+
 'use client';
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAppContext } from "@/contexts/AppContext";
@@ -21,7 +22,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 export function Header() {
-  const { selectedInterest, selectedTopic, selectInterest, selectTopic, viewMode } = useAppContext();
+  const { selectedInterest, topicBreadcrumbs, selectInterest, selectTopic, viewMode } = useAppContext();
   const { auth, user } = useFirebase();
   const pathname = usePathname();
 
@@ -76,14 +77,19 @@ export function Header() {
               </Button>
             </>
           )}
-          {selectedTopic && (
-            <>
-              <Icons.right className="h-4 w-4" />
-              <Button variant="ghost" size="sm" className="text-foreground">
-                {selectedTopic.name}
-              </Button>
-            </>
-          )}
+          {topicBreadcrumbs.map((topic, index) => (
+             <React.Fragment key={topic.id}>
+                <Icons.right className="h-4 w-4" />
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => selectTopic(topic.id)}
+                    className={index === topicBreadcrumbs.length -1 ? 'text-foreground' : ''}
+                >
+                    {topic.name}
+                </Button>
+             </React.Fragment>
+          ))}
         </>
        )
     }

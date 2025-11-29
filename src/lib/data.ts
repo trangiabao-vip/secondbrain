@@ -42,6 +42,7 @@ export interface Topic {
   name: string;
   description?: string;
   interestId: string;
+  parentId?: string | null; // ID of the parent topic
   imageId: string;
   createdAt: any; // Can be string or Firebase Timestamp
   userId: string;
@@ -144,5 +145,3 @@ export const initialData: DataType = {
   wikiPages: [],
   salesPages: [],
 };
-
-    

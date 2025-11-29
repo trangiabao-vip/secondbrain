@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AuthGuard } from '@/components/auth/AuthGuard';
@@ -42,7 +43,7 @@ function AppPage() {
     }
   
     // Default view when no specific item is selected but data is loaded.
-    return <WelcomeScreen />;
+    return <TopicGrid />;
   };
 
   return (

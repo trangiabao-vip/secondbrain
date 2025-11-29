@@ -1,14 +1,61 @@
+
 'use client';
+import React, { useMemo } from 'react';
 import { useAppContext } from "@/contexts/AppContext";
 import { TopicCard } from "./TopicCard";
 import { AddTopicDialog } from "./AddTopicDialog";
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { Topic } from '@/lib/data';
+import { Card, CardHeader, CardTitle, CardDescription } from '../ui/card';
+
+interface TopicWithSubTopics extends Topic {
+  subTopics: TopicWithSubTopics[];
+}
+
+const TopicTreeItem = ({ topic, level }: { topic: TopicWithSubTopics, level: number }) => {
+  return (
+    <div className="flex flex-col">
+      <div style={{ gridColumn: 'span 4 / span 4' }}>
+        <TopicCard topic={topic} />
+      </div>
+      {topic.subTopics && topic.subTopics.length > 0 && (
+         <div 
+            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 pl-6 mt-6 border-l-2 ml-4"
+         >
+           {topic.subTopics.map(subTopic => (
+             <TopicTreeItem key={subTopic.id} topic={subTopic} level={level + 1} />
+           ))}
+         </div>
+      )}
+    </div>
+  )
+}
 
 export function TopicGrid() {
   const { topics, selectedInterest, isDataLoading } = useAppContext();
-  const filteredTopics = topics.filter(topic => topic.interestId === selectedInterest?.id);
+  
+  const topicTree = useMemo(() => {
+    if (!selectedInterest) return [];
+    
+    const allTopicsForInterest = topics.filter(topic => topic.interestId === selectedInterest.id);
+    const topicMap = new Map<string, TopicWithSubTopics>(
+      allTopicsForInterest.map(topic => ({ ...topic, subTopics: [] })).map(topic => [topic.id, topic])
+    );
+    
+    const tree: TopicWithSubTopics[] = [];
+
+    topicMap.forEach(topic => {
+      if (topic.parentId && topicMap.has(topic.parentId)) {
+        topicMap.get(topic.parentId)!.subTopics.push(topic);
+      } else {
+        tree.push(topic);
+      }
+    });
+
+    return tree;
+  }, [topics, selectedInterest]);
 
   if (!selectedInterest) return null;
 
@@ -35,14 +82,16 @@ export function TopicGrid() {
         <AddTopicDialog>
           <Button>
             <Icons.add className="mr-2 h-4 w-4" />
-            Chủ đề mới
+            Thêm chủ đề
           </Button>
         </AddTopicDialog>
       </div>
-      {filteredTopics.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredTopics.map((topic) => (
-            <TopicCard key={topic.id} topic={topic} />
+      {topicTree.length > 0 ? (
+        <div className="grid gap-6 grid-cols-1">
+          {topicTree.map((topic) => (
+            <div key={topic.id} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <TopicTreeItem topic={topic} level={0} />
+            </div>
           ))}
         </div>
       ) : (

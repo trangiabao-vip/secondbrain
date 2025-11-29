@@ -61,6 +61,10 @@
           "type": "string",
           "description": "The ID of the parent interest."
         },
+        "parentId": {
+          "type": ["string", "null"],
+          "description": "The ID of the parent topic, if this is a sub-topic."
+        },
         "imageId": {
           "type": "string",
           "description": "ID for the placeholder image."

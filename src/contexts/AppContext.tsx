@@ -2,7 +2,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { createContext, useContext, useState, useMemo, useEffect } from 'react';
+import { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
 import { type Interest, type Topic, type Goal, type Task, type WikiPage, type SalesPage } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
@@ -25,6 +25,7 @@ interface AppContextType {
   salesPages: SalesPage[];
   selectedInterestId: string | null;
   selectedTopicId: string | null;
+  topicBreadcrumbs: Topic[];
   viewMode: ViewMode;
   isDataLoading: boolean;
   setViewMode: (mode: ViewMode) => void;
@@ -32,7 +33,7 @@ interface AppContextType {
   selectTopic: (id: string | null) => void;
   addInterest: (name: string) => void;
   updateInterest: (id: string, name: string) => void;
-  addTopic: (name: string, imageId: string, description?: string, interestId?: string) => void;
+  addTopic: (name: string, imageId: string, description?: string, interestId?: string, parentId?: string | null) => void;
   updateTopic: (topicId: string, name: string, description?: string) => void;
   addGoal: (goalData: Partial<Omit<Goal, 'id'>>) => void;
   updateGoal: (goalId: string, updatedData: Partial<Omit<Goal, 'id'>>) => void;
@@ -120,10 +121,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Sở thích đã được cập nhật", description: `Sở thích đã được đổi tên thành "${name}".` });
   }
 
-  const addTopic = (name: string, imageId: string, description?: string, interestId?: string) => {
+  const addTopic = (name: string, imageId: string, description?: string, interestId?: string, parentId?: string | null) => {
     const finalInterestId = interestId || selectedInterestId;
     if (!finalInterestId || !user) return;
-    const newTopic: Partial<Topic> = { name, imageId, interestId: finalInterestId, userId: user.uid, createdAt: serverTimestamp() };
+    const newTopic: Partial<Topic> = { 
+        name, 
+        imageId, 
+        interestId: finalInterestId, 
+        userId: user.uid, 
+        createdAt: serverTimestamp(),
+        parentId: parentId || null,
+    };
     if (description) newTopic.description = description;
     addDocumentNonBlocking(collection(firestore, 'topics'), newTopic);
     toast({ title: "Đã thêm chủ đề", description: `"${name}" đã được thêm.` });
@@ -208,15 +216,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     const topicName = topics.find(t => t.id === id)?.name;
     const batch = writeBatch(firestore);
+
+    // Find all descendant topics
+    const descendants = new Set<string>();
+    const findDescendants = (parentId: string) => {
+      const children = topics.filter(t => t.parentId === parentId);
+      children.forEach(child => {
+        descendants.add(child.id);
+        findDescendants(child.id);
+      });
+    };
+    findDescendants(id);
+    const allTopicsToDelete = [id, ...Array.from(descendants)];
     
-    const goalsToDelete = goals.filter(g => g.topicId === id);
-    const tasksToDelete = tasks.filter(t => goalsToDelete.some(g => g.id === t.goalId) || t.topicId === id);
-    const wikiPagesToDelete = wikiPages.filter(p => p.topicId === id);
+    const goalsToDelete = goals.filter(g => allTopicsToDelete.includes(g.topicId));
+    const tasksToDelete = tasks.filter(t => goalsToDelete.some(g => g.id === t.goalId) || allTopicsToDelete.includes(t.topicId!));
+    const wikiPagesToDelete = wikiPages.filter(p => allTopicsToDelete.includes(p.topicId));
     
     wikiPagesToDelete.forEach(p => batch.delete(doc(firestore, 'wikiPages', p.id)));
     tasksToDelete.forEach(t => batch.delete(doc(firestore, 'tasks', t.id)));
     goalsToDelete.forEach(g => batch.delete(doc(firestore, 'goals', g.id)));
-    batch.delete(doc(firestore, 'topics', id));
+    allTopicsToDelete.forEach(topicId => batch.delete(doc(firestore, 'topics', topicId)));
     
     try {
       await batch.commit();
@@ -396,6 +416,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const getTopicById = (id: string) => topics.find(t => t.id === id);
   const getWikiPageById = (id: string) => wikiPages.find(p => p.id === id);
   const getSalesPageById = (id: string) => salesPages.find(p => p.id === id);
+  
+  const getTopicBreadcrumbs = useCallback((topicId: string | null): Topic[] => {
+    if (!topicId) return [];
+    const breadcrumbs: Topic[] = [];
+    let currentTopic = topics.find(t => t.id === topicId);
+    while (currentTopic) {
+        breadcrumbs.unshift(currentTopic);
+        currentTopic = topics.find(t => t.id === currentTopic!.parentId);
+    }
+    return breadcrumbs;
+  }, [topics]);
+
+  const topicBreadcrumbs = useMemo(() => getTopicBreadcrumbs(selectedTopicId), [selectedTopicId, getTopicBreadcrumbs]);
 
   const logout = () => {
     if(auth) {
@@ -413,6 +446,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isDataLoading,
     selectedInterestId,
     selectedTopicId,
+    topicBreadcrumbs,
     viewMode,
     setViewMode,
     selectInterest,

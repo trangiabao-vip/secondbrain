@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, type ReactNode } from 'react';
 import {
@@ -15,20 +16,20 @@ import { useAppContext } from '@/contexts/AppContext';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Textarea } from '../ui/textarea';
 
-export function AddTopicDialog({ children, interestId }: { children: ReactNode, interestId?: string }) {
-  const { addTopic, selectedInterest } = useAppContext();
+export function AddTopicDialog({ children, interestId, parentId }: { children: ReactNode, interestId?: string, parentId?: string | null }) {
+  const { addTopic, selectedInterest, selectedTopic } = useAppContext();
   const [topicName, setTopicName] = useState('');
   const [description, setDescription] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
-  const finalInterestId = interestId || selectedInterest?.id;
-  const finalInterest = interestId ? { id: interestId, name: 'hiện tại' } : selectedInterest;
-
+  const finalInterestId = interestId || selectedTopic?.interestId || selectedInterest?.id;
+  const finalParentId = parentId !== undefined ? parentId : selectedTopic?.id;
+  const finalInterest = interestId ? { id: interestId, name: 'hiện tại' } : (selectedTopic || selectedInterest);
 
   const handleAddTopic = () => {
     if (topicName.trim() && finalInterestId) {
       const randomImageId = PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)].id;
-      addTopic(topicName.trim(), randomImageId, description, finalInterestId);
+      addTopic(topicName.trim(), randomImageId, description, finalInterestId, finalParentId);
       setTopicName('');
       setDescription('');
       setIsOpen(false);
@@ -42,7 +43,7 @@ export function AddTopicDialog({ children, interestId }: { children: ReactNode, 
         <DialogHeader>
           <DialogTitle>Thêm chủ đề mới</DialogTitle>
           <DialogDescription>
-            Thêm một chủ đề mới vào sở thích của bạn: "{finalInterest?.name}"
+            Thêm một chủ đề mới vào {finalParentId ? 'chủ đề' : 'sở thích'} của bạn: "{finalInterest?.name}"
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
