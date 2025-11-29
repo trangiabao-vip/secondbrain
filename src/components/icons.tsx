@@ -31,6 +31,7 @@ import {
   Facebook,
   Instagram,
   FileText,
+  Search,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -69,6 +70,7 @@ export const Icons = {
   instagram: Instagram,
   dashboard: LayoutGrid,
   salesPage: FileText,
+  search: Search,
   whoIsTheSpy: ({ className }: { className?: string }) => (
     <svg 
       className={className}

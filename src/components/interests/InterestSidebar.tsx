@@ -8,6 +8,7 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarSeparator,
+  SidebarInput,
 } from "@/components/ui/sidebar";
 import { useAppContext } from "@/contexts/AppContext";
 import { Icons } from "@/components/icons";
@@ -18,9 +19,11 @@ import { EditInterestDialog } from "./EditInterestDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSearch } from "../search/GlobalSearchDialog";
 
 export function InterestSidebar() {
   const { interests, selectedInterestId, selectInterest, deleteInterest, viewMode, setViewMode, isDataLoading } = useAppContext();
+  const { setOpen: setSearchOpen } = useSearch();
   const pathname = usePathname();
   const isGameView = pathname.startsWith('/games');
   const isSalesPageView = pathname.startsWith('/sales-pages');
@@ -69,6 +72,16 @@ export function InterestSidebar() {
           <div className="flex items-center gap-2">
             <Icons.logo className="w-6 h-6 text-primary" />
             <h1 className="text-lg font-semibold">Trung tâm Sở thích</h1>
+          </div>
+        </div>
+        <div className="p-2">
+          <div className="relative">
+            <Icons.search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <SidebarInput 
+              placeholder="Tìm kiếm..." 
+              className="pl-8"
+              onFocus={() => setSearchOpen(true)}
+            />
           </div>
         </div>
       </SidebarHeader>
