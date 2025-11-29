@@ -21,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import { AddTopicDialog } from "../topics/AddTopicDialog";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
+import { MarkdownRenderer } from "../ui/markdown-renderer";
 
 const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
@@ -187,7 +188,7 @@ export function GoalsView() {
                       <AccordionTrigger className="flex-1 text-left p-0 hover:no-underline">
                           <div className="flex flex-col gap-2 w-full">
                               <span className="font-semibold text-base">{goal.title}</span>
-                              {goal.description && <p className="text-sm text-muted-foreground line-clamp-2">{goal.description}</p>}
+                              {goal.description && <MarkdownRenderer className="text-sm text-muted-foreground line-clamp-2">{goal.description}</MarkdownRenderer>}
                               <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 flex-wrap">
                                   <Badge variant="secondary" className="capitalize w-fit">
                                       <div className={cn("w-2 h-2 rounded-full mr-2", statusColors[goal.status])}></div>

@@ -13,6 +13,7 @@ import { Badge } from "../ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Label } from "../ui/label";
+import { MarkdownRenderer } from "../ui/markdown-renderer";
 
 const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
@@ -133,7 +134,7 @@ export function TaskList({ goalId, tasks: customTasks, filterStatus = 'all' }: T
                     </div>
                   )}
                 </div>
-                {task.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.notes}</p>}
+                {task.notes && <MarkdownRenderer className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.notes}</MarkdownRenderer>}
                 
                 {task.customProperties && Object.keys(task.customProperties).length > 0 && (
                   <div className="flex items-center gap-x-4 gap-y-2 flex-wrap mt-2">
