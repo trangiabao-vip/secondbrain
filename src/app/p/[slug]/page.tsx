@@ -21,6 +21,28 @@ const PageSkeleton = () => (
     </div>
 );
 
+// Basic Markdown to HTML conversion
+const renderContent = (content: string) => {
+  return content
+    .split('\n')
+    .map((line, index) => {
+      if (line.startsWith('### ')) {
+        return <h3 key={index} className="text-2xl font-semibold mt-6 mb-3">{line.substring(4)}</h3>;
+      }
+      if (line.startsWith('## ')) {
+        return <h2 key={index} className="text-3xl font-semibold mt-8 mb-4 border-b pb-2">{line.substring(3)}</h2>;
+      }
+      if (line.startsWith('# ')) {
+        return <h1 key={index} className="text-4xl font-bold mt-8 mb-4">{line.substring(2)}</h1>;
+      }
+      if (line.trim() === '') {
+        return <br key={index} />;
+      }
+      return <p key={index} className="mb-4 leading-relaxed">{line}</p>;
+    })
+};
+
+
 export default function SharedSalesPage() {
   const { slug } = useParams();
   const { firestore } = useFirebase();
@@ -51,31 +73,12 @@ export default function SharedSalesPage() {
     return <PageSkeleton />;
   }
 
-  // Basic Markdown to HTML conversion (for demonstration)
-  // For a real app, use a library like 'marked' or 'react-markdown'
-  const renderContent = (content: string) => {
-    return content
-      .split('\n')
-      .map((paragraph, index) => {
-        if (paragraph.startsWith('# ')) {
-          return <h1 key={index} className="text-4xl font-bold mt-6 mb-4">{paragraph.substring(2)}</h1>;
-        }
-        if (paragraph.startsWith('## ')) {
-          return <h2 key={index} className="text-3xl font-semibold mt-6 mb-4">{paragraph.substring(3)}</h2>;
-        }
-        if (paragraph.startsWith('### ')) {
-          return <h3 key={index} className="text-2xl font-semibold mt-5 mb-3">{paragraph.substring(4)}</h3>;
-        }
-        return <p key={index} className="mb-4 leading-relaxed">{paragraph}</p>;
-      })
-  };
-
   return (
     <div className="min-h-screen bg-background text-foreground">
         <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-4xl">
             <article className="prose prose-lg dark:prose-invert max-w-none">
-                 <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">{pageData.title}</h1>
-                 <div className="whitespace-pre-wrap">{renderContent(pageData.content)}</div>
+                 <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 border-b pb-4">{pageData.title}</h1>
+                 <div className="mt-6">{renderContent(pageData.content)}</div>
             </article>
         </div>
     </div>

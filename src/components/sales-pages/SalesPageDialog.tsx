@@ -43,7 +43,18 @@ export function SalesPageDialog({ mode, pageId, children }: SalesPageDialogProps
     } else {
         setTitle('');
         setSlug('');
-        setContent('');
+        setContent(`# Tiêu đề chính
+
+Đây là đoạn văn mô tả sản phẩm hoặc dịch vụ của bạn. Bạn có thể viết chi tiết về các tính năng, lợi ích và tại sao khách hàng nên chọn bạn.
+
+## Tiêu đề phụ
+
+Mô tả thêm các chi tiết quan trọng khác ở đây.
+
+### Tiêu đề nhỏ hơn
+
+Sử dụng các tiêu đề nhỏ để phân chia các phần nội dung một cách rõ ràng.
+`);
     }
   }, [isOpen, mode, pageId, getSalesPageById]);
 
@@ -81,7 +92,7 @@ export function SalesPageDialog({ mode, pageId, children }: SalesPageDialogProps
              {mode === 'add' ? 'Tạo trang bán hàng mới' : 'Chỉnh sửa trang bán hàng'}
           </DialogTitle>
           <DialogDescription>
-            Điền thông tin chi tiết cho trang của bạn.
+            Điền thông tin chi tiết cho trang của bạn. Sử dụng cú pháp Markdown cho phần nội dung.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto pr-4">
@@ -113,7 +124,7 @@ export function SalesPageDialog({ mode, pageId, children }: SalesPageDialogProps
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="Viết nội dung trang của bạn ở đây. Hỗ trợ Markdown."
-                  className="min-h-[300px]"
+                  className="min-h-[300px] font-mono"
                 />
             </div>
         </div>
