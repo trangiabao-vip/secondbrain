@@ -4,7 +4,8 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import {
   Dialog,
   DialogContent,
-  DialogHeader
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from '@/components/ui/input';
 import { Icons } from '@/components/icons';
@@ -136,6 +137,7 @@ export function GlobalSearchDialog({ children }: { children: ReactNode }) {
             <Dialog open={isOpen} onOpenChange={setOpen}>
                 <DialogContent className="sm:max-w-2xl gap-0 p-0">
                     <DialogHeader className="p-4 border-b">
+                         <DialogTitle className="sr-only">Tìm kiếm toàn cục</DialogTitle>
                         <div className="relative">
                             <Icons.search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
@@ -179,6 +181,7 @@ export function GlobalSearchDialog({ children }: { children: ReactNode }) {
                             ) : (
                                 <div className="text-center py-10">
                                     <p className="text-muted-foreground">Không tìm thấy kết quả nào cho "{query}"</p>
+
                                 </div>
                             )
                         ) : (
