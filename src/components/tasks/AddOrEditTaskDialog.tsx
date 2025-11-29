@@ -23,6 +23,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { TaskStatus, TaskDifficulty, type Task } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { MarkdownRenderer } from '../ui/markdown-renderer';
+
 
 interface AddOrEditTaskDialogProps {
   taskId?: string;
@@ -184,7 +187,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{mode === 'edit' ? 'Chỉnh sửa nhiệm vụ' : 'Thêm nhiệm vụ mới'}</DialogTitle>
           <DialogDescription>
@@ -202,12 +205,26 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
             </div>
             <div className="space-y-2">
               <Label htmlFor="task-notes">Ghi chú (Tùy chọn)</Label>
-              <Textarea
-                id="task-notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Thêm ghi chú hoặc chi tiết..."
-              />
+               <Tabs defaultValue="write" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="write">Viết</TabsTrigger>
+                  <TabsTrigger value="preview">Xem trước</TabsTrigger>
+                </TabsList>
+                <TabsContent value="write">
+                  <Textarea
+                    id="task-notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Thêm ghi chú hoặc chi tiết... Hỗ trợ Markdown."
+                    className="min-h-[150px] mt-2"
+                  />
+                </TabsContent>
+                <TabsContent value="preview">
+                  <div className="min-h-[150px] mt-2 rounded-md border p-4 bg-secondary/50">
+                    <MarkdownRenderer>{notes || "Chưa có nội dung xem trước."}</MarkdownRenderer>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
              <div className="space-y-2">
               <Label htmlFor="task-goal">Mục tiêu (Tùy chọn)</Label>

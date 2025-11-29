@@ -23,6 +23,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { GoalStatus, GoalPriority, Goal } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { MarkdownRenderer } from '../ui/markdown-renderer';
 
 const getDateFromFirestore = (date: any): Date | undefined => {
     if (!date) return undefined;
@@ -146,7 +148,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Chỉnh sửa mục tiêu</DialogTitle>
           <DialogDescription>
@@ -165,12 +167,26 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             </div>
              <div className="space-y-2">
                 <Label htmlFor="goal-description-edit">Mô tả (Tùy chọn)</Label>
-                <Textarea
-                  id="goal-description-edit"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Mô tả chi tiết hơn về mục tiêu này"
-                />
+                <Tabs defaultValue="write" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="write">Viết</TabsTrigger>
+                    <TabsTrigger value="preview">Xem trước</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="write">
+                    <Textarea
+                      id="goal-description-edit"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Mô tả chi tiết hơn về mục tiêu này. Hỗ trợ Markdown."
+                      className="min-h-[150px] mt-2"
+                    />
+                  </TabsContent>
+                  <TabsContent value="preview">
+                     <div className="min-h-[150px] mt-2 rounded-md border p-4 bg-secondary/50">
+                        <MarkdownRenderer>{description || "Chưa có nội dung xem trước."}</MarkdownRenderer>
+                      </div>
+                  </TabsContent>
+                </Tabs>
             </div>
             <div className="space-y-2">
               <Label htmlFor="priority-edit">Mức độ ưu tiên</Label>
