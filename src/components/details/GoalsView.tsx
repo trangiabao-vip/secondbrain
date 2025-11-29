@@ -46,6 +46,7 @@ export function GoalsView() {
     'đang làm': 'bg-blue-500',
     'hoàn thành': 'bg-green-500',
     'thất bại': 'bg-red-500',
+    'huỷ': 'bg-orange-500',
   }
   
   return (
@@ -122,6 +123,7 @@ export function GoalsView() {
                                         <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'đang làm' })}>Đang làm</DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'hoàn thành' })}>Hoàn thành</DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'thất bại' })}>Thất bại</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'huỷ' })}>Huỷ</DropdownMenuItem>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuPortal>
                             </DropdownMenuSub>

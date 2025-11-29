@@ -20,6 +20,7 @@ import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { AddTopicDialog } from "../topics/AddTopicDialog";
 import { Checkbox } from "../ui/checkbox";
+import { Label } from "../ui/label";
 
 const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
@@ -62,7 +63,7 @@ export function GoalsView() {
     if (task.topicId !== selectedTopic?.id || task.goalId) return false;
     if (typeFilter === 'goal') return false; // Hide standalone tasks if filtering for goals
     if (statusFilter === 'all') return true;
-    return task.status === statusFilter;
+    return task.status === filterStatus;
   });
 
   if (isDataLoading) {
