@@ -1,6 +1,6 @@
 'use client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GoalsView } from "./GoalsView";
+import { GoalsView } from "../goals/GoalsView";
 import { ScheduleView } from "./ScheduleView";
 import { Icons } from "../icons";
 import { WikiView } from "../wiki/WikiView";

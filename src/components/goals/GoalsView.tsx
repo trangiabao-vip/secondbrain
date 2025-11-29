@@ -63,7 +63,7 @@ export function GoalsView() {
     if (task.topicId !== selectedTopic?.id || task.goalId) return false;
     if (typeFilter === 'goal') return false; // Hide standalone tasks if filtering for goals
     if (statusFilter === 'all') return true;
-    return task.status === filterStatus;
+    return task.status === statusFilter;
   });
 
   if (isDataLoading) {
@@ -172,7 +172,7 @@ export function GoalsView() {
         </DropdownMenu>
       </div>
 
-      {filteredGoals.length > 0 && (
+      {filteredGoals.length > 0 && typeFilter !== 'task' && (
         <Accordion type="single" collapsible className="w-full" defaultValue={filteredGoals[0]?.id}>
           {filteredGoals.map((goal) => {
             const endDate = getDateFromFirestore(goal.endDate);
@@ -290,7 +290,7 @@ export function GoalsView() {
         </Accordion>
       )}
 
-      {filteredStandaloneTasks.length > 0 && (
+      {filteredStandaloneTasks.length > 0 && typeFilter !== 'goal' && (
          <Card>
             <CardContent className="p-4">
                <h4 className="font-semibold mb-4">Nhiệm vụ độc lập</h4>
@@ -306,7 +306,7 @@ export function GoalsView() {
                 Không tìm thấy kết quả
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-                Hãy thử thay đổi bộ lọc hoặc tạo một mục tiêu mới.
+                Hãy thử thay đổi bộ lọc hoặc tạo một mục tiêu / nhiệm vụ mới.
             </p>
             <div className="mt-6 flex gap-4">
                 <AddGoalDialog>
@@ -315,8 +315,8 @@ export function GoalsView() {
                         Mục tiêu mới
                     </Button>
                 </AddGoalDialog>
-                 {statusFilter !== 'all' && (
-                  <Button variant="outline" onClick={() => setStatusFilter('all')}>
+                 {(statusFilter !== 'all' || typeFilter !== 'all') && (
+                  <Button variant="outline" onClick={() => { setStatusFilter('all'); setTypeFilter('all'); }}>
                     Xóa bộ lọc
                   </Button>
                 )}
