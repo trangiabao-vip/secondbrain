@@ -1,3 +1,4 @@
+
 'use client';
 import {
   SidebarHeader,
@@ -21,12 +22,24 @@ import { usePathname } from "next/navigation";
 export function InterestSidebar() {
   const { interests, selectedInterestId, selectInterest, deleteInterest, viewMode, setViewMode, isDataLoading } = useAppContext();
   const pathname = usePathname();
-  const isGameView = viewMode === 'games';
-  const isScheduleView = viewMode === 'global-schedule';
-  const isDashboardView = viewMode === 'dashboard';
+  const isGameView = pathname.startsWith('/games');
+  const isSalesPageView = pathname.startsWith('/sales-pages');
+  const isScheduleView = viewMode === 'global-schedule' && !isGameView && !isSalesPageView;
+  const isDashboardView = viewMode === 'dashboard' && !isGameView && !isSalesPageView;
 
+  const handleSetViewMode = (mode: 'global-schedule' | 'dashboard' | 'sales-pages' | 'games' | 'interests') => {
+    if (mode === 'games') {
+      if (!isGameView) router.push('/games');
+    } else if (mode === 'sales-pages') {
+      if (!isSalesPageView) router.push('/sales-pages');
+    } else {
+      setViewMode(mode);
+      if (pathname !== '/') router.push('/');
+    }
+  };
+  
   const isActive = (id: string) => {
-    return selectedInterestId === id && !isGameView && !isScheduleView && !isDashboardView
+    return selectedInterestId === id && !isGameView && !isScheduleView && !isDashboardView && !isSalesPageView
   }
 
   if (isDataLoading) {
@@ -79,9 +92,21 @@ export function InterestSidebar() {
                 isActive={isGameView}
                 tooltip="Game"
               >
-                <Link href="/games" onClick={() => setViewMode('games')}>
+                <Link href="/games">
                   <Icons.game />
                   <span>Game</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={isSalesPageView}
+                tooltip="Sales Pages"
+              >
+                <Link href="/sales-pages">
+                  <Icons.salesPage />
+                  <span>Sales Pages</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

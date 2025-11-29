@@ -326,6 +326,40 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "title", "userId", "createdAt"]
+    },
+    "SalesPage": {
+      "title": "Sales Page",
+      "type": "object",
+      "description": "Represents a single, public-facing sales page.",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The main headline or title of the sales page."
+        },
+        "slug": {
+          "type": "string",
+          "description": "The URL-friendly slug for the page (e.g., 'my-amazing-product'). Must be unique."
+        },
+        "content": {
+          "type": "string",
+          "description": "The main content of the page, likely in Markdown or HTML format."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this page."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the page was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the page was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": ["title", "slug", "content", "userId", "createdAt", "updatedAt"]
     }
   },
   "auth": {
@@ -369,6 +403,10 @@
     "/businessCards/{cardId}": {
       "schema": { "$ref": "#/entities/BusinessCard" },
       "description": "Collection for digital business cards."
+    },
+    "/salesPages/{pageId}": {
+      "schema": { "$ref": "#/entities/SalesPage" },
+      "description": "Collection for public sales pages. Document ID is the page ID, contains a userId for ownership."
     }
   }
 }

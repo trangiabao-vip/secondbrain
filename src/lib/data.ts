@@ -1,4 +1,5 @@
 
+
 export type GoalStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại' | 'huỷ';
 export type TaskStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại' | 'huỷ';
 export type GoalPriority = 'Thấp' | 'Vừa' | 'Cao';
@@ -113,6 +114,16 @@ export interface BusinessCard {
     updatedAt?: any;
 }
 
+export interface SalesPage {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  userId: string;
+  createdAt: any;
+  updatedAt: any;
+}
+
 
 export type DataType = {
   interests: Interest[];
@@ -120,6 +131,7 @@ export type DataType = {
   goals: Goal[];
   tasks: Task[];
   wikiPages: WikiPage[];
+  salesPages: SalesPage[];
 };
 
 // This initialData is now only for reference and will not be used
@@ -130,6 +142,7 @@ export const initialData: DataType = {
   goals: [],
   tasks: [],
   wikiPages: [],
+  salesPages: [],
 };
 
     

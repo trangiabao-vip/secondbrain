@@ -1,3 +1,4 @@
+
 'use client';
 import {
   BookOpen,
@@ -29,6 +30,7 @@ import {
   Linkedin,
   Facebook,
   Instagram,
+  FileText,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -66,6 +68,7 @@ export const Icons = {
   facebook: Facebook,
   instagram: Instagram,
   dashboard: LayoutGrid,
+  salesPage: FileText,
   whoIsTheSpy: ({ className }: { className?: string }) => (
     <svg 
       className={className}

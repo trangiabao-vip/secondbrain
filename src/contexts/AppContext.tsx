@@ -1,8 +1,9 @@
+
 'use client';
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useMemo, useEffect } from 'react';
-import { type Interest, type Topic, type Goal, type Task, type WikiPage } from '@/lib/data';
+import { type Interest, type Topic, type Goal, type Task, type WikiPage, type SalesPage } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, serverTimestamp, writeBatch, query, where, addDoc } from 'firebase/firestore';
@@ -13,7 +14,7 @@ import {
 } from '@/firebase/non-blocking-updates';
 import { signOut } from 'firebase/auth';
 
-type ViewMode = 'interests' | 'global-schedule' | 'games' | 'dashboard';
+type ViewMode = 'interests' | 'global-schedule' | 'games' | 'dashboard' | 'sales-pages';
 
 interface AppContextType {
   interests: Interest[];
@@ -21,6 +22,7 @@ interface AppContextType {
   goals: Goal[];
   tasks: Task[];
   wikiPages: WikiPage[];
+  salesPages: SalesPage[];
   selectedInterestId: string | null;
   selectedTopicId: string | null;
   viewMode: ViewMode;
@@ -45,6 +47,9 @@ interface AppContextType {
   addWikiPage: (pageData: Partial<Omit<WikiPage, 'id'>>) => void;
   updateWikiPage: (pageId: string, updatedData: Partial<Omit<WikiPage, 'id'>>) => void;
   deleteWikiPage: (pageId: string) => void;
+  addSalesPage: (pageData: Partial<Omit<SalesPage, 'id'>>) => Promise<string | undefined>;
+  updateSalesPage: (pageId: string, updatedData: Partial<Omit<SalesPage, 'id'>>) => void;
+  deleteSalesPage: (pageId: string) => void;
   selectedInterest: Interest | null;
   selectedTopic: Topic | null;
   getInterestById: (id: string) => Interest | undefined;
@@ -53,6 +58,7 @@ interface AppContextType {
   getTasksByGoalId: (goalId: string) => Task[];
   getTopicById: (id: string) => Topic | undefined;
   getWikiPageById: (id: string) => WikiPage | undefined;
+  getSalesPageById: (id: string) => SalesPage | undefined;
   logout: () => void;
 }
 
@@ -71,22 +77,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const goalsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'goals'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const tasksQuery = useMemoFirebase(() => user ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const wikiPagesQuery = useMemoFirebase(() => user ? query(collection(firestore, 'wikiPages'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const salesPagesQuery = useMemoFirebase(() => user ? query(collection(firestore, 'salesPages'), where('userId', '==', user.uid)) : null, [firestore, user]);
 
   const { data: interestsData, isLoading: interestsLoading } = useCollection<Interest>(interestsQuery);
   const { data: topicsData, isLoading: topicsLoading } = useCollection<Topic>(topicsQuery);
   const { data: goalsData, isLoading: goalsLoading } = useCollection<Goal>(goalsQuery);
   const { data: tasksData, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
   const { data: wikiPagesData, isLoading: wikiPagesLoading } = useCollection<WikiPage>(wikiPagesQuery);
+  const { data: salesPagesData, isLoading: salesPagesLoading } = useCollection<SalesPage>(salesPagesQuery);
   
   const interests = interestsData || [];
   const topics = topicsData || [];
   const goals = goalsData || [];
   const tasks = tasksData || [];
   const wikiPages = wikiPagesData || [];
+  const salesPages = salesPagesData || [];
 
   const isDataLoading = useMemo(() => {
-    return isUserLoading || interestsLoading || topicsLoading || goalsLoading || tasksLoading || wikiPagesLoading;
-  }, [isUserLoading, interestsLoading, topicsLoading, goalsLoading, tasksLoading, wikiPagesLoading]);
+    return isUserLoading || interestsLoading || topicsLoading || goalsLoading || tasksLoading || wikiPagesLoading || salesPagesLoading;
+  }, [isUserLoading, interestsLoading, topicsLoading, goalsLoading, tasksLoading, wikiPagesLoading, salesPagesLoading]);
 
 
   const selectInterest = (id: string | null) => {
@@ -340,6 +349,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteDocumentNonBlocking(doc(firestore, 'wikiPages', pageId));
     toast({ title: "Đã xóa trang Wiki", description: `"${pageTitle}" đã bị xóa.` });
   };
+  
+  const addSalesPage = async (pageData: Partial<Omit<SalesPage, 'id'>>) => {
+    if (!user) return;
+    const newPage: Omit<SalesPage, 'id'> = {
+      title: pageData.title || 'Trang không có tiêu đề',
+      slug: pageData.slug || `page-${Date.now()}`,
+      content: pageData.content || '',
+      userId: user.uid,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    try {
+        const docRef = await addDoc(collection(firestore, 'salesPages'), newPage);
+        toast({ title: "Đã tạo trang bán hàng", description: `"${newPage.title}" đã được tạo.` });
+        return docRef.id;
+    } catch(e) {
+        console.error("Error adding sales page: ", e);
+        toast({ variant: 'destructive', title: "Lỗi", description: 'Không thể tạo trang bán hàng.' });
+    }
+  };
+  
+  const updateSalesPage = (pageId: string, updatedData: Partial<Omit<SalesPage, 'id'>>) => {
+    const dataWithTimestamp = {
+      ...updatedData,
+      updatedAt: serverTimestamp(),
+    };
+    updateDocumentNonBlocking(doc(firestore, 'salesPages', pageId), dataWithTimestamp);
+    toast({ title: "Trang bán hàng đã được cập nhật" });
+  };
+
+  const deleteSalesPage = (pageId: string) => {
+    if (!user) return;
+    const pageTitle = salesPages.find(p => p.id === pageId)?.title;
+    deleteDocumentNonBlocking(doc(firestore, 'salesPages', pageId));
+    toast({ title: "Đã xóa trang bán hàng", description: `"${pageTitle}" đã bị xóa.` });
+  };
 
   const selectedInterest = useMemo(() => interests.find((i) => i.id === selectedInterestId) ?? null, [interests, selectedInterestId]);
   const selectedTopic = useMemo(() => topics.find((t) => t.id === selectedTopicId) ?? null, [topics, selectedTopicId]);
@@ -350,6 +395,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const getTasksByGoalId = (goalId: string) => tasks.filter(t => t.goalId === goalId);
   const getTopicById = (id: string) => topics.find(t => t.id === id);
   const getWikiPageById = (id: string) => wikiPages.find(p => p.id === id);
+  const getSalesPageById = (id: string) => salesPages.find(p => p.id === id);
 
   const logout = () => {
     if(auth) {
@@ -363,6 +409,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     goals,
     tasks,
     wikiPages,
+    salesPages,
     isDataLoading,
     selectedInterestId,
     selectedTopicId,
@@ -387,6 +434,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addWikiPage,
     updateWikiPage,
     deleteWikiPage,
+    addSalesPage,
+    updateSalesPage,
+    deleteSalesPage,
     selectedInterest,
     selectedTopic,
     getInterestById,
@@ -395,6 +445,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getTasksByGoalId,
     getTopicById,
     getWikiPageById,
+    getSalesPageById,
     logout,
   };
 

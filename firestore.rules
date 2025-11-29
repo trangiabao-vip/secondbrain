@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -67,6 +68,14 @@ service cloud.firestore {
     // Business cards can be read by anyone (publicly shareable).
     // They can only be created, updated, or deleted by their owner.
     match /businessCards/{cardId} {
+      allow read; // Allow public read access for both get and list
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Sales pages can be read by anyone (publicly shareable).
+    // They can only be created, updated, or deleted by their owner.
+    match /salesPages/{pageId} {
       allow read; // Allow public read access for both get and list
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
