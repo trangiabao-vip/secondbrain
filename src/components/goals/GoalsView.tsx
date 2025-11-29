@@ -38,24 +38,32 @@ const statusOptions: Record<GoalStatus | 'all', string> = {
     'huỷ': 'Huỷ',
 };
 
+const typeOptions = {
+    'all': 'Tất cả loại',
+    'goal': 'Chỉ mục tiêu',
+    'task': 'Chỉ nhiệm vụ',
+};
+
 export function GoalsView() {
   const { goals, tasks, selectedTopic, deleteGoal, updateGoal, isDataLoading, duplicateGoal } = useAppContext();
   const [statusFilter, setStatusFilter] = useState<GoalStatus | 'all'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'goal' | 'task'>('all');
   
   if (!selectedTopic) return null;
   
-  const topicGoals = goals.filter(goal => {
+  const filteredGoals = goals.filter(goal => {
     if (goal.topicId !== selectedTopic?.id) return false;
+    if (typeFilter === 'task') return false; // Hide all goals if filtering for tasks
     if (statusFilter === 'all') return true;
     return goal.status === statusFilter;
   });
 
-  const standaloneTasks = tasks.filter(task => {
+  const filteredStandaloneTasks = tasks.filter(task => {
     if (task.topicId !== selectedTopic?.id || task.goalId) return false;
+    if (typeFilter === 'goal') return false; // Hide standalone tasks if filtering for goals
     if (statusFilter === 'all') return true;
     return task.status === statusFilter;
   });
-
 
   if (isDataLoading) {
     return (
@@ -122,11 +130,31 @@ export function GoalsView() {
         </div>
       </div>
 
-      <div className="flex items-center">
+      <div className="flex items-center gap-2 p-2 rounded-lg border bg-card">
+        <span className="text-sm font-medium text-muted-foreground mr-2">Lọc theo:</span>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                    Lọc: {statusOptions[statusFilter]}
+                <Button variant="outline" size="sm">
+                    {typeOptions[typeFilter]}
+                    <Icons.down className="ml-2 h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+                {Object.entries(typeOptions).map(([key, value]) => (
+                    <DropdownMenuItem 
+                        key={key} 
+                        onSelect={() => setTypeFilter(key as 'all' | 'goal' | 'task')}
+                    >
+                        {value}
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                    {statusOptions[statusFilter]}
                     <Icons.down className="ml-2 h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
@@ -143,9 +171,9 @@ export function GoalsView() {
         </DropdownMenu>
       </div>
 
-      {topicGoals.length > 0 && (
-        <Accordion type="single" collapsible className="w-full" defaultValue={topicGoals[0]?.id}>
-          {topicGoals.map((goal) => {
+      {filteredGoals.length > 0 && (
+        <Accordion type="single" collapsible className="w-full" defaultValue={filteredGoals[0]?.id}>
+          {filteredGoals.map((goal) => {
             const endDate = getDateFromFirestore(goal.endDate);
             const priority = goal.priority || 'Vừa';
             const { color: priorityColor, icon: PriorityIcon } = priorityConfig[priority];
@@ -251,7 +279,7 @@ export function GoalsView() {
                   </div>
                   <AccordionContent>
                       <div className="px-4 pb-4">
-                          <TaskList goalId={goal.id} />
+                          <TaskList goalId={goal.id} filterStatus={statusFilter} />
                       </div>
                   </AccordionContent>
                 </Card>
@@ -261,23 +289,23 @@ export function GoalsView() {
         </Accordion>
       )}
 
-      {standaloneTasks.length > 0 && (
+      {filteredStandaloneTasks.length > 0 && (
          <Card>
             <CardContent className="p-4">
                <h4 className="font-semibold mb-4">Nhiệm vụ độc lập</h4>
-               <TaskList tasks={standaloneTasks} />
+               <TaskList tasks={filteredStandaloneTasks} />
             </CardContent>
          </Card>
       )}
 
-      {topicGoals.length === 0 && standaloneTasks.length === 0 && (
+      {filteredGoals.length === 0 && filteredStandaloneTasks.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-card p-12 text-center">
             <Icons.goal className="h-12 w-12 text-muted-foreground" />
             <h3 className="mt-4 text-lg font-semibold">
-                {statusFilter === 'all' ? 'Chưa có mục tiêu hoặc nhiệm vụ nào' : `Không có mục tiêu nào với trạng thái "${statusOptions[statusFilter]}"`}
+                Không tìm thấy kết quả
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-                {statusFilter === 'all' ? 'Đặt mục tiêu hoặc thêm nhiệm vụ để bắt đầu tiến bộ về chủ đề này.' : 'Hãy thử thay đổi bộ lọc hoặc tạo một mục tiêu mới.'}
+                Hãy thử thay đổi bộ lọc hoặc tạo một mục tiêu mới.
             </p>
             <div className="mt-6 flex gap-4">
                 <AddGoalDialog>

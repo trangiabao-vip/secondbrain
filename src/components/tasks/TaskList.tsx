@@ -36,10 +36,28 @@ const statusConfig: Record<TaskStatus, { color: string; label: string }> = {
     'huỷ': { color: 'bg-orange-500', label: 'Huỷ' },
 };
 
-export function TaskList({ goalId, tasks: customTasks }: { goalId?: string, tasks?: Task[] }) {
+interface TaskListProps {
+  goalId?: string;
+  tasks?: Task[];
+  filterStatus?: TaskStatus | 'all';
+}
+
+
+export function TaskList({ goalId, tasks: customTasks, filterStatus = 'all' }: TaskListProps) {
   const { tasks: allTasks, updateTask, deleteTask, isDataLoading, duplicateTask } = useAppContext();
 
-  const tasksToRender = customTasks ? customTasks : allTasks.filter(task => task.goalId === goalId);
+  let tasksToRender: Task[];
+
+  if (customTasks) {
+    tasksToRender = customTasks;
+  } else {
+    tasksToRender = allTasks.filter(task => {
+        if (task.goalId !== goalId) return false;
+        if (filterStatus === 'all') return true;
+        return task.status === filterStatus;
+    });
+  }
+
 
   if (isDataLoading) {
     return (
@@ -57,6 +75,16 @@ export function TaskList({ goalId, tasks: customTasks }: { goalId?: string, task
   const handleStatusChange = (taskId: string, status: TaskStatus) => {
     updateTask(taskId, { status });
   };
+  
+  if (tasksToRender.length === 0 && goalId) {
+     return (
+        <div className="space-y-4">
+          <h4 className="font-semibold">Công việc</h4>
+          <p className="text-sm text-muted-foreground">Chưa có nhiệm vụ nào cho mục tiêu này.</p>
+          {goalId && <AddTaskForm goalId={goalId} />}
+        </div>
+      )
+  }
 
   return (
     <div className="space-y-4">
