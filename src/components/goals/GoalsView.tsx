@@ -50,7 +50,11 @@ export function GoalsView() {
     return goal.status === statusFilter;
   });
 
-  const standaloneTasks = tasks.filter(task => task.topicId === selectedTopic?.id && !task.goalId);
+  const standaloneTasks = tasks.filter(task => {
+    if (task.topicId !== selectedTopic?.id || task.goalId) return false;
+    if (statusFilter === 'all') return true;
+    return task.status === statusFilter;
+  });
 
 
   if (isDataLoading) {
