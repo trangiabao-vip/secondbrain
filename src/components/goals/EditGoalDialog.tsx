@@ -23,7 +23,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { GoalStatus, GoalPriority, Goal } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
 
 const getDateFromFirestore = (date: any): Date | undefined => {
@@ -35,6 +34,31 @@ const getDateFromFirestore = (date: any): Date | undefined => {
     return undefined;
 };
 
+function EditableMarkdown({ value, onChange, placeholder }: { value: string, onChange: (value: string) => void, placeholder: string }) {
+    const [isEditing, setIsEditing] = useState(false);
+
+    if (isEditing) {
+        return (
+            <Textarea
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                className="min-h-[150px] mt-2"
+                onBlur={() => setIsEditing(false)}
+                autoFocus
+            />
+        );
+    }
+
+    return (
+        <div 
+            className="min-h-[150px] mt-2 rounded-md border p-4 bg-secondary/50 cursor-text prose dark:prose-invert prose-sm max-w-none"
+            onClick={() => setIsEditing(true)}
+        >
+            {value ? <MarkdownRenderer>{value}</MarkdownRenderer> : <p className="text-muted-foreground">{placeholder}</p>}
+        </div>
+    );
+}
 
 export function EditGoalDialog({ goalId, children }: { goalId: string, children: ReactNode }) {
   const { getGoalById, updateGoal, deleteGoal, duplicateGoal } = useAppContext();
@@ -48,7 +72,6 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
   const [status, setStatus] = useState<GoalStatus>('chưa bắt đầu');
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const isInitialized = useRef(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -167,26 +190,11 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             </div>
              <div className="space-y-2">
                 <Label htmlFor="goal-description-edit">Mô tả (Tùy chọn)</Label>
-                <Tabs defaultValue="write" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="write">Viết</TabsTrigger>
-                    <TabsTrigger value="preview">Xem trước</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="write">
-                    <Textarea
-                      id="goal-description-edit"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Mô tả chi tiết hơn về mục tiêu này. Hỗ trợ Markdown."
-                      className="min-h-[150px] mt-2"
-                    />
-                  </TabsContent>
-                  <TabsContent value="preview">
-                     <div className="min-h-[150px] mt-2 rounded-md border p-4 bg-secondary/50">
-                        <MarkdownRenderer>{description || "Chưa có nội dung xem trước."}</MarkdownRenderer>
-                      </div>
-                  </TabsContent>
-                </Tabs>
+                <EditableMarkdown
+                    value={description}
+                    onChange={setDescription}
+                    placeholder="Mô tả chi tiết hơn về mục tiêu này. Hỗ trợ Markdown."
+                />
             </div>
             <div className="space-y-2">
               <Label htmlFor="priority-edit">Mức độ ưu tiên</Label>

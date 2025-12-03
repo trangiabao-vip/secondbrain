@@ -23,7 +23,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { TaskStatus, TaskDifficulty, type Task } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
 
 
@@ -42,6 +41,31 @@ const getDateFromFirestore = (date: any): Date | undefined => {
     return undefined;
 };
 
+function EditableMarkdown({ value, onChange, placeholder }: { value: string, onChange: (value: string) => void, placeholder: string }) {
+    const [isEditing, setIsEditing] = useState(false);
+
+    if (isEditing) {
+        return (
+            <Textarea
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                className="min-h-[150px] mt-2"
+                onBlur={() => setIsEditing(false)}
+                autoFocus
+            />
+        );
+    }
+
+    return (
+        <div 
+            className="min-h-[150px] mt-2 rounded-md border p-4 bg-secondary/50 cursor-text prose dark:prose-invert prose-sm max-w-none"
+            onClick={() => setIsEditing(true)}
+        >
+            {value ? <MarkdownRenderer>{value}</MarkdownRenderer> : <p className="text-muted-foreground">{placeholder}</p>}
+        </div>
+    );
+}
 
 export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, mode }: AddOrEditTaskDialogProps) {
   const { getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic, duplicateTask } = useAppContext();
@@ -57,7 +81,6 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
   const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(initialGoalId);
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const isInitialized = useRef(false);
 
   const topicGoals = goals.filter(g => g.topicId === selectedTopic?.id);
 
@@ -205,26 +228,11 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
             </div>
             <div className="space-y-2">
               <Label htmlFor="task-notes">Ghi chú (Tùy chọn)</Label>
-               <Tabs defaultValue="write" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="write">Viết</TabsTrigger>
-                  <TabsTrigger value="preview">Xem trước</TabsTrigger>
-                </TabsList>
-                <TabsContent value="write">
-                  <Textarea
-                    id="task-notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Thêm ghi chú hoặc chi tiết... Hỗ trợ Markdown."
-                    className="min-h-[150px] mt-2"
-                  />
-                </TabsContent>
-                <TabsContent value="preview">
-                  <div className="min-h-[150px] mt-2 rounded-md border p-4 bg-secondary/50">
-                    <MarkdownRenderer>{notes || "Chưa có nội dung xem trước."}</MarkdownRenderer>
-                  </div>
-                </TabsContent>
-              </Tabs>
+              <EditableMarkdown
+                  value={notes}
+                  onChange={setNotes}
+                  placeholder="Thêm ghi chú hoặc chi tiết... Hỗ trợ Markdown."
+              />
             </div>
              <div className="space-y-2">
               <Label htmlFor="task-goal">Mục tiêu (Tùy chọn)</Label>

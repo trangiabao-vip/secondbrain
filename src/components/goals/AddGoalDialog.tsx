@@ -23,8 +23,33 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { GoalPriority } from '@/lib/data';
 import { Separator } from '../ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
+
+function EditableMarkdown({ value, onChange, placeholder }: { value: string, onChange: (value: string) => void, placeholder: string }) {
+    const [isEditing, setIsEditing] = useState(true);
+
+    if (isEditing) {
+        return (
+            <Textarea
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                className="min-h-[150px] mt-2"
+                onBlur={() => setIsEditing(false)}
+                autoFocus
+            />
+        );
+    }
+
+    return (
+        <div 
+            className="min-h-[150px] mt-2 rounded-md border p-4 bg-secondary/50 cursor-text prose dark:prose-invert prose-sm max-w-none"
+            onClick={() => setIsEditing(true)}
+        >
+            {value ? <MarkdownRenderer>{value}</MarkdownRenderer> : <p className="text-muted-foreground">{placeholder}</p>}
+        </div>
+    );
+}
 
 export function AddGoalDialog({ children }: { children: ReactNode }) {
   const { addGoal, selectedTopic } = useAppContext();
@@ -119,26 +144,11 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="goal-description">Mô tả (Tùy chọn)</Label>
-              <Tabs defaultValue="write" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="write">Viết</TabsTrigger>
-                  <TabsTrigger value="preview">Xem trước</TabsTrigger>
-                </TabsList>
-                <TabsContent value="write">
-                  <Textarea
-                    id="goal-description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Mô tả chi tiết hơn về mục tiêu này. Hỗ trợ Markdown."
-                    className="min-h-[150px] mt-2"
-                  />
-                </TabsContent>
-                <TabsContent value="preview">
-                  <div className="min-h-[150px] mt-2 rounded-md border p-4 bg-secondary/50">
-                    <MarkdownRenderer>{description || "Chưa có nội dung xem trước."}</MarkdownRenderer>
-                  </div>
-                </TabsContent>
-              </Tabs>
+              <EditableMarkdown
+                  value={description}
+                  onChange={setDescription}
+                  placeholder="Mô tả chi tiết hơn về mục tiêu này. Hỗ trợ Markdown."
+              />
             </div>
              <div className="space-y-2">
               <Label htmlFor="priority-add">Mức độ ưu tiên</Label>
