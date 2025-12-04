@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { cn } from "@/lib/utils";
 import { Label } from "../ui/label";
 import { MarkdownRenderer } from "../ui/markdown-renderer";
+import { Tooltip, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
 const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
@@ -24,13 +25,13 @@ const getDateFromFirestore = (date: any): Date | null => {
 };
 
 const difficultyColors: Record<TaskDifficulty, string> = {
-    'Dễ': 'bg-green-500/20 text-green-700 border-green-500/30',
-    'Vừa': 'bg-yellow-500/20 text-yellow-700 border-yellow-500/30',
-    'Khó': 'bg-red-500/20 text-red-700 border-red-500/30',
+    'Dễ': 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300',
+    'Vừa': 'border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300',
+    'Khó': 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300',
 };
 
 const statusConfig: Record<TaskStatus, { color: string; label: string }> = {
-    'chưa bắt đầu': { color: 'bg-gray-500', label: 'Chưa bắt đầu' },
+    'chưa bắt đầu': { color: 'bg-gray-400', label: 'Chưa bắt đầu' },
     'đang làm': { color: 'bg-blue-500', label: 'Đang làm' },
     'hoàn thành': { color: 'bg-green-500', label: 'Hoàn thành' },
     'thất bại': { color: 'bg-red-500', label: 'Thất bại' },
@@ -80,7 +81,7 @@ export function TaskList({ goalId, tasks: customTasks, filterStatus = 'all' }: T
   if (tasksToRender.length === 0 && goalId) {
      return (
         <div className="space-y-4">
-          <h4 className="font-semibold">Công việc</h4>
+          <h4 className="text-sm font-semibold text-muted-foreground">Công việc</h4>
           <p className="text-sm text-muted-foreground">Chưa có nhiệm vụ nào cho mục tiêu này.</p>
           {goalId && <AddTaskForm goalId={goalId} />}
         </div>
@@ -88,14 +89,14 @@ export function TaskList({ goalId, tasks: customTasks, filterStatus = 'all' }: T
   }
 
   return (
-    <div className="space-y-4">
-      {goalId && <h4 className="font-semibold">Công việc</h4>}
-      <div className="space-y-2">
+    <div className="space-y-2">
+      {goalId && <h4 className="text-sm font-semibold text-muted-foreground">Công việc</h4>}
+      <div className="space-y-1">
         {tasksToRender.map(task => {
           const startDate = getDateFromFirestore(task.startDate);
           const currentStatus = statusConfig[task.status];
           return (
-            <div key={task.id} className="flex items-start gap-3 p-2 rounded-md hover:bg-secondary/50 group">
+            <div key={task.id} className="flex items-start gap-3 p-2 rounded-md hover:bg-background/50 group">
               <Checkbox
                 id={`task-check-${task.id}`}
                 checked={task.status === 'hoàn thành'}
@@ -105,33 +106,59 @@ export function TaskList({ goalId, tasks: customTasks, filterStatus = 'all' }: T
               />
               <div className="flex-grow">
                 <AddOrEditTaskDialog taskId={task.id} mode="edit">
-                  <span className="text-sm cursor-pointer">{task.text}</span>
+                  <span className={cn("text-sm cursor-pointer", task.status === 'hoàn thành' && 'line-through text-muted-foreground')}>
+                      {task.text}
+                  </span>
                 </AddOrEditTaskDialog>
 
                 <div className="flex items-center gap-2 flex-wrap mt-1">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Badge className="cursor-pointer">
-                        <div className={cn("w-2 h-2 rounded-full mr-2", currentStatus.color)}></div>
-                        {currentStatus.label}
-                      </Badge>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      {Object.entries(statusConfig).map(([statusKey, { label }]) => (
-                        <DropdownMenuItem key={statusKey} onSelect={() => handleStatusChange(task.id, statusKey as TaskStatus)}>
-                          {label}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                   <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Badge variant="outline" className="cursor-pointer font-normal text-xs">
+                                <div className={cn("w-1.5 h-1.5 rounded-full mr-1.5", currentStatus.color)}></div>
+                                {currentStatus.label}
+                            </Badge>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                            {Object.entries(statusConfig).map(([statusKey, { label }]) => (
+                                <DropdownMenuItem key={statusKey} onSelect={() => handleStatusChange(task.id, statusKey as TaskStatus)}>
+                                {label}
+                                </DropdownMenuItem>
+                            ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TooltipTrigger>
+                      <TooltipContent><p>Trạng thái</p></TooltipContent>
+                    </Tooltip>
+                   </TooltipProvider>
 
-                  {task.difficulty && <Badge variant="outline" className={difficultyColors[task.difficulty]}>{task.difficulty}</Badge>}
+
+                  {task.difficulty && (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Badge variant="outline" className={cn("font-normal text-xs", difficultyColors[task.difficulty])}>{task.difficulty}</Badge>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Độ khó</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                  )}
                   
                   {startDate && (
-                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Icons.calendar className="h-3 w-3" />
-                      {format(startDate, "d MMM, HH:mm", { locale: vi })}
-                    </div>
+                     <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Icons.calendar className="h-3 w-3" />
+                                {format(startDate, "d MMM, HH:mm", { locale: vi })}
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Thời gian</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                   )}
                 </div>
                 {task.notes && <MarkdownRenderer className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.notes}</MarkdownRenderer>}

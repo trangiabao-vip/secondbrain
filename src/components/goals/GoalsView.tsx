@@ -1,7 +1,6 @@
 'use client';
 import { useState } from "react";
 import { useAppContext } from "@/contexts/AppContext";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { TaskList } from "@/components/tasks/TaskList";
 import { AddGoalDialog } from "@/components/goals/AddGoalDialog";
 import { Button } from "../ui/button";
@@ -21,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { MarkdownRenderer } from "../ui/markdown-renderer";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 
 const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
@@ -74,8 +74,8 @@ export function GoalsView() {
           <Skeleton className="h-10 w-32" />
         </div>
         <div className="space-y-4">
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
         </div>
       </div>
     )
@@ -89,17 +89,17 @@ export function GoalsView() {
   };
 
   const statusColors: Record<GoalStatus, string> = {
-    'chưa bắt đầu': 'bg-gray-500',
-    'đang làm': 'bg-blue-500',
-    'hoàn thành': 'bg-green-500',
-    'thất bại': 'bg-red-500',
-    'huỷ': 'bg-orange-500',
+    'chưa bắt đầu': 'bg-gray-500 border-gray-400 text-gray-100',
+    'đang làm': 'bg-blue-500 border-blue-400 text-blue-100',
+    'hoàn thành': 'bg-green-500 border-green-400 text-green-100',
+    'thất bại': 'bg-red-500 border-red-400 text-red-100',
+    'huỷ': 'bg-orange-500 border-orange-400 text-orange-100',
   }
 
-  const priorityConfig: Record<GoalPriority, { color: string; icon: keyof typeof Icons }> = {
-    'Thấp': { color: 'text-gray-500', icon: 'down' },
-    'Vừa': { color: 'text-blue-500', icon: 'ellipsis' },
-    'Cao': { color: 'text-red-500', icon: 'up' },
+  const priorityConfig: Record<GoalPriority, { color: string; icon: keyof typeof Icons, label: string }> = {
+    'Thấp': { color: 'text-gray-500 dark:text-gray-400', icon: 'down', label: 'Ưu tiên: Thấp' },
+    'Vừa': { color: 'text-blue-500 dark:text-blue-400', icon: 'ellipsis', label: 'Ưu tiên: Vừa' },
+    'Cao': { color: 'text-red-500 dark:text-red-400', icon: 'up', label: 'Ưu tiên: Cao' },
   };
   
   return (
@@ -167,121 +167,159 @@ export function GoalsView() {
       </div>
 
       {filteredGoals.length > 0 && typeFilter !== 'task' && (
-        <Accordion type="single" collapsible className="w-full" defaultValue={filteredGoals[0]?.id}>
+        <div className="space-y-4">
           {filteredGoals.map((goal) => {
             const endDate = getDateFromFirestore(goal.endDate);
             const priority = goal.priority || 'Vừa';
-            const { color: priorityColor, icon: PriorityIcon } = priorityConfig[priority];
+            const { color: priorityColor, icon: PriorityIcon, label: priorityLabel } = priorityConfig[priority];
             const IconComponent = Icons[PriorityIcon] as React.ElementType;
+            const progress = calculateProgress(goal.id);
 
             return (
-              <AccordionItem value={goal.id} key={goal.id} className="border-b-0">
-                <Card className="mb-4 overflow-hidden">
-                  <div className="flex items-start p-4">
-                      <AccordionTrigger className="flex-1 text-left p-0 hover:no-underline">
-                          <div className="flex flex-col gap-2 w-full">
-                              <span className="font-semibold text-base">{goal.title}</span>
-                              {goal.description && <MarkdownRenderer className="text-sm text-muted-foreground line-clamp-2">{goal.description}</MarkdownRenderer>}
-                              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 flex-wrap">
-                                  <Badge variant="secondary" className="capitalize w-fit">
-                                      <div className={cn("w-2 h-2 rounded-full mr-2", statusColors[goal.status])}></div>
-                                      {goal.status}
-                                  </Badge>
-                                  <TooltipProvider>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                           <div className={`flex items-center gap-1 text-xs font-medium ${priorityColor}`}>
-                                                <IconComponent className="h-4 w-4" />
-                                                <span>Ưu tiên: {priority}</span>
-                                            </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p>Mức độ ưu tiên: {priority}</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                  </TooltipProvider>
-
-                                  {endDate && (
-                                      <span className="text-xs text-muted-foreground">
-                                      Hết hạn {formatDistanceToNow(endDate, { addSuffix: true, locale: vi })} ({format(endDate, 'd MMM, yyyy', { locale: vi })})
-                                      </span>
-                                  )}
-                              </div>
-                               {goal.customProperties && Object.keys(goal.customProperties).length > 0 && (
-                                <div className="flex items-center gap-x-4 gap-y-2 flex-wrap mt-2">
-                                  {Object.entries(goal.customProperties).map(([key, value]) => {
-                                      const lowerValue = String(value).toLowerCase();
-                                      if (lowerValue === 'true' || lowerValue === 'false') {
-                                        return (
-                                          <div key={key} className="flex items-center gap-2">
-                                            <Checkbox checked={lowerValue === 'true'} disabled id={`goal-prop-${goal.id}-${key}`} />
-                                            <Label htmlFor={`goal-prop-${goal.id}-${key}`} className="text-sm font-medium text-muted-foreground">
-                                              {key}
-                                            </Label>
-                                          </div>
-                                        );
-                                      }
-                                      return (
-                                        <Badge key={key} variant="outline" className="font-normal">
-                                          <span className="font-semibold mr-1">{key}:</span>
-                                          <span>{String(value)}</span>
-                                        </Badge>
-                                      );
-                                  })}
-                                </div>
-                              )}
-                              <Progress value={calculateProgress(goal.id)} className="h-2 w-full max-w-sm mt-1" />
-                          </div>
-                      </AccordionTrigger>
-                      <div className="flex items-center ml-2">
-                          <EditGoalDialog goalId={goal.id}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
-                                  <Icons.edit className="h-4 w-4" />
-                              </Button>
-                          </EditGoalDialog>
-                          <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
-                              <Icons.ellipsis className="h-4 w-4" />
-                              </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => duplicateGoal(goal.id)}>
-                                  <Icons.copy className="mr-2 h-4 w-4" />
-                                  Nhân bản
-                              </DropdownMenuItem>
-                              <DropdownMenuSub>
-                                  <DropdownMenuSubTrigger>
-                                      <span>Cập nhật trạng thái</span>
-                                  </DropdownMenuSubTrigger>
-                                  <DropdownMenuPortal>
-                                      <DropdownMenuSubContent>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'chưa bắt đầu' })}>Chưa bắt đầu</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'đang làm' })}>Đang làm</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'hoàn thành' })}>Hoàn thành</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'thất bại' })}>Thất bại</DropdownMenuItem>
-                                           <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'huỷ' })}>Huỷ</DropdownMenuItem>
-                                      </DropdownMenuSubContent>
-                                  </DropdownMenuPortal>
-                              </DropdownMenuSub>
-                              <DropdownMenuItem className="text-destructive" onClick={() => deleteGoal(goal.id)}>
-                              <Icons.delete className="mr-2 h-4 w-4" />
-                              Xóa mục tiêu
-                              </DropdownMenuItem>
-                          </DropdownMenuContent>
-                          </DropdownMenu>
-                      </div>
+              <Card key={goal.id} className="overflow-hidden">
+                <div className="p-4">
+                  <div className="flex justify-between items-start gap-2">
+                    <h4 className="font-semibold text-base flex-1">{goal.title}</h4>
+                    <div className="flex items-center flex-shrink-0">
+                        <EditGoalDialog goalId={goal.id}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Icons.edit className="h-4 w-4" />
+                            </Button>
+                        </EditGoalDialog>
+                        <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Icons.ellipsis className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => duplicateGoal(goal.id)}>
+                                <Icons.copy className="mr-2 h-4 w-4" />
+                                Nhân bản
+                            </DropdownMenuItem>
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <span>Cập nhật trạng thái</span>
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuPortal>
+                                    <DropdownMenuSubContent>
+                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'chưa bắt đầu' })}>Chưa bắt đầu</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'đang làm' })}>Đang làm</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'hoàn thành' })}>Hoàn thành</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'thất bại' })}>Thất bại</DropdownMenuItem>
+                                         <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'huỷ' })}>Huỷ</DropdownMenuItem>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuPortal>
+                            </DropdownMenuSub>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive" onClick={() => deleteGoal(goal.id)}>
+                            <Icons.delete className="mr-2 h-4 w-4" />
+                            Xóa mục tiêu
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                   </div>
-                  <AccordionContent>
-                      <div className="px-4 pb-4">
-                          <TaskList goalId={goal.id} filterStatus={statusFilter} />
-                      </div>
-                  </AccordionContent>
-                </Card>
-              </AccordionItem>
+                  
+                  <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Badge variant="outline" className={cn("capitalize", statusColors[goal.status])}>
+                                    <div className="w-2 h-2 rounded-full mr-2 bg-current"></div>
+                                    {goal.status}
+                                </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Trạng thái</p></TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className={cn("flex items-center gap-1", priorityColor)}>
+                                    <IconComponent className="h-4 w-4" />
+                                    <span>{priority}</span>
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent><p>{priorityLabel}</p></TooltipContent>
+                        </Tooltip>
+                        {endDate && (
+                           <Tooltip>
+                             <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1">
+                                    <Icons.calendar className="h-4 w-4" />
+                                    <span>{format(endDate, 'd MMM, yyyy', { locale: vi })}</span>
+                                    <span className="hidden sm:inline">({formatDistanceToNow(endDate, { addSuffix: true, locale: vi })})</span>
+                                </div>
+                             </TooltipTrigger>
+                             <TooltipContent><p>Hạn chót</p></TooltipContent>
+                           </Tooltip>
+                        )}
+                      </TooltipProvider>
+                  </div>
+                </div>
+
+                <div className="px-4 pb-1">
+                   <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger className="w-full">
+                             <Progress value={progress} className="h-2 w-full" />
+                        </TooltipTrigger>
+                        <TooltipContent><p>{Math.round(progress)}% hoàn thành</p></TooltipContent>
+                    </Tooltip>
+                   </TooltipProvider>
+                </div>
+
+                <Collapsible>
+                  {(goal.description || (goal.customProperties && Object.keys(goal.customProperties).length > 0)) && (
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm" className="w-full justify-start text-xs text-muted-foreground">
+                        <Icons.down className="h-4 w-4 mr-1 transition-transform [&[data-state=open]]:rotate-180" />
+                        Chi tiết...
+                      </Button>
+                    </CollapsibleTrigger>
+                  )}
+                  <CollapsibleContent className="px-4 pb-2 space-y-4">
+                     {goal.description && (
+                        <div>
+                            <Label className="text-xs font-semibold text-muted-foreground">Mô tả</Label>
+                            <MarkdownRenderer className="text-sm">{goal.description}</MarkdownRenderer>
+                        </div>
+                     )}
+                     {goal.customProperties && Object.keys(goal.customProperties).length > 0 && (
+                        <div>
+                            <Label className="text-xs font-semibold text-muted-foreground">Thuộc tính</Label>
+                            <div className="flex items-center gap-x-4 gap-y-2 flex-wrap mt-2">
+                            {Object.entries(goal.customProperties).map(([key, value]) => {
+                                const lowerValue = String(value).toLowerCase();
+                                if (lowerValue === 'true' || lowerValue === 'false') {
+                                return (
+                                    <div key={key} className="flex items-center gap-2">
+                                    <Checkbox checked={lowerValue === 'true'} disabled id={`goal-prop-${goal.id}-${key}`} />
+                                    <Label htmlFor={`goal-prop-${goal.id}-${key}`} className="text-sm font-medium text-muted-foreground">
+                                        {key}
+                                    </Label>
+                                    </div>
+                                );
+                                }
+                                return (
+                                <Badge key={key} variant="outline" className="font-normal">
+                                    <span className="font-semibold mr-1.5">{key}:</span>
+                                    <span>{String(value)}</span>
+                                </Badge>
+                                );
+                            })}
+                            </div>
+                        </div>
+                     )}
+                  </CollapsibleContent>
+                </Collapsible>
+                
+                <div className="bg-secondary/50 p-4">
+                    <TaskList goalId={goal.id} filterStatus={statusFilter} />
+                </div>
+              </Card>
             )
           })}
-        </Accordion>
+        </div>
       )}
 
       {filteredStandaloneTasks.length > 0 && typeFilter !== 'goal' && (
