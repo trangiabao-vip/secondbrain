@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from "@/contexts/AppContext";
-import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, parseISO, getMinutes, differenceInMinutes, startOfDay, endOfDay, areIntervalsOverlapping, max, min, isBefore, getDay, addWeeks, addMonths } from "date-fns";
+import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, parseISO, getMinutes, differenceInMinutes, startOfDay, endOfDay, areIntervalsOverlapping, max, min, isBefore, getDay, addWeeks, addMonths, addMinutes } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Icons } from "../icons";
 import { Button } from "../ui/button";
@@ -70,7 +70,7 @@ const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date
 
         if (rule.frequency === 'weekly' && rule.daysOfWeek && rule.daysOfWeek.length > 0) {
             rule.daysOfWeek.forEach(day => {
-                const dayIndex = dayNameToIndex[day];
+                const dayIndex = dayNameToIndex[day as keyof typeof dayNameToIndex];
                 const currentDayIndex = getDay(currentDate);
                 const dateInWeek = addDays(currentDate, dayIndex - currentDayIndex);
 
@@ -443,3 +443,5 @@ export function GlobalScheduleView() {
     </div>
   );
 }
+
+    
