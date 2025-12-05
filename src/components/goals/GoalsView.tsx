@@ -16,11 +16,12 @@ import { cn } from "@/lib/utils";
 import type { GoalStatus, GoalPriority } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { MarkdownRenderer } from "../ui/markdown-renderer";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 
 const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
@@ -46,8 +47,8 @@ const typeOptions = {
 
 export function GoalsView() {
   const { goals, tasks, selectedTopic, deleteGoal, updateGoal, isDataLoading, duplicateGoal } = useAppContext();
-  const [statusFilters, setStatusFilters] = useState<GoalStatus[]>([]);
-  const [typeFilter, setTypeFilter] = useState<'all' | 'goal' | 'task'>('all');
+  const [statusFilters, setStatusFilters] = useLocalStorage<GoalStatus[]>('goalsViewStatusFilters', []);
+  const [typeFilter, setTypeFilter] = useLocalStorage<'all' | 'goal' | 'task'>('goalsViewTypeFilter', 'all');
   
   if (!selectedTopic) return null;
   
@@ -377,3 +378,5 @@ export function GoalsView() {
     </div>
   );
 }
+
+    
