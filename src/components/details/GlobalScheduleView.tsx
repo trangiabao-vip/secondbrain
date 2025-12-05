@@ -84,6 +84,7 @@ const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date
                         id: `${task.id}-recur-${dateInWeek.getTime()}`,
                         startDate: occurrenceStartDate,
                         endDate: occurrenceEndDate,
+                        status: 'chưa bắt đầu', // Force status to 'not started' for recurring instances
                     });
                 }
             });
@@ -96,7 +97,8 @@ const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date
                      ...task,
                      id: `${task.id}-recur-${currentDate.getTime()}`,
                      startDate: occurrenceStartDate,
-                     endDate: occurrenceEndDate
+                     endDate: occurrenceEndDate,
+                     status: 'chưa bắt đầu', // Force status to 'not started' for recurring instances
                  });
              }
         }
@@ -443,5 +445,3 @@ export function GlobalScheduleView() {
     </div>
   );
 }
-
-    
