@@ -41,7 +41,7 @@ const statusConfig: Record<TaskStatus, { color: string; label: string }> = {
 interface TaskListProps {
   goalId?: string;
   tasks?: Task[];
-  filterStatus?: TaskStatus | 'all';
+  filterStatus?: TaskStatus[] | 'all';
 }
 
 
@@ -56,7 +56,7 @@ export function TaskList({ goalId, tasks: customTasks, filterStatus = 'all' }: T
     tasksToRender = allTasks.filter(task => {
         if (task.goalId !== goalId) return false;
         if (filterStatus === 'all') return true;
-        return task.status === filterStatus;
+        return filterStatus.includes(task.status);
     });
   }
 

@@ -6,7 +6,7 @@ import { AddGoalDialog } from "@/components/goals/AddGoalDialog";
 import { Button } from "../ui/button";
 import { Icons } from "../icons";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent, DropdownMenuSeparator } from "../ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent, DropdownMenuSeparator, DropdownMenuCheckboxItem } from "../ui/dropdown-menu";
 import { Progress } from "../ui/progress";
 import { vi } from 'date-fns/locale';
 import { Card, CardContent } from "../ui/card";
@@ -30,8 +30,7 @@ const getDateFromFirestore = (date: any): Date | null => {
     return null;
 };
 
-const statusOptions: Record<GoalStatus | 'all', string> = {
-    'all': 'Tất cả trạng thái',
+const statusOptions: Record<GoalStatus, string> = {
     'chưa bắt đầu': 'Chưa bắt đầu',
     'đang làm': 'Đang làm',
     'hoàn thành': 'Hoàn thành',
@@ -47,23 +46,31 @@ const typeOptions = {
 
 export function GoalsView() {
   const { goals, tasks, selectedTopic, deleteGoal, updateGoal, isDataLoading, duplicateGoal } = useAppContext();
-  const [statusFilter, setStatusFilter] = useState<GoalStatus | 'all'>('all');
+  const [statusFilters, setStatusFilters] = useState<GoalStatus[]>([]);
   const [typeFilter, setTypeFilter] = useState<'all' | 'goal' | 'task'>('all');
   
   if (!selectedTopic) return null;
   
+  const toggleStatusFilter = (status: GoalStatus) => {
+    setStatusFilters(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status) 
+        : [...prev, status]
+    );
+  };
+
   const filteredGoals = goals.filter(goal => {
     if (goal.topicId !== selectedTopic?.id) return false;
-    if (typeFilter === 'task') return false; // Hide all goals if filtering for tasks
-    if (statusFilter === 'all') return true;
-    return goal.status === statusFilter;
+    if (typeFilter === 'task') return false; 
+    if (statusFilters.length === 0) return true;
+    return statusFilters.includes(goal.status);
   });
 
   const filteredStandaloneTasks = tasks.filter(task => {
     if (task.topicId !== selectedTopic?.id || task.goalId) return false;
-    if (typeFilter === 'goal') return false; // Hide standalone tasks if filtering for goals
-    if (statusFilter === 'all') return true;
-    return task.status === statusFilter;
+    if (typeFilter === 'goal') return false; 
+    if (statusFilters.length === 0) return true;
+    return statusFilters.includes(task.status);
   });
 
   if (isDataLoading) {
@@ -149,18 +156,21 @@ export function GoalsView() {
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
-                    {statusOptions[statusFilter]}
+                    Trạng thái
+                    {statusFilters.length > 0 && <Badge variant="secondary" className="ml-2 rounded">{statusFilters.length}</Badge>}
                     <Icons.down className="ml-2 h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
                 {Object.entries(statusOptions).map(([key, value]) => (
-                    <DropdownMenuItem 
+                    <DropdownMenuCheckboxItem 
                         key={key} 
-                        onSelect={() => setStatusFilter(key as GoalStatus | 'all')}
+                        checked={statusFilters.includes(key as GoalStatus)}
+                        onSelect={(e) => e.preventDefault()}
+                        onClick={() => toggleStatusFilter(key as GoalStatus)}
                     >
                         {value}
-                    </DropdownMenuItem>
+                    </DropdownMenuCheckboxItem>
                 ))}
             </DropdownMenuContent>
         </DropdownMenu>
@@ -315,7 +325,7 @@ export function GoalsView() {
                     )}
                     
                     <div className="bg-secondary/50 p-4">
-                        <TaskList goalId={goal.id} filterStatus={statusFilter} />
+                        <TaskList goalId={goal.id} filterStatus={statusFilters.length > 0 ? statusFilters : 'all'} />
                     </div>
                   </CollapsibleContent>
                 </Card>
@@ -356,8 +366,8 @@ export function GoalsView() {
                         Mục tiêu mới
                     </Button>
                 </AddGoalDialog>
-                 {(statusFilter !== 'all' || typeFilter !== 'all') && (
-                  <Button variant="outline" onClick={() => { setStatusFilter('all'); setTypeFilter('all'); }}>
+                 {(statusFilters.length > 0 || typeFilter !== 'all') && (
+                  <Button variant="outline" onClick={() => { setStatusFilters([]); setTypeFilter('all'); }}>
                     Xóa bộ lọc
                   </Button>
                 )}
