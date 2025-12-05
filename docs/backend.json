@@ -178,6 +178,30 @@
             "description": "The difficulty of the task.",
             "enum": ["Dễ", "Vừa", "Khó"]
         },
+        "recurrence": {
+          "type": "object",
+          "description": "Rules for recurring tasks.",
+          "properties": {
+            "frequency": {
+              "type": "string",
+              "enum": ["daily", "weekly", "monthly"]
+            },
+            "interval": {
+              "type": "number"
+            },
+            "endDate": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "daysOfWeek": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
+              }
+            }
+          }
+        },
         "customProperties": {
           "type": "object",
           "description": "User-defined custom properties for the task.",

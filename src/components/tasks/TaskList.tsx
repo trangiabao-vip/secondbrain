@@ -160,6 +160,19 @@ export function TaskList({ goalId, tasks: customTasks, filterStatus = 'all' }: T
                         </Tooltip>
                     </TooltipProvider>
                   )}
+
+                  {task.recurrence && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Icons.recurrence className="h-3 w-3" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Nhiệm vụ lặp lại</p></TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                 </div>
                 {task.notes && <MarkdownRenderer className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.notes}</MarkdownRenderer>}
                 

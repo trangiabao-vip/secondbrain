@@ -32,6 +32,7 @@ import {
   Instagram,
   FileText,
   Search,
+  Repeat,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -71,6 +72,7 @@ export const Icons = {
   dashboard: LayoutGrid,
   salesPage: FileText,
   search: Search,
+  recurrence: Repeat,
   whoIsTheSpy: ({ className }: { className?: string }) => (
     <svg 
       className={className}

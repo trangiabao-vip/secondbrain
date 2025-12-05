@@ -20,10 +20,12 @@ import { Icons } from '../icons';
 import { format, setHours, setMinutes, parseISO } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { TaskStatus, TaskDifficulty, type Task } from '@/lib/data';
+import { TaskStatus, TaskDifficulty, type Task, type RecurrenceRule, RecurrenceFrequency } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
+import { Switch } from '../ui/switch';
+import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 
 
 interface AddOrEditTaskDialogProps {
@@ -81,6 +83,12 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
   const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(initialGoalId);
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule>({
+    frequency: 'weekly',
+    interval: 1,
+    daysOfWeek: [],
+  });
 
   const topicGoals = goals.filter(g => g.topicId === selectedTopic?.id);
 
@@ -97,26 +105,29 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
           
           const sDate = getDateFromFirestore(task.startDate);
           setStartDate(sDate);
-          if (sDate) {
-            setStartTime(format(sDate, "HH:mm"));
-          } else {
-            setStartTime('09:00');
-          }
+          if (sDate) setStartTime(format(sDate, "HH:mm"));
+          else setStartTime('09:00');
+          
 
           const eDate = getDateFromFirestore(task.endDate);
           setEndDate(eDate);
-          if (eDate) {
-            setEndTime(format(eDate, "HH:mm"));
-          } else {
-            setEndTime('10:00');
-          }
+          if (eDate) setEndTime(format(eDate, "HH:mm"));
+          else setEndTime('10:00');
 
-           if (task.customProperties) {
+          if (task.customProperties) {
             setCustomProperties(
               Object.entries(task.customProperties).map(([key, value], index) => ({ id: index, key, value: String(value) }))
             );
           } else {
             setCustomProperties([]);
+          }
+
+          if (task.recurrence) {
+            setIsRecurring(true);
+            setRecurrenceRule(task.recurrence);
+          } else {
+            setIsRecurring(false);
+            setRecurrenceRule({ frequency: 'weekly', interval: 1, daysOfWeek: [] });
           }
         }
       } else {
@@ -131,6 +142,8 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
         setEndTime('10:00');
         setSelectedGoalId(initialGoalId);
         setCustomProperties([]);
+        setIsRecurring(false);
+        setRecurrenceRule({ frequency: 'weekly', interval: 1, daysOfWeek: [] });
       }
     }
   }, [isOpen, taskId, getTaskById, mode, initialGoalId]);
@@ -177,6 +190,7 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
         startDate: finalStartDate,
         endDate: finalEndDate,
         goalId: selectedGoalId === 'none' || selectedGoalId === undefined ? null : selectedGoalId,
+        recurrence: isRecurring ? recurrenceRule : null,
         customProperties: customPropsObject,
       };
 
@@ -206,6 +220,20 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
       setIsOpen(false);
     }
   };
+
+  const handleRecurrenceChange = (field: keyof RecurrenceRule, value: any) => {
+    setRecurrenceRule(prev => ({...prev, [field]: value}));
+  }
+
+  const daysOfWeekMap = [
+    { id: 'MO', label: 'T2' },
+    { id: 'TU', label: 'T3' },
+    { id: 'WE', label: 'T4' },
+    { id: 'TH', label: 'T5' },
+    { id: 'FR', label: 'T6' },
+    { id: 'SA', label: 'T7' },
+    { id: 'SU', label: 'CN' },
+  ] as const;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -345,6 +373,75 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
                     />
                 )}
               </div>
+            </div>
+            <Separator/>
+            <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                    <Switch id="recurrence-switch" checked={isRecurring} onCheckedChange={setIsRecurring} />
+                    <Label htmlFor="recurrence-switch">Lặp lại nhiệm vụ</Label>
+                </div>
+                {isRecurring && (
+                    <div className="grid gap-4 p-4 border rounded-lg">
+                        <div className='flex items-center gap-2'>
+                            Lặp lại mỗi
+                            <Input 
+                                type="number" 
+                                className="w-16" 
+                                value={recurrenceRule.interval}
+                                onChange={e => handleRecurrenceChange('interval', parseInt(e.target.value) || 1)}
+                                min="1"
+                            />
+                            <Select value={recurrenceRule.frequency} onValueChange={(v: RecurrenceFrequency) => handleRecurrenceChange('frequency', v)}>
+                                <SelectTrigger className="w-32">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="daily">Ngày</SelectItem>
+                                    <SelectItem value="weekly">Tuần</SelectItem>
+                                    <SelectItem value="monthly">Tháng</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        {recurrenceRule.frequency === 'weekly' && (
+                            <div>
+                                <Label className="mb-2 block">Vào các ngày</Label>
+                                <ToggleGroup 
+                                    type="multiple"
+                                    variant="outline"
+                                    value={recurrenceRule.daysOfWeek}
+                                    onValueChange={v => handleRecurrenceChange('daysOfWeek', v)}
+                                >
+                                    {daysOfWeekMap.map(day => (
+                                        <ToggleGroupItem key={day.id} value={day.id}>{day.label}</ToggleGroupItem>
+                                    ))}
+                                </ToggleGroup>
+                            </div>
+                        )}
+                        <div>
+                          <Label>Ngày kết thúc (Tùy chọn)</Label>
+                           <Popover>
+                              <PopoverTrigger asChild>
+                              <Button
+                                  variant={"outline"}
+                                  className="w-full justify-start text-left font-normal mt-2"
+                              >
+                                  <Icons.calendar className="mr-2 h-4 w-4" />
+                                  {recurrenceRule.endDate ? format(getDateFromFirestore(recurrenceRule.endDate)!, "PPP", { locale: vi }) : <span>Không bao giờ</span>}
+                              </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                  locale={vi}
+                                  mode="single"
+                                  selected={getDateFromFirestore(recurrenceRule.endDate)}
+                                  onSelect={d => handleRecurrenceChange('endDate', d)}
+                                  initialFocus
+                              />
+                              </PopoverContent>
+                          </Popover>
+                        </div>
+                    </div>
+                )}
             </div>
             <Separator />
             <div className="space-y-2">

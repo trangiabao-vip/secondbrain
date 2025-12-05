@@ -4,9 +4,16 @@ export type GoalStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 
 export type TaskStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại' | 'huỷ';
 export type GoalPriority = 'Thấp' | 'Vừa' | 'Cao';
 export type TaskDifficulty = 'Dễ' | 'Vừa' | 'Khó';
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly';
 
 // Note: The 'id' field will be automatically managed by Firestore.
 // The types here represent the data structure within the application logic.
+export interface RecurrenceRule {
+  frequency: RecurrenceFrequency;
+  interval: number;
+  daysOfWeek?: ('MO' | 'TU' | 'WE' | 'TH' | 'FR' | 'SA' | 'SU')[];
+  endDate?: any; // Can be string or Firebase Timestamp
+}
 
 export interface Task {
   id: string; // Firestore document ID
@@ -18,6 +25,7 @@ export interface Task {
   topicId?: string | null; // Optional: Link directly to a topic
   startDate?: any; // Can be string or Firebase Timestamp
   endDate?: any; // Can be string or Firebase Timestamp
+  recurrence?: RecurrenceRule;
   customProperties?: { [key: string]: string };
   createdAt: any; // Can be string or Firebase Timestamp
   userId: string;
