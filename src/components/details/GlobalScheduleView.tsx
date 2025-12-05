@@ -221,12 +221,12 @@ export function GlobalScheduleView() {
   }, []);
 
   const week = useMemo(() => {
-    const start = startOfWeek(currentDate, { locale: vi });
+    const start = startOfWeek(currentDate, { weekStartsOn: 0 }); // Sunday as start of the week
     return eachDayOfInterval({ start, end: addDays(start, 6) });
   }, [currentDate]);
 
   const scheduledItems = useMemo((): ScheduledItem[] => {
-    const rangeStart = startOfWeek(currentDate, { locale: vi });
+    const rangeStart = startOfWeek(currentDate, { weekStartsOn: 0 });
     const rangeEnd = endOfDay(addDays(rangeStart, 6));
 
     const goalItems: ScheduledItem[] = goals
