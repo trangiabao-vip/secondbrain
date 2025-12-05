@@ -319,7 +319,7 @@ export function GlobalScheduleView() {
       <div className="flex-1 flex flex-col">
         <header className="flex items-center justify-between pb-4">
           <h2 className="text-xl font-bold">
-            Tháng {format(startOfWeek(currentDate, { locale: vi }), 'M, yyyy', { locale: vi })}
+            Tháng {format(startOfWeek(currentDate, { locale: vi, weekStartsOn: 0 }), 'M, yyyy', { locale: vi })}
           </h2>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={goToPreviousWeek} className="h-8 w-8">
