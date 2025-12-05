@@ -69,10 +69,14 @@ const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date
         }
 
         if (rule.frequency === 'weekly' && rule.daysOfWeek && rule.daysOfWeek.length > 0) {
-            rule.daysOfWeek.forEach(day => {
+            for (const day of rule.daysOfWeek) {
                 const dayIndex = dayNameToIndex[day as keyof typeof dayNameToIndex];
                 const currentDayIndex = getDay(currentDate);
                 const dateInWeek = addDays(currentDate, dayIndex - currentDayIndex);
+
+                if (isBefore(dateInWeek, taskStartDate)) {
+                  continue;
+                }
 
                 if (dateInWeek >= rangeStart && dateInWeek <= rangeEnd) {
                      const occurrenceStartDate = new Date(dateInWeek);
@@ -87,9 +91,9 @@ const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date
                         status: 'chưa bắt đầu', // Force status to 'not started' for recurring instances
                     });
                 }
-            });
+            }
         } else {
-             if (currentDate >= rangeStart && currentDate <= rangeEnd) {
+             if (currentDate >= rangeStart && currentDate <= rangeEnd && !isBefore(currentDate, taskStartDate)) {
                   const occurrenceStartDate = new Date(currentDate);
                   occurrenceStartDate.setHours(getHours(taskStartDate), getMinutes(taskStartDate));
                   const occurrenceEndDate = addMinutes(occurrenceStartDate, taskDuration);
@@ -118,7 +122,9 @@ const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date
         }
     }
 
-    return occurrences;
+    return occurrences.filter((value, index, self) =>
+      index === self.findIndex((t) => t.id === value.id)
+    );
 }
 
 
