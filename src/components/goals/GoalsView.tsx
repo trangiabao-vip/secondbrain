@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import type { GoalStatus, GoalPriority } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
-import { Tooltip, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "../ui/tooltip";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { MarkdownRenderer } from "../ui/markdown-renderer";
@@ -378,5 +378,3 @@ export function GoalsView() {
     </div>
   );
 }
-
-    
