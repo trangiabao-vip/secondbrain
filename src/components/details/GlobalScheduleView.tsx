@@ -2,13 +2,13 @@
 import { useState, useMemo, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from "@/contexts/AppContext";
-import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, parseISO, getMinutes, differenceInMinutes, startOfDay, endOfDay, areIntervalsOverlapping, max, min } from "date-fns";
+import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, parseISO, getMinutes, differenceInMinutes, startOfDay, endOfDay, areIntervalsOverlapping, max, min, isBefore, getDay, addWeeks, addMonths } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Icons } from "../icons";
 import { Button } from "../ui/button";
 import { EditGoalDialog } from "../goals/EditGoalDialog";
 import { EditTaskDialog } from "../tasks/EditTaskDialog";
-import { Goal, Task, GoalStatus } from "@/lib/data";
+import { Goal, Task, GoalStatus, RecurrenceRule } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -25,14 +25,108 @@ const getDateFromFirestore = (date: any): Date | null => {
 type ScheduledItem = (Goal | Task) & { type: 'goal' | 'task', startDate: Date, endDate?: Date };
 type PositionedItem = ScheduledItem & { top: number; height: number; left: number; width: number; };
 
+const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date): Task[] => {
+    if (!task.recurrence || !task.startDate) return [];
+
+    const occurrences: Task[] = [];
+    const rule = task.recurrence;
+    const taskStartDate = getDateFromFirestore(task.startDate);
+    if (!taskStartDate) return [];
+
+    const taskDuration = task.endDate ? differenceInMinutes(getDateFromFirestore(task.endDate)!, taskStartDate) : 30;
+    
+    let currentDate = new Date(taskStartDate);
+    const dayNameToIndex = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
+
+    // Move to the first potential start date within or before the range
+    while(currentDate < rangeStart && (!rule.endDate || currentDate < getDateFromFirestore(rule.endDate)!)) {
+         switch (rule.frequency) {
+            case 'daily':
+                currentDate = addDays(currentDate, rule.interval || 1);
+                break;
+            case 'weekly':
+                currentDate = addWeeks(currentDate, rule.interval || 1);
+                break;
+            case 'monthly':
+                currentDate = addMonths(currentDate, rule.interval || 1);
+                break;
+        }
+    }
+     // Go back one step to include events starting just before the range but overlapping into it
+    switch (rule.frequency) {
+        case 'daily': currentDate = addDays(currentDate, -(rule.interval || 1)); break;
+        case 'weekly': currentDate = addWeeks(currentDate, -(rule.interval || 1)); break;
+        case 'monthly': currentDate = addMonths(currentDate, -(rule.interval || 1)); break;
+    }
+
+
+    for (let i = 0; i < 100; i++) { // Limit to 100 iterations to prevent infinite loops
+        if (rule.endDate && currentDate > getDateFromFirestore(rule.endDate)!) {
+            break;
+        }
+        if (currentDate > rangeEnd) {
+            break;
+        }
+
+        if (rule.frequency === 'weekly' && rule.daysOfWeek && rule.daysOfWeek.length > 0) {
+            rule.daysOfWeek.forEach(day => {
+                const dayIndex = dayNameToIndex[day];
+                const currentDayIndex = getDay(currentDate);
+                const dateInWeek = addDays(currentDate, dayIndex - currentDayIndex);
+
+                if (dateInWeek >= rangeStart && dateInWeek <= rangeEnd) {
+                     const occurrenceStartDate = new Date(dateInWeek);
+                     occurrenceStartDate.setHours(getHours(taskStartDate), getMinutes(taskStartDate));
+                     const occurrenceEndDate = addMinutes(occurrenceStartDate, taskDuration);
+                    
+                    occurrences.push({
+                        ...task,
+                        id: `${task.id}-recur-${dateInWeek.getTime()}`,
+                        startDate: occurrenceStartDate,
+                        endDate: occurrenceEndDate,
+                    });
+                }
+            });
+        } else {
+             if (currentDate >= rangeStart && currentDate <= rangeEnd) {
+                  const occurrenceStartDate = new Date(currentDate);
+                  occurrenceStartDate.setHours(getHours(taskStartDate), getMinutes(taskStartDate));
+                  const occurrenceEndDate = addMinutes(occurrenceStartDate, taskDuration);
+                 occurrences.push({
+                     ...task,
+                     id: `${task.id}-recur-${currentDate.getTime()}`,
+                     startDate: occurrenceStartDate,
+                     endDate: occurrenceEndDate
+                 });
+             }
+        }
+        
+        switch (rule.frequency) {
+            case 'daily':
+                currentDate = addDays(currentDate, rule.interval || 1);
+                break;
+            case 'weekly':
+                currentDate = addWeeks(currentDate, rule.interval || 1);
+                break;
+            case 'monthly':
+                currentDate = addMonths(currentDate, rule.interval || 1);
+                break;
+            default:
+                return occurrences;
+        }
+    }
+
+    return occurrences;
+}
+
+
 const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
     const timedItems = items
         .map(item => {
             const startDate = getDateFromFirestore(item.startDate);
             if (!startDate) return null;
             const hasTime = getHours(startDate) !== 0 || getMinutes(startDate) !== 0;
-            // Only process items that have a specific time. All-day items are handled separately.
-            if (!hasTime && differenceInMinutes(getDateFromFirestore(item.endDate)!, startDate) >= 1440) return null;
+            if (!hasTime && (!item.endDate || differenceInMinutes(getDateFromFirestore(item.endDate)!, startDate) >= 1440)) return null;
 
             let endDate = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 30);
             return { ...item, startDate, endDate, top: 0, height: 0, left: 0, width: 0 };
@@ -124,18 +218,27 @@ export function GlobalScheduleView() {
   }, [currentDate]);
 
   const scheduledItems = useMemo((): ScheduledItem[] => {
+    const rangeStart = startOfWeek(currentDate, { locale: vi });
+    const rangeEnd = endOfDay(addDays(rangeStart, 6));
+
     const goalItems: ScheduledItem[] = goals
         .filter(g => g.startDate)
         .map(g => ({ ...g, type: 'goal' as const, startDate: getDateFromFirestore(g.startDate)!, endDate: getDateFromFirestore(g.endDate) }))
         .filter(item => item.startDate);
 
-    const taskItems: ScheduledItem[] = tasks
-        .filter(t => t.startDate)
+    const baseTasks: ScheduledItem[] = tasks
+        .filter(t => t.startDate && !t.recurrence)
+        .map(t => ({ ...t, type: 'task' as const, startDate: getDateFromFirestore(t.startDate)!, endDate: getDateFromFirestore(t.endDate) }))
+        .filter(item => item.startDate);
+
+    const recurringTaskInstances: ScheduledItem[] = tasks
+        .filter(t => t.recurrence && t.startDate)
+        .flatMap(t => generateRecurrencesInRange(t, rangeStart, rangeEnd))
         .map(t => ({ ...t, type: 'task' as const, startDate: getDateFromFirestore(t.startDate)!, endDate: getDateFromFirestore(t.endDate) }))
         .filter(item => item.startDate);
         
-    return [...goalItems, ...taskItems];
-  }, [goals, tasks]);
+    return [...goalItems, ...baseTasks, ...recurringTaskInstances];
+  }, [goals, tasks, currentDate]);
 
   const getScheduledItemsForDay = (day: Date) => {
     const dayStart = startOfDay(day);
@@ -145,7 +248,6 @@ export function GlobalScheduleView() {
       .filter(item => {
         const startDate = getDateFromFirestore(item.startDate);
         if (!startDate) return false;
-        // Use a default duration (e.g., 30 mins) if endDate is not present
         const endDate = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 30);
         
         const itemInterval = { start: startDate, end: endDate };
@@ -157,7 +259,6 @@ export function GlobalScheduleView() {
         const itemStart = getDateFromFirestore(item.startDate)!;
         const itemEnd = getDateFromFirestore(item.endDate) || setMinutes(itemStart, getMinutes(itemStart) + 30);
 
-        // Clamp the event's start and end times to the current day for correct visualization
         const displayStart = max([itemStart, dayStart]);
         const displayEnd = min([itemEnd, dayEnd]);
 
@@ -174,11 +275,6 @@ export function GlobalScheduleView() {
         const startDate = getDateFromFirestore(item.startDate);
         if (!startDate) return false;
         
-        const endDate = getDateFromFirestore(item.endDate);
-        const duration = endDate ? differenceInMinutes(endDate, startDate) : 0;
-        
-        // It's an all-day event if it has no time or spans 24h or more, and it overlaps with the current day
-        const isAllDayLike = (getHours(startDate) === 0 && getMinutes(startDate) === 0 && duration >= 1439) || isSameDay(startDate, day);
         const hasTime = getHours(startDate) !== 0 || getMinutes(startDate) !== 0;
 
         return isSameDay(startDate, day) && !hasTime;
@@ -257,25 +353,28 @@ export function GlobalScheduleView() {
                     </div>
                     {/* All day section */}
                     <div className="h-10 border-b p-0.5 space-y-0.5 overflow-hidden">
-                      {getItemsForAllday(day).map(item => (
-                        <div key={`${item.type}-${item.id}`}>
-                          {item.type === 'goal' ? (
-                            <EditGoalDialog goalId={item.id}>
-                              <div className="bg-primary/20 text-primary-foreground text-xs rounded-sm px-1 py-0.5 truncate border border-primary/50 cursor-pointer hover:bg-primary/30">
-                                <Icons.goal className="h-3 w-3 inline mr-1 align-middle"/>
-                                {(item as Goal).title}
-                              </div>
-                            </EditGoalDialog>
-                          ) : (
-                            <EditTaskDialog taskId={item.id}>
-                               <div className="bg-secondary/80 text-secondary-foreground text-xs rounded-sm px-1 py-0.5 truncate border border-secondary/50 cursor-pointer hover:bg-secondary">
-                                <Icons.task className="h-3 w-3 inline mr-1 align-middle"/>
-                                {(item as Task).text}
-                              </div>
-                            </EditTaskDialog>
-                          )}
-                        </div>
-                      ))}
+                      {getItemsForAllday(day).map(item => {
+                        const originalId = item.id.includes('-recur-') ? item.id.split('-recur-')[0] : item.id;
+                        return (
+                          <div key={item.id}>
+                            {item.type === 'goal' ? (
+                              <EditGoalDialog goalId={originalId}>
+                                <div className="bg-primary/20 text-primary-foreground text-xs rounded-sm px-1 py-0.5 truncate border border-primary/50 cursor-pointer hover:bg-primary/30">
+                                  <Icons.goal className="h-3 w-3 inline mr-1 align-middle"/>
+                                  {(item as Goal).title}
+                                </div>
+                              </EditGoalDialog>
+                            ) : (
+                              <EditTaskDialog taskId={originalId}>
+                                 <div className="bg-secondary/80 text-secondary-foreground text-xs rounded-sm px-1 py-0.5 truncate border border-secondary/50 cursor-pointer hover:bg-secondary">
+                                  <Icons.task className="h-3 w-3 inline mr-1 align-middle"/>
+                                  {(item as Task).text}
+                                </div>
+                              </EditTaskDialog>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
 
                     {/* Hourly section */}
@@ -292,6 +391,7 @@ export function GlobalScheduleView() {
                           </div>
                       )}
                       {layout.map(item => {
+                          const originalId = item.id.includes('-recur-') ? item.id.split('-recur-')[0] : item.id;
                           const content = (
                               <div
                                   className={cn(
@@ -320,13 +420,13 @@ export function GlobalScheduleView() {
 
                           if (item.type === 'goal') {
                             return (
-                              <EditGoalDialog goalId={item.id} key={`${item.type}-${item.id}`}>
+                              <EditGoalDialog goalId={originalId} key={item.id}>
                                 {content}
                               </EditGoalDialog>
                             );
                           } else {
                             return (
-                              <EditTaskDialog taskId={item.id} key={`${item.type}-${item.id}`}>
+                              <EditTaskDialog taskId={originalId} key={item.id}>
                                 {content}
                               </EditTaskDialog>
                             );
