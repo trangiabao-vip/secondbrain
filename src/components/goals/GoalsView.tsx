@@ -176,147 +176,150 @@ export function GoalsView() {
             const progress = calculateProgress(goal.id);
 
             return (
-              <Card key={goal.id} className="overflow-hidden">
-                <div className="p-4">
-                  <div className="flex justify-between items-start gap-2">
-                    <h4 className="font-semibold text-base flex-1">{goal.title}</h4>
-                    <div className="flex items-center flex-shrink-0">
-                        <EditGoalDialog goalId={goal.id}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Icons.edit className="h-4 w-4" />
-                            </Button>
-                        </EditGoalDialog>
-                        <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Icons.ellipsis className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => duplicateGoal(goal.id)}>
-                                <Icons.copy className="mr-2 h-4 w-4" />
-                                Nhân bản
-                            </DropdownMenuItem>
-                            <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>
-                                    <span>Cập nhật trạng thái</span>
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuPortal>
-                                    <DropdownMenuSubContent>
-                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'chưa bắt đầu' })}>Chưa bắt đầu</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'đang làm' })}>Đang làm</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'hoàn thành' })}>Hoàn thành</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'thất bại' })}>Thất bại</DropdownMenuItem>
-                                         <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'huỷ' })}>Huỷ</DropdownMenuItem>
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuPortal>
-                            </DropdownMenuSub>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive" onClick={() => deleteGoal(goal.id)}>
-                            <Icons.delete className="mr-2 h-4 w-4" />
-                            Xóa mục tiêu
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                        </DropdownMenu>
+              <Collapsible key={goal.id} asChild>
+                <Card className="overflow-hidden">
+                  <div className="p-4">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex items-center gap-2 flex-1">
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                            <Icons.down className="h-4 w-4 transition-transform [&[data-state=open]]:-rotate-90" />
+                          </Button>
+                        </CollapsibleTrigger>
+                        <h4 className="font-semibold text-base">{goal.title}</h4>
+                      </div>
+                      <div className="flex items-center flex-shrink-0">
+                          <EditGoalDialog goalId={goal.id}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <Icons.edit className="h-4 w-4" />
+                              </Button>
+                          </EditGoalDialog>
+                          <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Icons.ellipsis className="h-4 w-4" />
+                              </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => duplicateGoal(goal.id)}>
+                                  <Icons.copy className="mr-2 h-4 w-4" />
+                                  Nhân bản
+                              </DropdownMenuItem>
+                              <DropdownMenuSub>
+                                  <DropdownMenuSubTrigger>
+                                      <span>Cập nhật trạng thái</span>
+                                  </DropdownMenuSubTrigger>
+                                  <DropdownMenuPortal>
+                                      <DropdownMenuSubContent>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'chưa bắt đầu' })}>Chưa bắt đầu</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'đang làm' })}>Đang làm</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'hoàn thành' })}>Hoàn thành</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'thất bại' })}>Thất bại</DropdownMenuItem>
+                                           <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'huỷ' })}>Huỷ</DropdownMenuItem>
+                                      </DropdownMenuSubContent>
+                                  </DropdownMenuPortal>
+                              </DropdownMenuSub>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-destructive" onClick={() => deleteGoal(goal.id)}>
+                              <Icons.delete className="mr-2 h-4 w-4" />
+                              Xóa mục tiêu
+                              </DropdownMenuItem>
+                          </DropdownMenuContent>
+                          </DropdownMenu>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pl-10">
+                        <TooltipProvider>
+                          <Tooltip>
+                              <TooltipTrigger asChild>
+                                  <Badge variant="outline" className={cn("capitalize", statusColors[goal.status])}>
+                                      <div className="w-2 h-2 rounded-full mr-2 bg-current"></div>
+                                      {goal.status}
+                                  </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Trạng thái</p></TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                              <TooltipTrigger asChild>
+                                  <div className={cn("flex items-center gap-1", priorityColor)}>
+                                      <IconComponent className="h-4 w-4" />
+                                      <span>{priority}</span>
+                                  </div>
+                              </TooltipTrigger>
+                              <TooltipContent><p>{priorityLabel}</p></TooltipContent>
+                          </Tooltip>
+                          {endDate && (
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                  <div className="flex items-center gap-1">
+                                      <Icons.calendar className="h-4 w-4" />
+                                      <span>{format(endDate, 'd MMM, yyyy', { locale: vi })}</span>
+                                      <span className="hidden sm:inline">({formatDistanceToNow(endDate, { addSuffix: true, locale: vi })})</span>
+                                  </div>
+                               </TooltipTrigger>
+                               <TooltipContent><p>Hạn chót</p></TooltipContent>
+                             </Tooltip>
+                          )}
+                        </TooltipProvider>
                     </div>
                   </div>
-                  
-                  <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                      <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Badge variant="outline" className={cn("capitalize", statusColors[goal.status])}>
-                                    <div className="w-2 h-2 rounded-full mr-2 bg-current"></div>
-                                    {goal.status}
-                                </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Trạng thái</p></TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div className={cn("flex items-center gap-1", priorityColor)}>
-                                    <IconComponent className="h-4 w-4" />
-                                    <span>{priority}</span>
-                                </div>
-                            </TooltipTrigger>
-                            <TooltipContent><p>{priorityLabel}</p></TooltipContent>
-                        </Tooltip>
-                        {endDate && (
-                           <Tooltip>
-                             <TooltipTrigger asChild>
-                                <div className="flex items-center gap-1">
-                                    <Icons.calendar className="h-4 w-4" />
-                                    <span>{format(endDate, 'd MMM, yyyy', { locale: vi })}</span>
-                                    <span className="hidden sm:inline">({formatDistanceToNow(endDate, { addSuffix: true, locale: vi })})</span>
-                                </div>
-                             </TooltipTrigger>
-                             <TooltipContent><p>Hạn chót</p></TooltipContent>
-                           </Tooltip>
-                        )}
-                      </TooltipProvider>
-                  </div>
-                </div>
 
-                <div className="px-4 pb-1">
-                   <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger className="w-full">
-                             <Progress value={progress} className="h-2 w-full" />
-                        </TooltipTrigger>
-                        <TooltipContent><p>{Math.round(progress)}% hoàn thành</p></TooltipContent>
-                    </Tooltip>
-                   </TooltipProvider>
-                </div>
+                  <CollapsibleContent>
+                    <div className="px-4 pb-1">
+                       <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger className="w-full">
+                                 <Progress value={progress} className="h-2 w-full" />
+                            </TooltipTrigger>
+                            <TooltipContent><p>{Math.round(progress)}% hoàn thành</p></TooltipContent>
+                        </Tooltip>
+                       </TooltipProvider>
+                    </div>
 
-                <Collapsible>
-                  {(goal.description || (goal.customProperties && Object.keys(goal.customProperties).length > 0)) && (
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="sm" className="w-full justify-start text-xs text-muted-foreground">
-                        <Icons.down className="h-4 w-4 mr-1 transition-transform [&[data-state=open]]:rotate-180" />
-                        Chi tiết...
-                      </Button>
-                    </CollapsibleTrigger>
-                  )}
-                  <CollapsibleContent className="px-4 pb-2 space-y-4">
-                     {goal.description && (
-                        <div>
-                            <Label className="text-xs font-semibold text-muted-foreground">Mô tả</Label>
-                            <MarkdownRenderer className="text-sm">{goal.description}</MarkdownRenderer>
-                        </div>
-                     )}
-                     {goal.customProperties && Object.keys(goal.customProperties).length > 0 && (
-                        <div>
-                            <Label className="text-xs font-semibold text-muted-foreground">Thuộc tính</Label>
-                            <div className="flex items-center gap-x-4 gap-y-2 flex-wrap mt-2">
-                            {Object.entries(goal.customProperties).map(([key, value]) => {
-                                const lowerValue = String(value).toLowerCase();
-                                if (lowerValue === 'true' || lowerValue === 'false') {
-                                return (
-                                    <div key={key} className="flex items-center gap-2">
-                                    <Checkbox checked={lowerValue === 'true'} disabled id={`goal-prop-${goal.id}-${key}`} />
-                                    <Label htmlFor={`goal-prop-${goal.id}-${key}`} className="text-sm font-medium text-muted-foreground">
-                                        {key}
-                                    </Label>
-                                    </div>
-                                );
-                                }
-                                return (
-                                <Badge key={key} variant="outline" className="font-normal">
-                                    <span className="font-semibold mr-1.5">{key}:</span>
-                                    <span>{String(value)}</span>
-                                </Badge>
-                                );
-                            })}
+                    {(goal.description || (goal.customProperties && Object.keys(goal.customProperties).length > 0)) && (
+                      <div className="px-4 pb-2 pt-4 space-y-4">
+                         {goal.description && (
+                            <div>
+                                <Label className="text-xs font-semibold text-muted-foreground">Mô tả</Label>
+                                <MarkdownRenderer className="text-sm">{goal.description}</MarkdownRenderer>
                             </div>
-                        </div>
-                     )}
+                         )}
+                         {goal.customProperties && Object.keys(goal.customProperties).length > 0 && (
+                            <div>
+                                <Label className="text-xs font-semibold text-muted-foreground">Thuộc tính</Label>
+                                <div className="flex items-center gap-x-4 gap-y-2 flex-wrap mt-2">
+                                {Object.entries(goal.customProperties).map(([key, value]) => {
+                                    const lowerValue = String(value).toLowerCase();
+                                    if (lowerValue === 'true' || lowerValue === 'false') {
+                                    return (
+                                        <div key={key} className="flex items-center gap-2">
+                                        <Checkbox checked={lowerValue === 'true'} disabled id={`goal-prop-${goal.id}-${key}`} />
+                                        <Label htmlFor={`goal-prop-${goal.id}-${key}`} className="text-sm font-medium text-muted-foreground">
+                                            {key}
+                                        </Label>
+                                        </div>
+                                    );
+                                    }
+                                    return (
+                                    <Badge key={key} variant="outline" className="font-normal">
+                                        <span className="font-semibold mr-1.5">{key}:</span>
+                                        <span>{String(value)}</span>
+                                    </Badge>
+                                    );
+                                })}
+                                </div>
+                            </div>
+                         )}
+                      </div>
+                    )}
+                    
+                    <div className="bg-secondary/50 p-4">
+                        <TaskList goalId={goal.id} filterStatus={statusFilter} />
+                    </div>
                   </CollapsibleContent>
-                </Collapsible>
-                
-                <div className="bg-secondary/50 p-4">
-                    <TaskList goalId={goal.id} filterStatus={statusFilter} />
-                </div>
-              </Card>
+                </Card>
+              </Collapsible>
             )
           })}
         </div>
