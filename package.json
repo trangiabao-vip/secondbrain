@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.0.0",
-    "@genkit-ai/next": "^1.0.0",
     "@hookform/resolvers": "^3.3.4",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
@@ -62,7 +61,7 @@
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
-    "@types/node": "^20",
+    "@types/node": "^20.14.9",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "genkit-cli": "^1.0.0",
