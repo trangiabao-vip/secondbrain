@@ -6,11 +6,12 @@ import { createContext, useContext, useState, useMemo, useEffect, useCallback } 
 import { type Interest, type Topic, type Goal, type Task, type WikiPage, type SalesPage } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp, writeBatch, query, where, addDoc } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, writeBatch, query, where, addDoc, setDoc } from 'firebase/firestore';
 import { 
   addDocumentNonBlocking, 
   deleteDocumentNonBlocking, 
-  updateDocumentNonBlocking 
+  updateDocumentNonBlocking,
+  setDocumentNonBlocking
 } from '@/firebase/non-blocking-updates';
 import { signOut } from 'firebase/auth';
 
@@ -181,7 +182,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const updateTask = (taskId: string, updatedData: Partial<Task>) => {
-    updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
+    // If the task ID indicates a recurring instance, we use setDoc to create an exception document
+    // instead of trying to update it (which would fail as it doesn't exist).
+    if (taskId.includes('-recur-')) {
+      const { id, ...dataToSet } = updatedData;
+      // We need to ensure the userId is present for security rules on create
+      const fullData = { ...dataToSet, userId: user?.uid, createdAt: serverTimestamp() };
+      setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullData, { merge: true });
+    } else {
+      updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
+    }
   };
 
   const deleteInterest = async (id: string) => {

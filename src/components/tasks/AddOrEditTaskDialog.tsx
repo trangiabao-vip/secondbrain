@@ -269,8 +269,11 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
           acc[prop.key.trim()] = prop.value;
           return acc;
         }, {} as { [key: string]: string });
+      
+      const originalTask = getTaskById(originalTaskId!);
 
       const taskData: Partial<Omit<Task, 'id'>> = {
+        ...(originalTask || {}), // Start with original data
         text: taskText.trim(),
         notes: notes,
         difficulty: difficulty,
@@ -288,14 +291,15 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
 
       if (mode === 'edit' && taskId) {
         if (isRecurringInstance) {
-            // Get original task data and merge with updates to create a new one-off task
-            const originalTask = getTaskById(originalTaskId!);
+            // When editing a recurring instance, we create a new standalone task
+            // by setting recurrence to null. This "overwrites" the virtual instance.
             const oneOffTaskData: Partial<Omit<Task, 'id'>> = {
-              ...(originalTask || {}), // spread original data first
-              ...taskData, // then overwrite with new data
-              recurrence: null, // this is now a standalone task
+              ...taskData,
+              recurrence: null, // This is now a standalone task
             };
-            addTask(oneOffTaskData);
+             // We use updateTask with the specific instance ID to perform a `setDoc`
+             // which will create the document if it doesn't exist.
+            updateTask(taskId, oneOffTaskData);
         } else {
             updateTask(taskId, taskData);
         }
@@ -315,7 +319,19 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
 
   const handleCancelInstance = () => {
     if (isRecurringInstance && taskId) {
-       updateTask(taskId, { status: 'huỷ' });
+      const originalTask = getTaskById(originalTaskId!);
+       if (!originalTask) return;
+       // Create a new one-off task with "cancelled" status
+       const cancelledInstanceData: Partial<Task> = {
+         ...originalTask,
+         text: originalTask.text, // ensure text is copied
+         startDate: startDate,
+         endDate: endDate,
+         status: 'huỷ',
+         recurrence: null,
+       };
+       // Use updateTask which will do a setDoc under the hood for the specific instance ID
+       updateTask(taskId, cancelledInstanceData);
       closeDialog();
     }
   }
