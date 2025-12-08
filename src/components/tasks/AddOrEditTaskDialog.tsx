@@ -26,6 +26,7 @@ import { Separator } from '../ui/separator';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
 import { Switch } from '../ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 
 interface AddOrEditTaskDialogProps {
@@ -171,11 +172,11 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
 
   const topicGoals = goals.filter(g => g.topicId === selectedTopic?.id);
   const isRecurringInstance = taskId?.includes('-recur-');
+  const originalTaskId = isRecurringInstance ? taskId.split('-recur-')[0] : taskId;
 
   useEffect(() => {
     if (mode === 'edit' && taskId) {
-      const originalTaskId = isRecurringInstance ? taskId.split('-recur-')[0] : taskId;
-      const task = getTaskById(originalTaskId);
+      const task = getTaskById(originalTaskId!);
       if (task) {
         setTaskText(task.text);
         setNotes(task.notes || '');
@@ -186,12 +187,10 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
         let sDate;
         if(isRecurringInstance) {
             const dateStr = taskId.split('-recur-')[1];
-            sDate = getDateFromFirestore(dateStr);
-            if(sDate) {
-                 const originalStartDate = getDateFromFirestore(task.startDate);
-                 if (originalStartDate) {
-                     sDate.setHours(originalStartDate.getHours(), originalStartDate.getMinutes());
-                 }
+            sDate = parseISO(dateStr);
+            const originalStartDate = getDateFromFirestore(task.startDate);
+            if (originalStartDate) {
+                sDate.setHours(originalStartDate.getHours(), originalStartDate.getMinutes());
             }
         } else {
             sDate = getDateFromFirestore(task.startDate);
@@ -225,7 +224,7 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
     } else {
       setSelectedGoalId(initialGoalId);
     }
-  }, [taskId, mode, getTaskById, initialGoalId, isRecurringInstance]);
+  }, [taskId, mode, getTaskById, initialGoalId, isRecurringInstance, originalTaskId]);
 
   const combineDateTime = (date: Date, time: string) => {
     try {
@@ -279,8 +278,7 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
 
       if (mode === 'edit' && taskId) {
         if (isRecurringInstance) {
-            // This is an exception, we are creating a new task to detach it from recurrence
-            addTask(taskData);
+            addTask({ ...taskData, recurrence: null });
         } else {
             updateTask(taskId, taskData);
         }
@@ -291,16 +289,32 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
     }
   };
 
-  const handleDeleteTask = () => {
-    if (taskId && !isRecurringInstance) {
-      deleteTask(taskId);
+  const handleDeleteSeries = () => {
+    if (originalTaskId) {
+      deleteTask(originalTaskId);
+      closeDialog();
+    }
+  }
+
+  const handleCancelInstance = () => {
+    if (isRecurringInstance && taskId) {
+      addTask({
+        ...getTaskById(originalTaskId!), // Get base data
+        id: taskId, // This is a virtual ID for the instance
+        status: 'huỷ',
+        startDate: startDate,
+        endDate: endDate,
+        recurrence: null, // This instance is now a standalone cancelled task
+      });
+      // This is a simplified approach. A more robust system would add an "exception" record.
+      // For now, we create a one-off cancelled task to represent the cancellation.
       closeDialog();
     }
   }
 
   const handleDuplicateTask = () => {
-    if (taskId && !isRecurringInstance) {
-      duplicateTask(taskId);
+    if (originalTaskId) {
+      duplicateTask(originalTaskId);
       closeDialog();
     }
   };
@@ -577,13 +591,32 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
           </div>
       </div>
       <DialogFooter className="sm:justify-between pt-2">
-          {mode === 'edit' && !isRecurringInstance ? (
+          {mode === 'edit' ? (
               <div className='flex gap-2'>
-                  <Button variant="destructive" onClick={handleDeleteTask}>
+                  {isRecurringInstance ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="destructive">
+                          <Icons.delete className="mr-2 h-4 w-4" />
+                          Xóa...
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={handleCancelInstance}>
+                          Hủy bỏ nhiệm vụ này
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleDeleteSeries} className="text-destructive">
+                          Xóa toàn bộ chuỗi
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <Button variant="destructive" onClick={handleDeleteSeries}>
                       <Icons.delete className="mr-2 h-4 w-4" />
                       Xóa
-                  </Button>
-                  <Button variant="secondary" onClick={handleDuplicateTask}>
+                    </Button>
+                  )}
+                  <Button variant="secondary" onClick={handleDuplicateTask} disabled={isRecurringInstance}>
                     <Icons.copy className="mr-2 h-4 w-4" />
                     Nhân bản
                   </Button>
