@@ -85,7 +85,7 @@ const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date
                     
                     occurrences.push({
                         ...task,
-                        id: `${task.id}-recur-${dateInWeek.getTime()}`,
+                        id: `${task.id}-recur-${format(occurrenceStartDate, 'yyyy-MM-dd')}`,
                         startDate: occurrenceStartDate,
                         endDate: occurrenceEndDate,
                         status: 'chưa bắt đầu', // Force status to 'not started' for recurring instances
@@ -99,7 +99,7 @@ const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date
                   const occurrenceEndDate = addMinutes(occurrenceStartDate, taskDuration);
                  occurrences.push({
                      ...task,
-                     id: `${task.id}-recur-${currentDate.getTime()}`,
+                     id: `${task.id}-recur-${format(occurrenceStartDate, 'yyyy-MM-dd')}`,
                      startDate: occurrenceStartDate,
                      endDate: occurrenceEndDate,
                      status: 'chưa bắt đầu', // Force status to 'not started' for recurring instances
@@ -243,7 +243,7 @@ export function GlobalScheduleView() {
         .filter(t => t.recurrence && t.startDate)
         .flatMap(t => generateRecurrencesInRange(t, rangeStart, rangeEnd))
         .map(t => ({ ...t, type: 'task' as const, startDate: getDateFromFirestore(t.startDate)!, endDate: getDateFromFirestore(t.endDate) }))
-        .filter(item => item.startDate);
+        .filter(item => item.startDate && !tasks.some(existingTask => existingTask.id === item.id));
         
     return [...goalItems, ...baseTasks, ...recurringTaskInstances];
   }, [goals, tasks, currentDate]);
@@ -434,7 +434,7 @@ export function GlobalScheduleView() {
                             );
                           } else {
                             return (
-                              <EditTaskDialog taskId={originalId} key={item.id}>
+                              <EditTaskDialog taskId={item.id.includes('-recur-') ? item.id : originalId} key={item.id}>
                                 {content}
                               </EditTaskDialog>
                             );
@@ -451,3 +451,5 @@ export function GlobalScheduleView() {
     </div>
   );
 }
+
+    

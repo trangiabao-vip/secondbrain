@@ -170,10 +170,12 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
   });
 
   const topicGoals = goals.filter(g => g.topicId === selectedTopic?.id);
+  const isRecurringInstance = taskId?.includes('-recur-');
 
   useEffect(() => {
     if (mode === 'edit' && taskId) {
-      const task = getTaskById(taskId);
+      const originalTaskId = isRecurringInstance ? taskId.split('-recur-')[0] : taskId;
+      const task = getTaskById(originalTaskId);
       if (task) {
         setTaskText(task.text);
         setNotes(task.notes || '');
@@ -181,7 +183,20 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
         setStatus(task.status);
         setSelectedGoalId(task.goalId || undefined);
         
-        const sDate = getDateFromFirestore(task.startDate);
+        let sDate;
+        if(isRecurringInstance) {
+            const dateStr = taskId.split('-recur-')[1];
+            sDate = getDateFromFirestore(dateStr);
+            if(sDate) {
+                 const originalStartDate = getDateFromFirestore(task.startDate);
+                 if (originalStartDate) {
+                     sDate.setHours(originalStartDate.getHours(), originalStartDate.getMinutes());
+                 }
+            }
+        } else {
+            sDate = getDateFromFirestore(task.startDate);
+        }
+
         setStartDate(sDate);
         if (sDate) setStartTime(format(sDate, "HH:mm"));
         else setStartTime('09:00');
@@ -199,7 +214,7 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
           setCustomProperties([]);
         }
 
-        if (task.recurrence) {
+        if (task.recurrence && !isRecurringInstance) {
           setIsRecurring(true);
           setRecurrenceRule(task.recurrence);
         } else {
@@ -210,7 +225,7 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
     } else {
       setSelectedGoalId(initialGoalId);
     }
-  }, [taskId, mode, getTaskById, initialGoalId]);
+  }, [taskId, mode, getTaskById, initialGoalId, isRecurringInstance]);
 
   const combineDateTime = (date: Date, time: string) => {
     try {
@@ -254,12 +269,17 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
         startDate: finalStartDate,
         endDate: finalEndDate,
         goalId: selectedGoalId === 'none' || selectedGoalId === undefined ? null : selectedGoalId,
-        recurrence: isRecurring ? recurrenceRule : null,
+        recurrence: isRecurring && !isRecurringInstance ? recurrenceRule : null,
         customProperties: customPropsObject,
       };
 
       if (mode === 'edit' && taskId) {
-        updateTask(taskId, taskData);
+        if (isRecurringInstance) {
+            // This is an exception, we are creating a new task to detach it from recurrence
+            addTask({ ...taskData, id: taskId });
+        } else {
+            updateTask(taskId, taskData);
+        }
       } else {
         if (!taskData.goalId && selectedTopic) {
           taskData.topicId = selectedTopic.id;
@@ -271,14 +291,14 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
   };
 
   const handleDeleteTask = () => {
-    if (taskId) {
+    if (taskId && !isRecurringInstance) {
       deleteTask(taskId);
       closeDialog();
     }
   }
 
   const handleDuplicateTask = () => {
-    if (taskId) {
+    if (taskId && !isRecurringInstance) {
       duplicateTask(taskId);
       closeDialog();
     }
@@ -445,7 +465,7 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
           <Separator/>
           <div className="space-y-4">
               <div className="flex items-center space-x-2">
-                  <Switch id="recurrence-switch" checked={isRecurring} onCheckedChange={setIsRecurring} />
+                  <Switch id="recurrence-switch" checked={isRecurring} onCheckedChange={setIsRecurring} disabled={isRecurringInstance}/>
                   <Label htmlFor="recurrence-switch">Lặp lại nhiệm vụ</Label>
               </div>
               {isRecurring && (
@@ -556,7 +576,7 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
           </div>
       </div>
       <DialogFooter className="sm:justify-between pt-2">
-          {mode === 'edit' ? (
+          {mode === 'edit' && !isRecurringInstance ? (
               <div className='flex gap-2'>
                   <Button variant="destructive" onClick={handleDeleteTask}>
                       <Icons.delete className="mr-2 h-4 w-4" />
@@ -593,3 +613,5 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
     </Dialog>
   );
 }
+
+    
