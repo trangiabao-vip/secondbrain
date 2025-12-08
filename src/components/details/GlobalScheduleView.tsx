@@ -248,35 +248,32 @@ export function GlobalScheduleView() {
     return [...goalItems, ...baseTasks, ...recurringTaskInstances];
   }, [goals, tasks, currentDate]);
 
-  const getScheduledItemsForDay = (day: Date) => {
+  const getScheduledItemsForDay = (day: Date): ScheduledItem[] => {
     const dayStart = startOfDay(day);
     const dayEnd = endOfDay(day);
+    const dayItems: ScheduledItem[] = [];
 
-    return scheduledItems
-      .filter(item => {
-        const startDate = getDateFromFirestore(item.startDate);
-        if (!startDate) return false;
-        const endDate = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 30);
-        
-        const itemInterval = { start: startDate, end: endDate };
-        const dayInterval = { start: dayStart, end: dayEnd };
+    scheduledItems.forEach(item => {
+        const itemStart = getDateFromFirestore(item.startDate);
+        if (!itemStart) return;
 
-        return areIntervalsOverlapping(itemInterval, dayInterval);
-      })
-      .map(item => {
-        const itemStart = getDateFromFirestore(item.startDate)!;
-        const itemEnd = getDateFromFirestore(item.endDate) || setMinutes(itemStart, getMinutes(itemStart) + 30);
+        const itemEnd = getDateFromFirestore(item.endDate) || addMinutes(itemStart, 30);
 
-        const displayStart = max([itemStart, dayStart]);
-        const displayEnd = min([itemEnd, dayEnd]);
+        // Case 1: Item is fully within the day
+        if (areIntervalsOverlapping({ start: itemStart, end: itemEnd }, { start: dayStart, end: dayEnd })) {
+            const displayStart = max([itemStart, dayStart]);
+            const displayEnd = min([itemEnd, dayEnd]);
 
-        return {
-          ...item,
-          startDate: displayStart,
-          endDate: displayEnd,
-        };
-      });
-  };
+            dayItems.push({
+                ...item,
+                startDate: displayStart,
+                endDate: displayEnd,
+            });
+        }
+    });
+
+    return dayItems;
+};
   
   const getItemsForAllday = (day: Date) => {
     return scheduledItems.filter(item => {
@@ -451,5 +448,3 @@ export function GlobalScheduleView() {
     </div>
   );
 }
-
-    
