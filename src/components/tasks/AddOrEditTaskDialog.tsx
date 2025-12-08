@@ -278,7 +278,14 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
 
       if (mode === 'edit' && taskId) {
         if (isRecurringInstance) {
-            addTask({ ...taskData, recurrence: null });
+            // Get original task data and merge with updates to create a new one-off task
+            const originalTask = getTaskById(originalTaskId!);
+            const oneOffTaskData: Partial<Omit<Task, 'id'>> = {
+              ...(originalTask || {}), // spread original data first
+              ...taskData, // then overwrite with new data
+              recurrence: null, // this is now a standalone task
+            };
+            addTask(oneOffTaskData);
         } else {
             updateTask(taskId, taskData);
         }
@@ -298,16 +305,10 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
 
   const handleCancelInstance = () => {
     if (isRecurringInstance && taskId) {
-      addTask({
-        ...getTaskById(originalTaskId!), // Get base data
-        id: taskId, // This is a virtual ID for the instance
-        status: 'huỷ',
-        startDate: startDate,
-        endDate: endDate,
-        recurrence: null, // This instance is now a standalone cancelled task
-      });
-      // This is a simplified approach. A more robust system would add an "exception" record.
-      // For now, we create a one-off cancelled task to represent the cancellation.
+      // This creates a one-off "cancelled" task for this specific instance
+      // The generateRecurrencesInRange function needs to be aware of these cancellations
+      // For now, this is a simplified approach.
+       updateTask(taskId, { status: 'huỷ' });
       closeDialog();
     }
   }
