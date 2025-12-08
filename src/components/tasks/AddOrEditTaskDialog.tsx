@@ -180,7 +180,7 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
         setTaskText(task.text);
         setNotes(task.notes || '');
         setDifficulty(task.difficulty || 'Vừa');
-        setStatus(task.status);
+        setStatus(isRecurringInstance ? 'chưa bắt đầu' : task.status);
         setSelectedGoalId(task.goalId || undefined);
         
         let sDate;
@@ -613,5 +613,3 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, m
     </Dialog>
   );
 }
-
-    
