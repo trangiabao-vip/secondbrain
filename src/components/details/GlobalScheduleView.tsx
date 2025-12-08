@@ -80,11 +80,7 @@ const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date
 
                 if (dateInWeek >= rangeStart && dateInWeek <= rangeEnd) {
                      const occurrenceStartDate = new Date(dateInWeek);
-                     if (isSameDay(taskStartDate, occurrenceStartDate)) {
-                       occurrenceStartDate.setHours(getHours(taskStartDate), getMinutes(taskStartDate));
-                     } else {
-                       occurrenceStartDate.setHours(getHours(occurrenceStartDate), getMinutes(occurrenceStartDate));
-                     }
+                     occurrenceStartDate.setHours(getHours(taskStartDate), getMinutes(taskStartDate));
                      const occurrenceEndDate = addMinutes(occurrenceStartDate, taskDuration);
                     
                     occurrences.push({
