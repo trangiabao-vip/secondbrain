@@ -181,6 +181,7 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
         setTaskText(task.text);
         setNotes(task.notes || '');
         setDifficulty(task.difficulty || 'Vừa');
+        // For recurring instances, force the status to 'chưa bắt đầu' in the dialog
         setStatus(isRecurringInstance ? 'chưa bắt đầu' : task.status);
         setSelectedGoalId(task.goalId || undefined);
         
@@ -200,7 +201,16 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
         if (sDate) setStartTime(format(sDate, "HH:mm"));
         else setStartTime('09:00');
         
-        const eDate = getDateFromFirestore(task.endDate);
+        let eDate;
+        if (isRecurringInstance && task.startDate && task.endDate) {
+            const originalStartDate = getDateFromFirestore(task.startDate)!;
+            const originalEndDate = getDateFromFirestore(task.endDate)!;
+            const duration = originalEndDate.getTime() - originalStartDate.getTime();
+            eDate = new Date(sDate!.getTime() + duration);
+        } else {
+            eDate = getDateFromFirestore(task.endDate);
+        }
+
         setEndDate(eDate);
         if (eDate) setEndTime(format(eDate, "HH:mm"));
         else setEndTime('10:00');
@@ -305,9 +315,6 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
 
   const handleCancelInstance = () => {
     if (isRecurringInstance && taskId) {
-      // This creates a one-off "cancelled" task for this specific instance
-      // The generateRecurrencesInRange function needs to be aware of these cancellations
-      // For now, this is a simplified approach.
        updateTask(taskId, { status: 'huỷ' });
       closeDialog();
     }
