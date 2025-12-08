@@ -226,7 +226,7 @@ export function GlobalScheduleView() {
   }, [currentDate]);
 
   const scheduledItems = useMemo((): ScheduledItem[] => {
-    const rangeStart = startOfWeek(currentDate, { weekStartsOn: 0 });
+    const rangeStart = startOfDay(startOfWeek(currentDate, { weekStartsOn: 0 }));
     const rangeEnd = endOfDay(addDays(rangeStart, 6));
 
     const goalItems: ScheduledItem[] = goals
@@ -242,7 +242,7 @@ export function GlobalScheduleView() {
     const recurringTaskInstances: ScheduledItem[] = tasks
         .filter(t => t.recurrence && t.startDate)
         .flatMap(t => generateRecurrencesInRange(t, rangeStart, rangeEnd))
-        .map(t => ({ ...t, type: 'task' as const, startDate: getDateFromFirestore(t.startDate)!, endDate: getDateFromFirestore(t.endDate) }))
+        .map(t => ({ ...t, type: 'task' as const, startDate: getDateFromFirestore(t.startDate)!, endDate: getDateFromFirestore(t.endDate)!, status: t.status || 'chưa bắt đầu' }))
         .filter(item => item.startDate && !tasks.some(existingTask => existingTask.id === item.id));
         
     return [...goalItems, ...baseTasks, ...recurringTaskInstances];
@@ -258,12 +258,11 @@ export function GlobalScheduleView() {
         if (!itemStart) return;
 
         const itemEnd = getDateFromFirestore(item.endDate) || addMinutes(itemStart, 30);
-
-        // Case 1: Item is fully within the day
+        
         if (areIntervalsOverlapping({ start: itemStart, end: itemEnd }, { start: dayStart, end: dayEnd })) {
             const displayStart = max([itemStart, dayStart]);
             const displayEnd = min([itemEnd, dayEnd]);
-
+            
             dayItems.push({
                 ...item,
                 startDate: displayStart,
