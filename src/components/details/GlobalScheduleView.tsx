@@ -430,7 +430,7 @@ export function GlobalScheduleView() {
                             );
                           } else {
                             return (
-                              <EditTaskDialog taskId={item.id.includes('-recur-') ? item.id : originalId} key={item.id}>
+                              <EditTaskDialog taskId={item.id} key={item.id}>
                                 {content}
                               </EditTaskDialog>
                             );

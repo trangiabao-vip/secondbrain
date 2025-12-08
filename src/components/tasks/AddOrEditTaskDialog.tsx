@@ -272,18 +272,19 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
         recurrence: isRecurring && !isRecurringInstance ? recurrenceRule : null,
         customProperties: customPropsObject,
       };
+      
+      if (!taskData.goalId && selectedTopic) {
+        taskData.topicId = selectedTopic.id;
+      }
 
       if (mode === 'edit' && taskId) {
         if (isRecurringInstance) {
             // This is an exception, we are creating a new task to detach it from recurrence
-            addTask({ ...taskData, id: taskId });
+            addTask(taskData);
         } else {
             updateTask(taskId, taskData);
         }
       } else {
-        if (!taskData.goalId && selectedTopic) {
-          taskData.topicId = selectedTopic.id;
-        }
         addTask(taskData);
       }
       closeDialog();
