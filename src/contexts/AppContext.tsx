@@ -182,15 +182,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const updateTask = (taskId: string, updatedData: Partial<Task>) => {
-    // If the task ID indicates a recurring instance, we use setDoc to create an exception document
-    // instead of trying to update it (which would fail as it doesn't exist).
     if (taskId.includes('-recur-')) {
-      const { id, ...dataToSet } = updatedData;
-      // We need to ensure the userId is present for security rules on create
-      const fullData = { ...dataToSet, userId: user?.uid, createdAt: serverTimestamp() };
-      setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullData, { merge: true });
+        const originalTaskId = taskId.split('-recur-')[0];
+        const originalTask = getTaskById(originalTaskId);
+        if (!originalTask) return;
+
+        // The instance on the calendar might have a modified start/end time.
+        // We need to find that virtual instance to get its correct date.
+        // This is a simplification; a more robust solution would involve passing the instance date.
+        // For now, we find the virtual task from the full tasks list.
+        const virtualTask = tasks.find(t => t.id === taskId);
+
+        const fullData = {
+            ...originalTask, // Base data from original task
+            ...virtualTask,   // Overlay with virtual task data (like specific start/end time)
+            ...updatedData,   // Overlay with the new changes (like status)
+            id: taskId,       // Ensure the ID is the instance ID
+            recurrence: null, // This is now a standalone exception
+            userId: user?.uid,
+            createdAt: serverTimestamp(),
+        };
+        setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullData, { merge: true });
     } else {
-      updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
+        updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
     }
   };
 
