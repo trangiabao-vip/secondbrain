@@ -88,7 +88,7 @@ const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date
                         id: `${task.id}-recur-${format(occurrenceStartDate, 'yyyy-MM-dd')}`,
                         startDate: occurrenceStartDate,
                         endDate: occurrenceEndDate,
-                        status: 'chưa bắt đầu', // Force status to 'not started' for recurring instances
+                        status: 'chưa bắt đầu',
                     });
                 }
             }
@@ -102,7 +102,7 @@ const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date
                      id: `${task.id}-recur-${format(occurrenceStartDate, 'yyyy-MM-dd')}`,
                      startDate: occurrenceStartDate,
                      endDate: occurrenceEndDate,
-                     status: 'chưa bắt đầu', // Force status to 'not started' for recurring instances
+                     status: 'chưa bắt đầu',
                  });
              }
         }
@@ -230,12 +230,12 @@ export function GlobalScheduleView() {
     const rangeEnd = endOfDay(addDays(rangeStart, 6));
 
     const goalItems: ScheduledItem[] = goals
-        .filter(g => g.startDate)
+        .filter(g => g.startDate && g.status !== 'huỷ')
         .map(g => ({ ...g, type: 'goal' as const, startDate: getDateFromFirestore(g.startDate)!, endDate: getDateFromFirestore(g.endDate) }))
         .filter(item => item.startDate);
 
     const baseTasks: ScheduledItem[] = tasks
-        .filter(t => t.startDate && !t.recurrence)
+        .filter(t => t.startDate && !t.recurrence && t.status !== 'huỷ')
         .map(t => ({ ...t, type: 'task' as const, startDate: getDateFromFirestore(t.startDate)!, endDate: getDateFromFirestore(t.endDate) }))
         .filter(item => item.startDate);
 
@@ -243,7 +243,7 @@ export function GlobalScheduleView() {
         .filter(t => t.recurrence && t.startDate)
         .flatMap(t => generateRecurrencesInRange(t, rangeStart, rangeEnd))
         .map(t => ({ ...t, type: 'task' as const, startDate: getDateFromFirestore(t.startDate)!, endDate: getDateFromFirestore(t.endDate)!, status: t.status || 'chưa bắt đầu' }))
-        .filter(item => item.startDate && !tasks.some(existingTask => existingTask.id === item.id));
+        .filter(item => item.startDate && !tasks.some(existingTask => existingTask.id === item.id) && item.status !== 'huỷ');
         
     return [...goalItems, ...baseTasks, ...recurringTaskInstances];
   }, [goals, tasks, currentDate]);
