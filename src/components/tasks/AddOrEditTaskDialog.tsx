@@ -627,9 +627,11 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
                         <DropdownMenuItem onClick={handleCancelInstance}>
+                          <Icons.close className="mr-2 h-4 w-4" />
                           Hủy bỏ nhiệm vụ này
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleDeleteSeries} className="text-destructive">
+                          <Icons.delete className="mr-2 h-4 w-4" />
                           Xóa toàn bộ chuỗi
                         </DropdownMenuItem>
                       </DropdownMenuContent>
