@@ -187,22 +187,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const originalTask = getTaskById(originalTaskId);
         if (!originalTask) return;
 
-        // The instance on the calendar might have a modified start/end time.
-        // We need to find that virtual instance to get its correct date.
-        // This is a simplification; a more robust solution would involve passing the instance date.
-        // For now, we find the virtual task from the full tasks list.
-        const virtualTask = tasks.find(t => t.id === taskId);
+        // This is a virtual task instance. We need to find its data as rendered on the calendar
+        // which might have a modified start/end time.
+        // A more robust solution might pass the instance's current data directly.
+        const virtualTaskInstance = tasks.find(t => t.id === taskId);
 
         const fullData = {
-            ...originalTask, // Base data from original task
-            ...virtualTask,   // Overlay with virtual task data (like specific start/end time)
-            ...updatedData,   // Overlay with the new changes (like status)
-            id: taskId,       // Ensure the ID is the instance ID
-            recurrence: null, // This is now a standalone exception
+            ...originalTask,
+            ...virtualTaskInstance, // Apply virtual data (like custom start/end times if they were calculated and stored)
+            ...updatedData,       // Apply the new changes (e.g., status)
+            id: taskId,           // Ensure the ID is the specific instance ID
+            recurrence: null,     // This is now a standalone exception
             userId: user?.uid,
             createdAt: serverTimestamp(),
         };
-        setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullData, { merge: true });
+        // Use setDoc to create or overwrite this instance as a standalone task.
+        setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullData, {});
     } else {
         updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
     }
