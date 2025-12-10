@@ -74,8 +74,8 @@ export function TaskList({ goalId, tasks: customTasks, filterStatus = 'all' }: T
     );
   }
   
-  const handleStatusChange = (taskId: string, status: TaskStatus) => {
-    updateTask(taskId, { status });
+  const handleStatusChange = (task: Task, status: TaskStatus) => {
+    updateTask(task.id, { status }, getDateFromFirestore(task.startDate) ?? undefined);
   };
   
   if (tasksToRender.length === 0 && goalId) {
@@ -100,7 +100,7 @@ export function TaskList({ goalId, tasks: customTasks, filterStatus = 'all' }: T
               <Checkbox
                 id={`task-check-${task.id}`}
                 checked={task.status === 'hoàn thành'}
-                onCheckedChange={(checked) => handleStatusChange(task.id, checked ? 'hoàn thành' : 'chưa bắt đầu')}
+                onCheckedChange={(checked) => handleStatusChange(task, checked ? 'hoàn thành' : 'chưa bắt đầu')}
                 className="mt-1"
                 aria-label={`Mark task ${task.text} as complete`}
               />
@@ -124,7 +124,7 @@ export function TaskList({ goalId, tasks: customTasks, filterStatus = 'all' }: T
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
                             {Object.entries(statusConfig).map(([statusKey, { label }]) => (
-                                <DropdownMenuItem key={statusKey} onSelect={() => handleStatusChange(task.id, statusKey as TaskStatus)}>
+                                <DropdownMenuItem key={statusKey} onSelect={() => handleStatusChange(task, statusKey as TaskStatus)}>
                                 {label}
                                 </DropdownMenuItem>
                             ))}

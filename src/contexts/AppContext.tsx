@@ -39,7 +39,7 @@ interface AppContextType {
   addGoal: (goalData: Partial<Omit<Goal, 'id'>>) => void;
   updateGoal: (goalId: string, updatedData: Partial<Omit<Goal, 'id'>>) => void;
   addTask: (taskData: Partial<Omit<Task, 'id'>>) => void;
-  updateTask: (taskId: string, updatedData: Partial<Task>) => void;
+  updateTask: (taskId: string, updatedData: Partial<Task>, instanceDate?: Date) => void;
   deleteInterest: (id: string) => Promise<void>;
   deleteTopic: (id: string) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
@@ -181,28 +181,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addDocumentNonBlocking(collection(firestore, 'tasks'), newTask);
   };
 
-  const updateTask = (taskId: string, updatedData: Partial<Task>) => {
+  const updateTask = (taskId: string, updatedData: Partial<Task>, instanceDate?: Date) => {
     if (taskId.includes('-recur-')) {
         const originalTaskId = taskId.split('-recur-')[0];
         const originalTask = getTaskById(originalTaskId);
         if (!originalTask) return;
 
-        // This is a virtual task instance. We need to find its data as rendered on the calendar
-        // which might have a modified start/end time.
-        // A more robust solution might pass the instance's current data directly.
-        const virtualTaskInstance = tasks.find(t => t.id === taskId);
+        // This is a virtual task instance. We must construct its full data.
+        const { id, createdAt, ...originalTaskData } = originalTask;
+        
+        let instanceStartDate = instanceDate || new Date(taskId.split('-recur-')[1]);
+        if (originalTask.startDate) {
+            const originalTime = new Date(originalTask.startDate);
+            instanceStartDate.setHours(originalTime.getHours(), originalTime.getMinutes());
+        }
 
-        const fullData = {
-            ...originalTask,
-            ...virtualTaskInstance, // Apply virtual data (like custom start/end times if they were calculated and stored)
-            ...updatedData,       // Apply the new changes (e.g., status)
-            id: taskId,           // Ensure the ID is the specific instance ID
+        let instanceEndDate = updatedData.endDate;
+        if (!instanceEndDate && originalTask.startDate && originalTask.endDate) {
+            const duration = new Date(originalTask.endDate).getTime() - new Date(originalTask.startDate).getTime();
+            instanceEndDate = new Date(instanceStartDate.getTime() + duration);
+        }
+
+        const fullDataForInstance = {
+            ...originalTaskData,
+            ...updatedData, // Apply the new changes (e.g., status)
+            startDate: updatedData.startDate || instanceStartDate,
+            endDate: instanceEndDate,
+            text: updatedData.text || originalTask.text, // Ensure text is carried over
             recurrence: null,     // This is now a standalone exception
             userId: user?.uid,
-            createdAt: serverTimestamp(),
         };
-        // Use setDoc to create or overwrite this instance as a standalone task.
-        setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullData, {});
+        
+        setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullDataForInstance, { merge: true });
+
     } else {
         updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
     }
