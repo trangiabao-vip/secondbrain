@@ -48,7 +48,9 @@ function AppPage() {
 
   return (
     <AuthGuard>
-      {renderMainContent()}
+      <AppLayout>
+        {renderMainContent()}
+      </AppLayout>
     </AuthGuard>
   );
 }
@@ -56,8 +58,6 @@ function AppPage() {
 
 export default function Home() {
   return (
-    <AppLayout>
-      <AppPage />
-    </AppLayout>
+    <AppPage />
   )
 }

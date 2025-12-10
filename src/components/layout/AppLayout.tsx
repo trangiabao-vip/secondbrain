@@ -4,7 +4,6 @@ import { InterestSidebar } from "@/components/interests/InterestSidebar";
 import { Header } from "./Header";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { GlobalSearchDialog } from "../search/GlobalSearchDialog";
 
 export function AppLayout({ children }: { children?: ReactNode }) {
   const pathname = usePathname();
@@ -15,18 +14,16 @@ export function AppLayout({ children }: { children?: ReactNode }) {
   }
   
   return (
-    <GlobalSearchDialog>
-      <SidebarProvider>
-        <Sidebar>
-          <InterestSidebar />
-        </Sidebar>
-        <SidebarInset className="flex flex-col @container/main">
-          <Header />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto bg-background text-foreground">
-            {children}
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
-    </GlobalSearchDialog>
+    <SidebarProvider>
+      <Sidebar>
+        <InterestSidebar />
+      </Sidebar>
+      <SidebarInset className="flex flex-col @container/main">
+        <Header />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto bg-background text-foreground">
+          {children}
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
