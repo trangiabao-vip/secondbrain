@@ -56,6 +56,7 @@ export function EditTopicDialog({ topicId, children }: { topicId: string, childr
                 value={topicName}
                 onChange={(e) => setTopicName(e.target.value)}
                 placeholder="e.g., 'Advanced CSS Techniques'"
+                onKeyDown={(e) => e.key === 'Enter' && handleUpdateTopic()}
               />
             </div>
              <div className="space-y-2">

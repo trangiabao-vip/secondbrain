@@ -319,19 +319,7 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
 
   const handleCancelInstance = () => {
     if (isRecurringInstance && taskId) {
-      const originalTask = getTaskById(originalTaskId!);
-       if (!originalTask) return;
-       // Create a new one-off task with "cancelled" status
-       const cancelledInstanceData: Partial<Task> = {
-         ...originalTask,
-         text: originalTask.text, // ensure text is copied
-         startDate: startDate,
-         endDate: endDate,
-         status: 'huỷ',
-         recurrence: null,
-       };
-       // Use updateTask which will do a setDoc under the hood for the specific instance ID
-       updateTask(taskId, cancelledInstanceData);
+       updateTask(taskId, { status: 'huỷ' });
       closeDialog();
     }
   }
@@ -379,6 +367,7 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
               id="task-text-edit"
               value={taskText}
               onChange={(e) => setTaskText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
             />
           </div>
           <div className="space-y-2">

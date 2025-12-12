@@ -52,6 +52,7 @@ export function EditInterestDialog({ interestId, children }: { interestId: strin
                 value={interestName}
                 onChange={(e) => setInterestName(e.target.value)}
                 placeholder="ví dụ: 'Viết sáng tạo'"
+                onKeyDown={(e) => e.key === 'Enter' && handleUpdateInterest()}
               />
             </div>
             <div className="flex justify-end">
