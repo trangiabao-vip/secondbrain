@@ -190,8 +190,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // This is a virtual task instance. We must construct its full data.
         const { id, createdAt, ...originalTaskData } = originalTask;
         
-        let instanceStartDate = instanceDate || new Date(taskId.split('-recur-')[1]);
-        if (originalTask.startDate) {
+        // Use the date from the updatedData if available (from the dialog),
+        // otherwise, use the instance date from the schedule view.
+        let instanceStartDate = updatedData.startDate || instanceDate || new Date(taskId.split('-recur-')[1]);
+        if (originalTask.startDate && updatedData.startDate) {
+            // Correctly combine the new date from the picker with the time from the picker
+            instanceStartDate = new Date(updatedData.startDate);
+        } else if (originalTask.startDate) {
+            // Keep original time if only status is changed
             const originalTime = new Date(originalTask.startDate);
             instanceStartDate.setHours(originalTime.getHours(), originalTime.getMinutes());
         }
@@ -204,8 +210,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         const fullDataForInstance = {
             ...originalTaskData,
-            ...updatedData, // Apply the new changes (e.g., status)
-            startDate: updatedData.startDate || instanceStartDate,
+            ...updatedData, // Apply the new changes (e.g., status, new time)
+            startDate: instanceStartDate, // Use the correctly calculated start date
             endDate: instanceEndDate,
             text: updatedData.text || originalTask.text, // Ensure text is carried over
             recurrence: null,     // This is now a standalone exception
