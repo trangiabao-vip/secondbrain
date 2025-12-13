@@ -185,37 +185,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (taskId.includes('-recur-')) {
         const originalTaskId = taskId.split('-recur-')[0];
         const originalTask = getTaskById(originalTaskId);
-        if (!originalTask) return;
+        if (!originalTask || !user) return;
 
-        // This is a virtual task instance. We must construct its full data.
         const { id, createdAt, ...originalTaskData } = originalTask;
         
-        // Use the date from the updatedData if available (from the dialog),
-        // otherwise, use the instance date from the schedule view.
-        let instanceStartDate = updatedData.startDate || instanceDate || new Date(taskId.split('-recur-')[1]);
-        if (originalTask.startDate && updatedData.startDate) {
-            // Correctly combine the new date from the picker with the time from the picker
-            instanceStartDate = new Date(updatedData.startDate);
-        } else if (originalTask.startDate) {
-            // Keep original time if only status is changed
-            const originalTime = new Date(originalTask.startDate);
-            instanceStartDate.setHours(originalTime.getHours(), originalTime.getMinutes());
-        }
-
-        let instanceEndDate = updatedData.endDate;
-        if (!instanceEndDate && originalTask.startDate && originalTask.endDate) {
-            const duration = new Date(originalTask.endDate).getTime() - new Date(originalTask.startDate).getTime();
-            instanceEndDate = new Date(instanceStartDate.getTime() + duration);
-        }
-
+        // This creates a new standalone task that acts as an exception.
+        // It starts with the original task's data, then overwrites it with
+        // any new data from the dialog (updatedData), ensuring that the
+        // new startDate/endDate are preserved.
         const fullDataForInstance = {
-            ...originalTaskData,
-            ...updatedData, // Apply the new changes (e.g., status, new time)
-            startDate: instanceStartDate, // Use the correctly calculated start date
-            endDate: instanceEndDate,
-            text: updatedData.text || originalTask.text, // Ensure text is carried over
-            recurrence: null,     // This is now a standalone exception
-            userId: user?.uid,
+            ...originalTaskData, // Base data from the original recurring task
+            ...updatedData,      // Overwrite with changes from the dialog (new status, time, etc.)
+            recurrence: null,     // This is now a standalone exception, not a recurring task
+            userId: user.uid,
         };
         
         setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullDataForInstance, { merge: true });
