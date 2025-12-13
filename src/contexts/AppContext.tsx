@@ -4,9 +4,9 @@
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
 import { type Interest, type Topic, type Goal, type Task, type WikiPage, type SalesPage } from '@/lib/data';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp, writeBatch, query, where, addDoc, setDoc } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, writeBatch, query, where, addDoc, setDoc, runTransaction } from 'firebase/firestore';
 import { 
   addDocumentNonBlocking, 
   deleteDocumentNonBlocking, 
@@ -14,6 +14,7 @@ import {
   setDocumentNonBlocking
 } from '@/firebase/non-blocking-updates';
 import { signOut } from 'firebase/auth';
+import { ToastAction } from '@/components/ui/toast';
 
 type ViewMode = 'interests' | 'global-schedule' | 'games' | 'dashboard' | 'sales-pages';
 
@@ -40,9 +41,9 @@ interface AppContextType {
   updateGoal: (goalId: string, updatedData: Partial<Omit<Goal, 'id'>>) => void;
   addTask: (taskData: Partial<Omit<Task, 'id'>>) => void;
   updateTask: (taskId: string, updatedData: Partial<Task>, instanceDate?: Date) => void;
-  deleteInterest: (id: string) => Promise<void>;
-  deleteTopic: (id: string) => Promise<void>;
-  deleteGoal: (id: string) => Promise<void>;
+  deleteInterest: (id: string) => void;
+  deleteTopic: (id: string) => void;
+  deleteGoal: (id: string) => void;
   deleteTask: (id: string) => void;
   duplicateGoal: (goalId: string) => Promise<void>;
   duplicateTask: (taskId: string) => void;
@@ -67,7 +68,6 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const { toast } = useToast();
   const { firestore, user, isUserLoading, auth } = useFirebase();
 
   const [selectedInterestId, setSelectedInterestId] = useState<string | null>(null);
@@ -95,9 +95,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const wikiPages = wikiPagesData || [];
   const salesPages = salesPagesData || [];
 
+  const [optimisticallyDeleted, setOptimisticallyDeleted] = useState<string[]>([]);
   const isDataLoading = useMemo(() => {
     return isUserLoading || interestsLoading || topicsLoading || goalsLoading || tasksLoading || wikiPagesLoading || salesPagesLoading;
   }, [isUserLoading, interestsLoading, topicsLoading, goalsLoading, tasksLoading, wikiPagesLoading, salesPagesLoading]);
+
+  const filteredInterests = useMemo(() => interests.filter(i => !optimisticallyDeleted.includes(i.id)), [interests, optimisticallyDeleted]);
+  const filteredTopics = useMemo(() => topics.filter(t => !optimisticallyDeleted.includes(t.id)), [topics, optimisticallyDeleted]);
+  const filteredGoals = useMemo(() => goals.filter(g => !optimisticallyDeleted.includes(g.id)), [goals, optimisticallyDeleted]);
+  const filteredTasks = useMemo(() => tasks.filter(t => !optimisticallyDeleted.includes(t.id)), [tasks, optimisticallyDeleted]);
+  const filteredWikiPages = useMemo(() => wikiPages.filter(wp => !optimisticallyDeleted.includes(wp.id)), [wikiPages, optimisticallyDeleted]);
 
 
   const selectInterest = (id: string | null) => {
@@ -182,121 +189,134 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const updateTask = (taskId: string, updatedData: Partial<Task>, instanceDate?: Date) => {
-    if (taskId.includes('-recur-')) {
-        const originalTaskId = taskId.split('-recur-')[0];
-        const originalTask = getTaskById(originalTaskId);
-        if (!originalTask || !user) return;
+      const isRecurringInstance = taskId.includes('-recur-');
+      if (isRecurringInstance) {
+          const originalTaskId = taskId.split('-recur-')[0];
+          const originalTask = getTaskById(originalTaskId);
+          if (!originalTask || !user) return;
+  
+          // Start with the original task's data as a base
+          const { id, createdAt, ...originalTaskData } = originalTask;
+          
+          // Construct the full data for the new exception document
+          const fullDataForInstance = {
+              ...originalTaskData,  // Base data from the recurring task
+              ...updatedData,       // Overwrite with changes from the dialog (e.g., new status, text)
+              recurrence: null,     // This is now a standalone exception
+              userId: user.uid,
+          };
+          
+          setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullDataForInstance, { merge: true });
+      } else {
+          // It's a regular, non-recurring task, so just update it.
+          updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
+      }
+  };
 
-        const { id, createdAt, ...originalTaskData } = originalTask;
-        
-        // This creates a new standalone task that acts as an exception.
-        // It starts with the original task's data, then overwrites it with
-        // any new data from the dialog (updatedData), ensuring that the
-        // new startDate/endDate are preserved.
-        const fullDataForInstance = {
-            ...originalTaskData, // Base data from the original recurring task
-            ...updatedData,      // Overwrite with changes from the dialog (new status, time, etc.)
-            recurrence: null,     // This is now a standalone exception, not a recurring task
-            userId: user.uid,
-        };
-        
-        setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullDataForInstance, { merge: true });
+  const createUndoableDelete = (
+    itemType: string,
+    itemId: string,
+    itemName: string | undefined,
+    deleteFn: () => Promise<any>
+  ) => {
+    if (!user) return;
 
-    } else {
-        updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
-    }
+    // Optimistically remove from UI
+    setOptimisticallyDeleted(prev => [...prev, itemId]);
+
+    // Create a timer for the actual deletion
+    const deleteTimeout = setTimeout(() => {
+        deleteFn().catch(error => {
+            console.error(`Error permanently deleting ${itemType}:`, error);
+            // If permanent deletion fails, add it back to the UI
+            setOptimisticallyDeleted(prev => prev.filter(id => id !== itemId));
+            toast({ variant: 'destructive', title: `Lỗi xóa ${itemType}`, description: `Không thể xóa vĩnh viễn "${itemName}".`});
+        });
+    }, 5000); // 5-second delay
+
+    const handleUndo = () => {
+        clearTimeout(deleteTimeout);
+        setOptimisticallyDeleted(prev => prev.filter(id => id !== itemId));
+    };
+
+    toast({
+        title: `Đã xóa ${itemType}`,
+        description: `"${itemName}" đã bị xóa.`,
+        action: <ToastAction altText="Hoàn tác" onClick={handleUndo}>Hoàn tác</ToastAction>,
+    });
   };
 
   const deleteInterest = async (id: string) => {
-    if (!user) return;
-    const interestName = interests.find(i => i.id === id)?.name;
-    const batch = writeBatch(firestore);
-
-    const topicsToDelete = topics.filter(t => t.interestId === id);
-    const goalsToDelete = goals.filter(g => topicsToDelete.some(t => t.id === g.topicId));
-    const tasksToDelete = tasks.filter(t => goalsToDelete.some(g => g.id === t.goalId) || topicsToDelete.some(topic => topic.id === t.topicId));
-    const wikiPagesToDelete = wikiPages.filter(p => topicsToDelete.some(t => t.id === p.topicId));
-    
-    wikiPagesToDelete.forEach(p => batch.delete(doc(firestore, 'wikiPages', p.id)));
-    tasksToDelete.forEach(t => batch.delete(doc(firestore, 'tasks', t.id)));
-    goalsToDelete.forEach(g => batch.delete(doc(firestore, 'goals', g.id)));
-    topicsToDelete.forEach(t => batch.delete(doc(firestore, 'topics', t.id)));
-    batch.delete(doc(firestore, 'interests', id));
-    
-    try {
-      await batch.commit();
-      if (selectedInterestId === id) {
-        selectInterest(null);
-      }
-      toast({ title: `Sở thích đã bị xóa`, description: `"${interestName}" và tất cả nội dung của nó đã bị xóa.`});
-    } catch (error) {
-      console.error("Error deleting interest and its subcollections: ", error);
-      toast({ variant: 'destructive', title: 'Lỗi xóa sở thích', description: 'Không thể xóa sở thích và dữ liệu liên quan.'});
-    }
-  }
+    const interest = getInterestById(id);
+    createUndoableDelete('sở thích', id, interest?.name, async () => {
+        const batch = writeBatch(firestore);
+        const topicsToDelete = topics.filter(t => t.interestId === id);
+        const goalsToDelete = goals.filter(g => topicsToDelete.some(t => t.id === g.topicId));
+        const tasksToDelete = tasks.filter(t => goalsToDelete.some(g => g.id === t.goalId) || topicsToDelete.some(topic => topic.id === t.topicId));
+        const wikiPagesToDelete = wikiPages.filter(p => topicsToDelete.some(t => t.id === p.topicId));
+        
+        wikiPagesToDelete.forEach(p => batch.delete(doc(firestore, 'wikiPages', p.id)));
+        tasksToDelete.forEach(t => batch.delete(doc(firestore, 'tasks', t.id)));
+        goalsToDelete.forEach(g => batch.delete(doc(firestore, 'goals', g.id)));
+        topicsToDelete.forEach(t => batch.delete(doc(firestore, 'topics', t.id)));
+        batch.delete(doc(firestore, 'interests', id));
+        
+        await batch.commit();
+         if (selectedInterestId === id) {
+            selectInterest(null);
+        }
+    });
+  };
 
   const deleteTopic = async (id: string) => {
-    if (!user) return;
-    const topicName = topics.find(t => t.id === id)?.name;
-    const batch = writeBatch(firestore);
+    const topic = getTopicById(id);
+    createUndoableDelete('chủ đề', id, topic?.name, async () => {
+        const batch = writeBatch(firestore);
+        const descendants = new Set<string>();
+        const findDescendants = (parentId: string) => {
+            const children = topics.filter(t => t.parentId === parentId);
+            children.forEach(child => {
+                descendants.add(child.id);
+                findDescendants(child.id);
+            });
+        };
+        findDescendants(id);
+        const allTopicsToDelete = [id, ...Array.from(descendants)];
+        
+        const goalsToDelete = goals.filter(g => allTopicsToDelete.includes(g.topicId));
+        const tasksToDelete = tasks.filter(t => goalsToDelete.some(g => g.id === t.goalId) || allTopicsToDelete.includes(t.topicId!));
+        const wikiPagesToDelete = wikiPages.filter(p => allTopicsToDelete.includes(p.topicId));
+        
+        wikiPagesToDelete.forEach(p => batch.delete(doc(firestore, 'wikiPages', p.id)));
+        tasksToDelete.forEach(t => batch.delete(doc(firestore, 'tasks', t.id)));
+        goalsToDelete.forEach(g => batch.delete(doc(firestore, 'goals', g.id)));
+        allTopicsToDelete.forEach(topicId => batch.delete(doc(firestore, 'topics', topicId)));
 
-    // Find all descendant topics
-    const descendants = new Set<string>();
-    const findDescendants = (parentId: string) => {
-      const children = topics.filter(t => t.parentId === parentId);
-      children.forEach(child => {
-        descendants.add(child.id);
-        findDescendants(child.id);
-      });
-    };
-    findDescendants(id);
-    const allTopicsToDelete = [id, ...Array.from(descendants)];
-    
-    const goalsToDelete = goals.filter(g => allTopicsToDelete.includes(g.topicId));
-    const tasksToDelete = tasks.filter(t => goalsToDelete.some(g => g.id === t.goalId) || allTopicsToDelete.includes(t.topicId!));
-    const wikiPagesToDelete = wikiPages.filter(p => allTopicsToDelete.includes(p.topicId));
-    
-    wikiPagesToDelete.forEach(p => batch.delete(doc(firestore, 'wikiPages', p.id)));
-    tasksToDelete.forEach(t => batch.delete(doc(firestore, 'tasks', t.id)));
-    goalsToDelete.forEach(g => batch.delete(doc(firestore, 'goals', g.id)));
-    allTopicsToDelete.forEach(topicId => batch.delete(doc(firestore, 'topics', topicId)));
-    
-    try {
-      await batch.commit();
-      if (selectedTopicId === id) {
-        selectTopic(null);
-      }
-      toast({ title: `Chủ đề đã bị xóa`, description: `"${topicName}" và tất cả nội dung của nó đã bị xóa.`});
-    } catch (error) {
-      console.error("Error deleting topic and its subcollections: ", error);
-      toast({ variant: 'destructive', title: 'Lỗi xóa chủ đề', description: 'Không thể xóa chủ đề và dữ liệu liên quan.'});
-    }
-  }
+        await batch.commit();
+        if (selectedTopicId === id) {
+            selectTopic(null);
+        }
+    });
+  };
 
   const deleteGoal = async (id: string) => {
-    if (!user) return;
-    const goalName = goals.find(g => g.id === id)?.title;
-    const batch = writeBatch(firestore);
-
-    const tasksToDelete = tasks.filter(t => t.goalId === id);
-    tasksToDelete.forEach(t => batch.delete(doc(firestore, 'tasks', t.id)));
-    batch.delete(doc(firestore, 'goals', id));
-
-    try {
-      await batch.commit();
-      toast({ title: `Mục tiêu đã bị xóa`, description: `"${goalName}" và tất cả các nhiệm vụ của nó đã bị xóa.`});
-    } catch (error) {
-      console.error("Error deleting goal and its tasks: ", error);
-      toast({ variant: 'destructive', title: 'Lỗi xóa mục tiêu', description: 'Không thể xóa mục tiêu và các nhiệm vụ của nó.'});
-    }
-  }
+    const goal = getGoalById(id);
+    createUndoableDelete('mục tiêu', id, goal?.title, async () => {
+        const batch = writeBatch(firestore);
+        const tasksToDelete = tasks.filter(t => t.goalId === id);
+        tasksToDelete.forEach(t => batch.delete(doc(firestore, 'tasks', t.id)));
+        batch.delete(doc(firestore, 'goals', id));
+        await batch.commit();
+    });
+  };
 
   const deleteTask = (id: string) => {
-    if (!user) return;
-    const taskText = tasks.find(t => t.id === id)?.text;
-    deleteDocumentNonBlocking(doc(firestore, 'tasks', id));
-    toast({ title: "Đã xóa nhiệm vụ", description: `"${taskText}" đã bị xóa.`});
+    const task = getTaskById(id);
+    createUndoableDelete('nhiệm vụ', id, task?.text, async () => {
+        await deleteDoc(doc(firestore, 'tasks', id));
+    });
   };
+
 
   const duplicateGoal = async (goalId: string) => {
     if (!user) return;
@@ -387,10 +407,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteWikiPage = (pageId: string) => {
-    if (!user) return;
-    const pageTitle = wikiPages.find(p => p.id === pageId)?.title;
-    deleteDocumentNonBlocking(doc(firestore, 'wikiPages', pageId));
-    toast({ title: "Đã xóa trang Wiki", description: `"${pageTitle}" đã bị xóa.` });
+    const page = getWikiPageById(pageId);
+    createUndoableDelete('trang wiki', pageId, page?.title, async () => {
+        await deleteDoc(doc(firestore, 'wikiPages', pageId));
+    });
   };
   
   const addSalesPage = async (pageData: Partial<Omit<SalesPage, 'id'>>) => {
@@ -423,19 +443,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteSalesPage = (pageId: string) => {
-    if (!user) return;
-    const pageTitle = salesPages.find(p => p.id === pageId)?.title;
-    deleteDocumentNonBlocking(doc(firestore, 'salesPages', pageId));
-    toast({ title: "Đã xóa trang bán hàng", description: `"${pageTitle}" đã bị xóa.` });
+    const page = getSalesPageById(pageId);
+    createUndoableDelete('trang bán hàng', pageId, page?.title, async () => {
+        await deleteDoc(doc(firestore, 'salesPages', pageId));
+    });
   };
 
-  const selectedInterest = useMemo(() => interests.find((i) => i.id === selectedInterestId) ?? null, [interests, selectedInterestId]);
-  const selectedTopic = useMemo(() => topics.find((t) => t.id === selectedTopicId) ?? null, [topics, selectedTopicId]);
+  const selectedInterest = useMemo(() => filteredInterests.find((i) => i.id === selectedInterestId) ?? null, [filteredInterests, selectedInterestId]);
+  const selectedTopic = useMemo(() => filteredTopics.find((t) => t.id === selectedTopicId) ?? null, [filteredTopics, selectedTopicId]);
 
   const getInterestById = (id: string) => interests.find(i => i.id === id);
   const getGoalById = (id: string) => goals.find(g => g.id === id);
   const getTaskById = (id: string) => tasks.find(t => t.id === id);
-  const getTasksByGoalId = (goalId: string) => tasks.filter(t => t.goalId === goalId);
+  const getTasksByGoalId = (goalId: string) => filteredTasks.filter(t => t.goalId === goalId);
   const getTopicById = (id: string) => topics.find(t => t.id === id);
   const getWikiPageById = (id: string) => wikiPages.find(p => p.id === id);
   const getSalesPageById = (id: string) => salesPages.find(p => p.id === id);
@@ -443,13 +463,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const getTopicBreadcrumbs = useCallback((topicId: string | null): Topic[] => {
     if (!topicId) return [];
     const breadcrumbs: Topic[] = [];
-    let currentTopic = topics.find(t => t.id === topicId);
+    let currentTopic = filteredTopics.find(t => t.id === topicId);
     while (currentTopic) {
         breadcrumbs.unshift(currentTopic);
-        currentTopic = topics.find(t => t.id === currentTopic!.parentId);
+        currentTopic = filteredTopics.find(t => t.id === currentTopic!.parentId);
     }
     return breadcrumbs;
-  }, [topics]);
+  }, [filteredTopics]);
 
   const topicBreadcrumbs = useMemo(() => getTopicBreadcrumbs(selectedTopicId), [selectedTopicId, getTopicBreadcrumbs]);
 
@@ -460,11 +480,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const value = {
-    interests,
-    topics,
-    goals,
-    tasks,
-    wikiPages,
+    interests: filteredInterests,
+    topics: filteredTopics,
+    goals: filteredGoals,
+    tasks: filteredTasks,
+    wikiPages: filteredWikiPages,
     salesPages,
     isDataLoading,
     selectedInterestId,
