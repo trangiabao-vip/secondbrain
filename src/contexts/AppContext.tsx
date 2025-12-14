@@ -207,12 +207,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const originalTask = getTaskById(originalTaskId);
         if (!originalTask || !user) return;
         
-        const { id, createdAt, ...originalTaskData } = originalTask;
-        
+        // This is the key change: ensure updatedData (with correct new date) is prioritized.
         const fullDataForInstance = {
-            ...originalTaskData,      
+            ...originalTask,      
             ...updatedData,
-            recurrence: null,    
+            recurrence: null, // This instance is now a standalone exception
             userId: user.uid,
         };
         
@@ -374,68 +373,71 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const isRecurringInstance = taskId.includes('-recur-');
     const originalTaskId = isRecurringInstance ? taskId.split('-recur-')[0] : taskId;
-    const taskToDuplicate = getTaskById(originalTaskId);
+    const originalTask = getTaskById(originalTaskId);
 
-    if (!taskToDuplicate) {
-        toast({ variant: 'destructive', title: 'Lỗi', description: 'Không tìm thấy nhiệm vụ để nhân bản.' });
+    if (!originalTask) {
+        toast({ variant: 'destructive', title: 'Lỗi', description: 'Không tìm thấy nhiệm vụ gốc để nhân bản.' });
         return;
     }
+    
+    // Find the specific instance data if it's a recurring one that has been modified and saved as an exception
+    const instanceTask = getTaskById(taskId);
+    const sourceTask = instanceTask && instanceTask.id === taskId ? instanceTask : originalTask;
 
-    let sourceData = { ...taskToDuplicate };
-    let effectiveStartDate: Date | null = null;
-    let effectiveEndDate: Date | null = null;
-
+    let effectiveStartDate = getDateFromFirestore(sourceTask.startDate);
+    let effectiveEndDate = getDateFromFirestore(sourceTask.endDate);
+    
+    // If it's a recurring instance, calculate its specific date/time
     if (isRecurringInstance) {
-        const instanceTask = getTaskById(taskId);
-        if (instanceTask && instanceTask.id === taskId) {
-            sourceData = { ...sourceData, ...instanceTask };
-        }
-        
         const dateStr = taskId.split('-recur-')[1];
         const instanceBaseDate = parseISO(dateStr);
-        const originalStartDate = getDateFromFirestore(taskToDuplicate.startDate);
+        const originalStartDate = getDateFromFirestore(originalTask.startDate);
         
         if (originalStartDate) {
             instanceBaseDate.setHours(originalStartDate.getHours(), originalStartDate.getMinutes());
         }
         effectiveStartDate = instanceBaseDate;
-
-        const originalEndDate = getDateFromFirestore(taskToDuplicate.endDate);
+        
+        const originalEndDate = getDateFromFirestore(originalTask.endDate);
         if (originalStartDate && originalEndDate) {
             const duration = differenceInMinutes(originalEndDate, originalStartDate);
             effectiveEndDate = addMinutes(effectiveStartDate, duration);
         } else {
-            effectiveEndDate = addMinutes(effectiveStartDate, 30);
+            effectiveEndDate = addMinutes(effectiveStartDate, 30); // Default duration
         }
-    } else {
-        effectiveStartDate = getDateFromFirestore(sourceData.startDate);
-        effectiveEndDate = getDateFromFirestore(sourceData.endDate);
     }
     
-    if (!effectiveStartDate || !effectiveEndDate) {
-        toast({ variant: 'destructive', title: 'Lỗi nhân bản', description: 'Không thể nhân bản nhiệm vụ không có thời gian bắt đầu hoặc kết thúc.' });
-        return;
+    if (!effectiveStartDate) {
+      toast({ variant: 'destructive', title: 'Lỗi nhân bản', description: 'Không thể nhân bản nhiệm vụ không có thời gian bắt đầu.' });
+      return;
     }
-
+    
+    // Ensure end date exists and calculate duration
+    if (!effectiveEndDate) {
+        effectiveEndDate = addMinutes(effectiveStartDate, 30); // Default duration
+    }
     const duration = differenceInMinutes(effectiveEndDate, effectiveStartDate);
+
+    // Position the new task right after the source task
     const newStartDate = effectiveEndDate;
     const newEndDate = addMinutes(newStartDate, duration);
 
-    const { id, createdAt, recurrence, ...taskDataToCopy } = sourceData;
+    // Copy data from the most specific source (instance or original)
+    const { id, createdAt, recurrence, ...taskDataToCopy } = sourceTask;
     
     const newTaskData = {
         ...taskDataToCopy,
-        text: `Bản sao của ${sourceData.text}`,
+        text: `Bản sao của ${sourceTask.text}`,
         status: 'chưa bắt đầu' as const,
         createdAt: serverTimestamp(),
-        recurrence: null,
+        recurrence: null, // Duplicated task is a single instance
         startDate: newStartDate,
         endDate: newEndDate,
         userId: user.uid,
     };
 
     addTask(newTaskData);
-    toast({ title: "Đã nhân bản nhiệm vụ", description: `Một bản sao của "${sourceData.text}" đã được tạo.` });
+    toast({ title: "Đã nhân bản nhiệm vụ", description: `Một bản sao của "${sourceTask.text}" đã được tạo.` });
   };
   
   const addWikiPage = (pageData: Partial<Omit<WikiPage, 'id'>>) => {
