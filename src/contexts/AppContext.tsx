@@ -213,8 +213,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // `updatedData` comes last to ensure its properties (like a new startDate or status)
         // overwrite the properties from the original task.
         const fullDataForInstance = {
-            ...originalTaskData,
-            ...updatedData,      
+            ...originalTaskData,      
+            ...updatedData,
             recurrence: null,    // This is an exception, not a recurring task itself
             userId: user.uid,
         };
@@ -422,11 +422,21 @@ const duplicateTask = (taskId: string) => {
         effectiveEndDate = getDateFromFirestore(sourceData.endDate);
     }
     
-    // If there's no start date at all, we can't position the duplicate.
     if (!effectiveStartDate) {
         toast({ variant: 'destructive', title: 'Lỗi nhân bản', description: 'Không thể nhân bản nhiệm vụ không có thời gian bắt đầu.' });
         return;
     }
+
+    const duration = effectiveEndDate ? differenceInMinutes(effectiveEndDate, effectiveStartDate) : 30;
+    
+    // The new start time is the end time of the source instance
+    const newStartDate = effectiveEndDate;
+    if(!newStartDate) {
+         toast({ variant: 'destructive', title: 'Lỗi nhân bản', description: 'Không thể nhân bản nhiệm vụ không có thời gian kết thúc.' });
+         return;
+    }
+    const newEndDate = addMinutes(newStartDate, duration);
+
 
     // 2. Prepare the new task data.
     const { id, createdAt, recurrence, ...taskDataToCopy } = sourceData;
@@ -437,8 +447,8 @@ const duplicateTask = (taskId: string) => {
         status: 'chưa bắt đầu' as const,
         createdAt: serverTimestamp(),
         recurrence: null, // Duplicates are always single instances.
-        startDate: effectiveStartDate, // Same start time as the source
-        endDate: effectiveEndDate,   // Same end time as the source
+        startDate: newStartDate, 
+        endDate: newEndDate,   
         userId: user.uid,
     };
 
