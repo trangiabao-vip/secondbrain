@@ -280,8 +280,11 @@ export function GlobalScheduleView() {
         if (!startDate) return false;
         
         const hasTime = getHours(startDate) !== 0 || getMinutes(startDate) !== 0;
+        if(hasTime) return false;
 
-        return isSameDay(startDate, day) && !hasTime;
+        const isMultiDay = item.endDate && differenceInMinutes(getDateFromFirestore(item.endDate)!, startDate) >= 1440;
+
+        return isSameDay(startDate, day) || (isMultiDay && areIntervalsOverlapping({ start: day, end: endOfDay(day) }, { start: startDate, end: getDateFromFirestore(item.endDate)! }));
     });
   };
 
@@ -333,7 +336,7 @@ export function GlobalScheduleView() {
             {/* Time column */}
             <div className="w-16 text-xs text-center text-muted-foreground sticky left-0 bg-background z-20">
               <div className="h-10 border-b"></div>
-              <div className="h-10 flex items-center justify-center border-b">Cả ngày</div>
+              <div className="h-14 flex items-center justify-center border-b">Cả ngày</div>
               {hours.map(hour => (
                 <div key={hour} className="h-16 text-right pr-2 relative">
                   <span className="relative -top-2">
@@ -356,28 +359,34 @@ export function GlobalScheduleView() {
                       <p className="font-semibold text-lg">{format(day, 'd')}</p>
                     </div>
                     {/* All day section */}
-                    <div className="h-10 border-b p-0.5 space-y-0.5 overflow-hidden">
+                    <div className="h-14 border-b p-0.5 space-y-0.5 overflow-y-auto">
                       {getItemsForAllday(day).map(item => {
                         const originalId = item.id.includes('-recur-') ? item.id.split('-recur-')[0] : item.id;
-                        return (
-                          <div key={item.id}>
-                            {item.type === 'goal' ? (
-                              <EditGoalDialog goalId={originalId}>
-                                <div className="bg-primary/20 text-primary-foreground text-xs rounded-sm px-1 py-0.5 truncate border border-primary/50 cursor-pointer hover:bg-primary/30">
-                                  <Icons.goal className="h-3 w-3 inline mr-1 align-middle"/>
-                                  {(item as Goal).title}
-                                </div>
-                              </EditGoalDialog>
-                            ) : (
-                              <EditTaskDialog taskId={originalId}>
-                                 <div className="bg-secondary/80 text-secondary-foreground text-xs rounded-sm px-1 py-0.5 truncate border border-secondary/50 cursor-pointer hover:bg-secondary">
-                                  <Icons.task className="h-3 w-3 inline mr-1 align-middle"/>
-                                  {(item as Task).text}
-                                </div>
-                              </EditTaskDialog>
-                            )}
+                        const content = (
+                          <div className={cn(
+                            "text-xs rounded-sm px-1 py-0.5 truncate border cursor-pointer hover:bg-opacity-80 flex items-center gap-1",
+                            item.type === 'goal'
+                              ? 'bg-blue-500/20 text-blue-900 border-blue-500/50 dark:text-blue-200'
+                              : 'bg-secondary/80 text-secondary-foreground border-secondary-foreground/50'
+                          )}>
+                            {item.type === 'goal' ? <Icons.goal className="h-3 w-3 flex-shrink-0" /> : <Icons.task className="h-3 w-3 flex-shrink-0" />}
+                            <span className="truncate">{(item as Goal).title || (item as Task).text}</span>
                           </div>
-                        )
+                        );
+
+                        if (item.type === 'goal') {
+                          return (
+                            <EditGoalDialog key={item.id} goalId={originalId}>
+                              {content}
+                            </EditGoalDialog>
+                          );
+                        } else {
+                          return (
+                            <EditTaskDialog key={item.id} taskId={item.id}>
+                              {content}
+                            </EditTaskDialog>
+                          );
+                        }
                       })}
                     </div>
 
