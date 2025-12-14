@@ -207,11 +207,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const originalTask = getTaskById(originalTaskId);
       if (!originalTask || !user) return;
   
-      // The updatedData from the dialog should already have the correct startDate
-      // for the specific instance being edited.
       const fullDataForInstance = {
         ...originalTask,
-        ...updatedData,
+        ...updatedData, // This now correctly includes the modified startDate
         recurrence: null, // This instance is now a standalone exception
         userId: user.uid,
       };
@@ -377,17 +375,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Finds the specific task instance to duplicate, including virtual recurring instances.
     const findTaskInstance = (id: string): Task | null => {
         const isRecurringInstance = id.includes('-recur-');
-        const originalTaskId = isRecurringInstance ? id.split('-recur-')[0] : id;
-        const originalTask = getTaskById(originalTaskId);
-  
-        if (!originalTask) return null;
-  
+        
         // If an exception already exists in the database for this instance, use it.
         const existingException = tasks.find(t => t.id === id);
         if (existingException) {
             return existingException;
         }
 
+        const originalTaskId = isRecurringInstance ? id.split('-recur-')[0] : id;
+        const originalTask = getTaskById(originalTaskId);
+  
+        if (!originalTask) return null;
+  
         // If it's a non-recurring task, just return it.
         if (!isRecurringInstance) {
             return originalTask;
@@ -405,8 +404,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (!originalStartDate) return null; // Cannot proceed without original start time
   
         // Combine the correct date from the ID with the time from the original task
-        const instanceStartDate = new Date(instanceDate);
-        instanceStartDate.setHours(originalStartDate.getHours(), originalStartDate.getMinutes(), originalStartDate.getSeconds(), originalStartDate.getMilliseconds());
+        const instanceStartDate = new Date(instanceDate.getFullYear(), instanceDate.getMonth(), instanceDate.getDate(), originalStartDate.getHours(), originalStartDate.getMinutes(), originalStartDate.getSeconds());
   
         let instanceEndDate: Date | null | undefined = null;
         const originalEndDate = getDateFromFirestore(originalTask.endDate);
@@ -438,7 +436,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
     const { id, createdAt, recurrence, ...taskDataToCopy } = sourceTask;
     
-    // Ensure we have valid dates for the new task
     const sourceStartDate = getDateFromFirestore(sourceTask.startDate);
     const sourceEndDate = getDateFromFirestore(sourceTask.endDate);
 
@@ -446,7 +443,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể nhân bản nhiệm vụ không có ngày bắt đầu.' });
         return;
     }
-
+    
+    // Create the new task with the exact same start and end time.
     const newTaskData = {
         ...taskDataToCopy,
         text: `Bản sao của ${sourceTask.text}`,
