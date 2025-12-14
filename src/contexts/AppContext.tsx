@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { ReactNode } from 'react';
@@ -206,13 +207,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const originalTask = getTaskById(originalTaskId);
         if (!originalTask || !user) return;
         
-        // This is the key: Combine the original task data with the new updates.
-        // The order is important: `updatedData` must come after `originalTask`
-        // to ensure new values (like `startDate`) overwrite the old ones.
         const { id, createdAt, ...originalTaskData } = originalTask;
+        
+        // This is the key: The order of spread operators matters.
+        // `updatedData` comes last to ensure its properties (like a new startDate or status)
+        // overwrite the properties from the original task.
         const fullDataForInstance = {
             ...originalTaskData,
-            ...updatedData,      // New changes (e.g., status, text, startDate)
+            ...updatedData,      
             recurrence: null,    // This is an exception, not a recurring task itself
             userId: user.uid,
         };
@@ -375,10 +377,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 const duplicateTask = (taskId: string) => {
     if (!user) return;
 
+    // 1. Determine the definitive source data for the task being duplicated.
     const isRecurringInstance = taskId.includes('-recur-');
     const originalTaskId = isRecurringInstance ? taskId.split('-recur-')[0] : taskId;
-
-    // 1. Get the definitive source data for the task being duplicated.
+    
     const taskToDuplicate = getTaskById(originalTaskId);
     if (!taskToDuplicate) {
         toast({ variant: 'destructive', title: 'Lỗi', description: 'Không tìm thấy nhiệm vụ để nhân bản.' });
@@ -386,8 +388,9 @@ const duplicateTask = (taskId: string) => {
     }
     
     let sourceData = { ...taskToDuplicate };
-    let instanceDate: Date | null = null;
-    
+    let effectiveStartDate: Date | null = null;
+    let effectiveEndDate: Date | null = null;
+
     // If it's a recurring instance, we need to construct its specific data.
     if (isRecurringInstance) {
         const instanceTask = getTaskById(taskId); // Check if it's already an exception
@@ -395,40 +398,37 @@ const duplicateTask = (taskId: string) => {
             sourceData = { ...sourceData, ...instanceTask };
         }
         
-        // The date is encoded in the ID.
+        // The date is encoded in the ID for virtual instances.
         const dateStr = taskId.split('-recur-')[1];
-        instanceDate = parseISO(dateStr);
+        const instanceBaseDate = parseISO(dateStr);
         const originalStartDate = getDateFromFirestore(taskToDuplicate.startDate);
         
         if (originalStartDate) {
-            instanceDate.setHours(originalStartDate.getHours(), originalStartDate.getMinutes());
+            instanceBaseDate.setHours(originalStartDate.getHours(), originalStartDate.getMinutes());
         }
-    }
+        effectiveStartDate = instanceBaseDate;
 
-    // 2. Determine the start and end times for the source task.
-    const sourceStartDate = instanceDate ? instanceDate : getDateFromFirestore(sourceData.startDate);
+        const originalEndDate = getDateFromFirestore(taskToDuplicate.endDate);
+        if (originalStartDate && originalEndDate) {
+            const duration = originalEndDate.getTime() - originalStartDate.getTime();
+            effectiveEndDate = new Date(effectiveStartDate.getTime() + duration);
+        } else {
+            effectiveEndDate = addMinutes(effectiveStartDate, 30);
+        }
+
+    } else {
+        // For regular tasks, just use their dates.
+        effectiveStartDate = getDateFromFirestore(sourceData.startDate);
+        effectiveEndDate = getDateFromFirestore(sourceData.endDate);
+    }
     
     // If there's no start date at all, we can't position the duplicate.
-    if (!sourceStartDate) {
+    if (!effectiveStartDate) {
         toast({ variant: 'destructive', title: 'Lỗi nhân bản', description: 'Không thể nhân bản nhiệm vụ không có thời gian bắt đầu.' });
         return;
     }
 
-    let durationMs = 30 * 60 * 1000; // Default 30 minutes
-    const sourceEndDate = getDateFromFirestore(sourceData.endDate);
-
-    if (sourceEndDate && sourceStartDate) {
-        durationMs = sourceEndDate.getTime() - sourceStartDate.getTime();
-        if (durationMs < 0) durationMs = 30 * 60 * 1000; // Fallback for invalid duration
-    }
-
-    // 3. Calculate times for the new duplicated task.
-    // The anchor date is where the original task ends.
-    const anchorDate = sourceEndDate || addMinutes(sourceStartDate, 30);
-    const newStartDate = new Date(anchorDate);
-    const newEndDate = new Date(newStartDate.getTime() + durationMs);
-
-    // 4. Prepare the new task data.
+    // 2. Prepare the new task data.
     const { id, createdAt, recurrence, ...taskDataToCopy } = sourceData;
     
     const newTaskData = {
@@ -437,8 +437,8 @@ const duplicateTask = (taskId: string) => {
         status: 'chưa bắt đầu' as const,
         createdAt: serverTimestamp(),
         recurrence: null, // Duplicates are always single instances.
-        startDate: newStartDate,
-        endDate: newEndDate,
+        startDate: effectiveStartDate, // Same start time as the source
+        endDate: effectiveEndDate,   // Same end time as the source
         userId: user.uid,
     };
 
