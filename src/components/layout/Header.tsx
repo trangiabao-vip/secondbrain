@@ -22,12 +22,8 @@ import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
-interface HeaderProps {
-  isInGameLayout?: boolean;
-}
-
-export function Header({ isInGameLayout = false }: HeaderProps) {
-  const { selectedInterest, topicBreadcrumbs, selectInterest, selectTopic, viewMode } = !isInGameLayout ? useAppContext() : { selectedInterest: null, topicBreadcrumbs: [], selectInterest: () => {}, selectTopic: () => {}, viewMode: 'games' as const };
+export function Header() {
+  const { selectedInterest, topicBreadcrumbs, selectInterest, selectTopic, viewMode } = useAppContext();
   const { auth, user } = useFirebase();
   const pathname = usePathname();
 
@@ -71,7 +67,7 @@ export function Header({ isInGameLayout = false }: HeaderProps) {
       )
     }
 
-    if (viewMode === 'interests' && !isInGameLayout) {
+    if (viewMode === 'interests') {
        return (
         <>
           {selectedInterest && (
@@ -107,7 +103,7 @@ export function Header({ isInGameLayout = false }: HeaderProps) {
       <div className="flex items-center gap-2 flex-1">
         <SidebarTrigger className="md:hidden" />
         <nav className="hidden md:flex items-center text-sm font-medium text-muted-foreground">
-          <Button variant="ghost" size="sm" className="gap-1" onClick={() => { !isInGameLayout && selectInterest(null)}}>
+          <Button variant="ghost" size="sm" className="gap-1" onClick={() => selectInterest(null)}>
             <Icons.home className="h-4 w-4" />
             Trang chủ
           </Button>
@@ -125,20 +121,20 @@ export function Header({ isInGameLayout = false }: HeaderProps) {
         <DropdownMenuContent align="end">
           <AddTopicDialog>
             <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full"
-              disabled={isInGameLayout || !selectedInterest}
+              disabled={!selectedInterest}
             >
               <Icons.topic className="mr-2 h-4 w-4" />
               Chủ đề mới...
             </button>
           </AddTopicDialog>
           <AddGoalDialog>
-             <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full" disabled={isInGameLayout}>
+             <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
                 <Icons.goal className="mr-2 h-4 w-4" />
                 Mục tiêu mới...
              </button>
           </AddGoalDialog>
           <AddOrEditTaskDialog mode="add">
-            <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full" disabled={isInGameLayout}>
+            <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
                 <Icons.task className="mr-2 h-4 w-4" />
                 Nhiệm vụ mới...
             </button>

@@ -22,21 +22,8 @@ import { usePathname } from "next/navigation";
 import { useSearch } from "../search/GlobalSearchDialog";
 import { useFirebase } from "@/firebase";
 
-interface InterestSidebarProps {
-  isInGameLayout?: boolean;
-}
-
-export function InterestSidebar({ isInGameLayout = false }: InterestSidebarProps) {
-  const appContext = !isInGameLayout ? useAppContext() : null;
-  const { interests, selectedInterestId, selectInterest, deleteInterest, viewMode, setViewMode, isDataLoading } = appContext || {
-    interests: [],
-    selectedInterestId: null,
-    selectInterest: () => {},
-    deleteInterest: () => {},
-    viewMode: 'games',
-    setViewMode: () => {},
-    isDataLoading: true,
-  };
+export function InterestSidebar() {
+  const { interests, selectedInterestId, selectInterest, deleteInterest, viewMode, setViewMode, isDataLoading } = useAppContext();
   const { user } = useFirebase();
 
   const { setOpen: setSearchOpen } = useSearch();
@@ -51,15 +38,6 @@ export function InterestSidebar({ isInGameLayout = false }: InterestSidebarProps
   }
 
   const renderInterests = () => {
-    if (isInGameLayout) {
-        return (
-            <div className="p-2 space-y-2">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-            </div>
-        );
-    }
-
     if (isDataLoading) {
       return (
         <div className="p-2 space-y-2">
@@ -186,7 +164,7 @@ export function InterestSidebar({ isInGameLayout = false }: InterestSidebarProps
       </SidebarContent>
       <SidebarFooter className="p-2 border-t">
         <AddInterestDialog>
-            <Button variant="ghost" className="w-full justify-start" disabled={isInGameLayout}>
+            <Button variant="ghost" className="w-full justify-start">
               <Icons.add className="mr-2 h-4 w-4" />
               Thêm sở thích mới
             </Button>

@@ -1,15 +1,15 @@
 'use client';
 
-import { GamePageLayout } from "@/components/layout/GamePageLayout";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { type ReactNode } from "react";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 
 export default function GamesLayout({ children }: { children: ReactNode }) {
     return (
         <AuthGuard>
-            <GamePageLayout>
+            <AppLayout>
                 {children}
-            </GamePageLayout>
+            </AppLayout>
         </AuthGuard>
     )
 }
