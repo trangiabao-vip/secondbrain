@@ -369,63 +369,69 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const findTaskInstance = useCallback((id: string): Task | null => {
+    // Case 1: The ID belongs to a non-recurring task or a modified recurring instance (exception).
+    // These exist as actual documents in the 'tasks' collection.
+    const directMatch = tasks.find(t => t.id === id);
+    if (directMatch) {
+        return directMatch;
+    }
+
+    // Case 2: The ID belongs to a "virtual" recurring instance that hasn't been modified.
+    // It doesn't exist as a separate document, so we must construct it.
+    const isRecurringInstance = id.includes('-recur-');
+    if (!isRecurringInstance) {
+        // If it's not a direct match and not a recurring instance ID, it doesn't exist.
+        return null;
+    }
+
+    const [originalTaskId, dateStr] = id.split('-recur-');
+    if (!originalTaskId || !dateStr) return null; // Invalid recurring ID format
+
+    const originalTask = tasks.find(t => t.id === originalTaskId);
+    if (!originalTask || !originalTask.recurrence) {
+        // The master task for this instance doesn't exist or isn't recurring.
+        return null;
+    }
+
+    // Safely parse the date from the ID. `parseISO` is crucial here to avoid timezone shifts.
+    const instanceDate = parseISO(dateStr);
+    const originalStartDate = getDateFromFirestore(originalTask.startDate);
+
+    if (!originalStartDate) return null; // Cannot calculate instance time without master start time
+
+    // Construct the correct start date for this specific instance by combining the instance's date with the master's time.
+    const instanceStartDate = new Date(
+        instanceDate.getFullYear(),
+        instanceDate.getMonth(),
+        instanceDate.getDate(),
+        originalStartDate.getHours(),
+        originalStartDate.getMinutes(),
+        originalStartDate.getSeconds()
+    );
+
+    let instanceEndDate: Date | null = null;
+    const originalEndDate = getDateFromFirestore(originalTask.endDate);
+    if (originalEndDate) {
+        const duration = differenceInMinutes(originalEndDate, originalStartDate);
+        instanceEndDate = addMinutes(instanceStartDate, duration);
+    } else {
+        instanceEndDate = addMinutes(instanceStartDate, 30); // Default 30-minute duration
+    }
+
+    // Return the constructed "virtual" task object for this instance.
+    return {
+        ...originalTask,
+        id: id,
+        startDate: instanceStartDate,
+        endDate: instanceEndDate,
+        status: 'chưa bắt đầu', // Virtual instances are always 'chưa bắt đầu'
+        recurrence: null, // This is an instance, not the recurring master
+    };
+  }, [tasks]);
+
   const duplicateTask = (taskId: string) => {
     if (!user) return;
-  
-    // Finds the specific task instance to duplicate, including virtual recurring instances.
-    const findTaskInstance = (id: string): Task | null => {
-        const isRecurringInstance = id.includes('-recur-');
-        
-        // If an exception already exists in the database for this instance, use it.
-        const existingException = tasks.find(t => t.id === id);
-        if (existingException) {
-            return existingException;
-        }
-
-        const originalTaskId = isRecurringInstance ? id.split('-recur-')[0] : id;
-        const originalTask = getTaskById(originalTaskId);
-  
-        if (!originalTask) return null;
-  
-        // If it's a non-recurring task, just return it.
-        if (!isRecurringInstance) {
-            return originalTask;
-        }
-  
-        // If it's a recurring instance that hasn't been modified (is virtual),
-        // we must construct its data.
-        const dateStr = id.split('-recur-')[1];
-        if (!dateStr) return null; // Safety check
-  
-        // Use parseISO to correctly handle the date string without timezone shifts.
-        const instanceDate = parseISO(dateStr);
-  
-        const originalStartDate = getDateFromFirestore(originalTask.startDate);
-        if (!originalStartDate) return null; // Cannot proceed without original start time
-  
-        // Combine the correct date from the ID with the time from the original task
-        const instanceStartDate = new Date(instanceDate.getFullYear(), instanceDate.getMonth(), instanceDate.getDate(), originalStartDate.getHours(), originalStartDate.getMinutes(), originalStartDate.getSeconds());
-  
-        let instanceEndDate: Date | null | undefined = null;
-        const originalEndDate = getDateFromFirestore(originalTask.endDate);
-  
-        if (originalEndDate) {
-            const duration = differenceInMinutes(originalEndDate, originalStartDate);
-            instanceEndDate = addMinutes(instanceStartDate, duration);
-        } else {
-            instanceEndDate = addMinutes(instanceStartDate, 30); // Default duration if none set
-        }
-  
-        // Construct a temporary Task object representing this specific virtual instance
-        return {
-            ...originalTask,
-            id: id, // The instance ID
-            startDate: instanceStartDate,
-            endDate: instanceEndDate,
-            status: 'chưa bắt đầu', // Virtual instances are always 'chưa bắt đầu'
-            recurrence: null, // This is an instance, not the recurring master
-        };
-    };
   
     const sourceTask = findTaskInstance(taskId);
   
@@ -436,14 +442,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
     const { id, createdAt, recurrence, ...taskDataToCopy } = sourceTask;
     
-    const sourceStartDate = getDateFromFirestore(sourceTask.startDate);
-    const sourceEndDate = getDateFromFirestore(sourceTask.endDate);
-
-    if (!sourceStartDate) {
-        toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể nhân bản nhiệm vụ không có ngày bắt đầu.' });
-        return;
-    }
-    
     // Create the new task with the exact same start and end time.
     const newTaskData = {
         ...taskDataToCopy,
@@ -451,8 +449,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         status: 'chưa bắt đầu' as const,
         createdAt: serverTimestamp(),
         recurrence: null, // Duplicated task is always a single instance
-        startDate: sourceStartDate, 
-        endDate: sourceEndDate,
         userId: user.uid,
     };
   
