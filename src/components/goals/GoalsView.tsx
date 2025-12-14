@@ -119,12 +119,6 @@ export function GoalsView() {
             {selectedTopic.description && <p className="text-muted-foreground mt-1 max-w-2xl">{selectedTopic.description}</p>}
         </div>
         <div className="flex gap-2 flex-shrink-0">
-          <AddOrEditTaskDialog mode="add">
-            <Button variant="outline">
-              <Icons.add className="mr-2 h-4 w-4" />
-              Thêm nhiệm vụ
-            </Button>
-          </AddOrEditTaskDialog>
           <AddGoalDialog>
             <Button>
               <Icons.add className="mr-2 h-4 w-4" />
@@ -178,7 +172,7 @@ export function GoalsView() {
         </DropdownMenu>
       </div>
 
-      {filteredGoals.length > 0 && typeFilter !== 'task' && (
+      {filteredGoals.length > 0 && (
         <div className="space-y-4">
           {filteredGoals.map((goal) => {
             const endDate = getDateFromFirestore(goal.endDate);
@@ -327,7 +321,7 @@ export function GoalsView() {
                     )}
                     
                     <div className="bg-secondary/50 p-4">
-                        <TaskList goalId={goal.id} filterStatus={statusFilters.length > 0 ? statusFilters : 'all'} />
+                        <TaskList goalId={goal.id} />
                     </div>
                   </CollapsibleContent>
                 </Card>
@@ -335,6 +329,25 @@ export function GoalsView() {
             )
           })}
         </div>
+      )}
+
+      {filteredStandaloneTasks.length > 0 && (
+        <Card>
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-base">Nhiệm vụ độc lập</h4>
+                    <AddOrEditTaskDialog mode="add">
+                        <Button variant="outline" size="sm">
+                        <Icons.add className="mr-2 h-4 w-4" />
+                        Thêm nhiệm vụ
+                        </Button>
+                    </AddOrEditTaskDialog>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <TaskList tasks={filteredStandaloneTasks} />
+            </CardContent>
+        </Card>
       )}
       
       {filteredGoals.length === 0 && filteredStandaloneTasks.length === 0 && (

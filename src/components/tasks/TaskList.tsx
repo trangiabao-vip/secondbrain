@@ -41,11 +41,10 @@ const statusConfig: Record<TaskStatus, { color: string; label: string }> = {
 interface TaskListProps {
   goalId?: string;
   tasks?: Task[];
-  filterStatus?: TaskStatus[] | 'all';
 }
 
 
-export function TaskList({ goalId, tasks: customTasks, filterStatus = 'all' }: TaskListProps) {
+export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
   const { tasks: allTasks, updateTask, deleteTask, isDataLoading, duplicateTask } = useAppContext();
 
   let tasksToRender: Task[];
@@ -53,11 +52,7 @@ export function TaskList({ goalId, tasks: customTasks, filterStatus = 'all' }: T
   if (customTasks) {
     tasksToRender = customTasks;
   } else {
-    tasksToRender = allTasks.filter(task => {
-        if (task.goalId !== goalId) return false;
-        if (filterStatus === 'all') return true;
-        return filterStatus.includes(task.status);
-    });
+    tasksToRender = allTasks.filter(task => task.goalId === goalId);
   }
 
 
@@ -86,6 +81,12 @@ export function TaskList({ goalId, tasks: customTasks, filterStatus = 'all' }: T
           {goalId && <AddTaskForm goalId={goalId} />}
         </div>
       )
+  }
+
+  if (tasksToRender.length === 0 && !goalId) {
+    return (
+      <p className="text-sm text-muted-foreground text-center py-4">Không có nhiệm vụ độc lập nào trong chủ đề này.</p>
+    )
   }
 
   return (
