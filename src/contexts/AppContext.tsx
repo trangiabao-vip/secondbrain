@@ -6,7 +6,7 @@ import { createContext, useContext, useState, useMemo, useEffect, useCallback } 
 import { type Interest, type Topic, type Goal, type Task, type WikiPage, type SalesPage } from '@/lib/data';
 import { toast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp, writeBatch, query, where, addDoc, setDoc, runTransaction } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, writeBatch, query, where, addDoc, setDoc, runTransaction, deleteDoc } from 'firebase/firestore';
 import { 
   addDocumentNonBlocking, 
   deleteDocumentNonBlocking, 
@@ -189,28 +189,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const updateTask = (taskId: string, updatedData: Partial<Task>, instanceDate?: Date) => {
-      const isRecurringInstance = taskId.includes('-recur-');
-      if (isRecurringInstance) {
-          const originalTaskId = taskId.split('-recur-')[0];
-          const originalTask = getTaskById(originalTaskId);
-          if (!originalTask || !user) return;
-  
-          // Start with the original task's data as a base
-          const { id, createdAt, ...originalTaskData } = originalTask;
-          
-          // Construct the full data for the new exception document
-          const fullDataForInstance = {
-              ...originalTaskData,  // Base data from the recurring task
-              ...updatedData,       // Overwrite with changes from the dialog (e.g., new status, text)
-              recurrence: null,     // This is now a standalone exception
-              userId: user.uid,
-          };
-          
-          setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullDataForInstance, { merge: true });
-      } else {
-          // It's a regular, non-recurring task, so just update it.
-          updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
-      }
+    const isRecurringInstance = taskId.includes('-recur-');
+    if (isRecurringInstance) {
+        const originalTaskId = taskId.split('-recur-')[0];
+        const originalTask = getTaskById(originalTaskId);
+        if (!originalTask || !user) return;
+
+        // Get the specific instance from the calendar view to get its current (potentially modified) start date
+        const instanceTaskOnCalendar = getTaskById(taskId);
+        
+        const { id, createdAt, ...originalTaskData } = originalTask;
+        
+        // This is the crucial part:
+        // We prioritize the data from the dialog (`updatedData`),
+        // then fill in any missing pieces from the original recurring task,
+        // and finally ensure it's a non-recurring exception.
+        const fullDataForInstance = {
+            ...originalTaskData,  // Base data from the recurring task
+            ...updatedData,       // Overwrite with changes from the dialog
+            recurrence: null,     // This is now a standalone exception
+            userId: user.uid,
+        };
+        
+        setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullDataForInstance, { merge: true });
+    } else {
+        // It's a regular, non-recurring task, so just update it.
+        updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
+    }
   };
 
   const createUndoableDelete = (
@@ -365,22 +370,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const duplicateTask = (taskId: string) => {
     if (!user) return;
-    const originalTask = getTaskById(taskId);
-    if (!originalTask) {
-      toast({ variant: 'destructive', title: 'Lỗi', description: 'Không tìm thấy nhiệm vụ gốc.' });
-      return;
+    // Find the specific instance of the task to get its data (including modified dates)
+    const taskToDuplicate = getTaskById(taskId);
+    if (!taskToDuplicate) {
+        toast({ variant: 'destructive', title: 'Lỗi', description: 'Không tìm thấy nhiệm vụ để nhân bản.' });
+        return;
     }
 
-    const { id, createdAt, ...taskData } = originalTask;
+    // Destructure to remove fields that should be new
+    const { id, createdAt, recurrence, ...taskData } = taskToDuplicate;
+
     const newTaskData = {
-      ...taskData,
-      text: `Bản sao của ${originalTask.text}`,
-      status: 'chưa bắt đầu' as const,
-      createdAt: serverTimestamp(),
+        ...taskData, // This includes potentially modified startDate, endDate, notes, etc.
+        text: `Bản sao của ${taskToDuplicate.text}`,
+        status: 'chưa bắt đầu' as const,
+        createdAt: serverTimestamp(),
+        recurrence: null, // The new task is always a single, non-recurring instance
     };
 
     addTask(newTaskData);
-    toast({ title: "Đã nhân bản nhiệm vụ", description: `"${originalTask.text}" đã được nhân bản.` });
+    toast({ title: "Đã nhân bản nhiệm vụ", description: `Một bản sao của "${taskToDuplicate.text}" đã được tạo.` });
   };
   
   const addWikiPage = (pageData: Partial<Omit<WikiPage, 'id'>>) => {
