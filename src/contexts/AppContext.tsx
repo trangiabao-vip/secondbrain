@@ -15,6 +15,7 @@ import {
 } from '@/firebase/non-blocking-updates';
 import { signOut } from 'firebase/auth';
 import { ToastAction } from '@/components/ui/toast';
+import { addMinutes, differenceInMinutes, parseISO } from 'date-fns';
 
 type ViewMode = 'interests' | 'global-schedule' | 'games' | 'dashboard' | 'sales-pages';
 
@@ -66,6 +67,15 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+
+const getDateFromFirestore = (date: any): Date | null => {
+    if (!date) return null;
+    if (typeof date === 'string') return parseISO(date);
+    if (date && typeof date.toDate === 'function') return date.toDate();
+    if (date.seconds) return new Date(date.seconds * 1000);
+    if (date instanceof Date) return date;
+    return null;
+};
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const { firestore, user, isUserLoading, auth } = useFirebase();
@@ -194,26 +204,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const originalTaskId = taskId.split('-recur-')[0];
         const originalTask = getTaskById(originalTaskId);
         if (!originalTask || !user) return;
-
-        // Get the specific instance from the calendar view to get its current (potentially modified) start date
-        const instanceTaskOnCalendar = getTaskById(taskId);
         
         const { id, createdAt, ...originalTaskData } = originalTask;
         
-        // This is the crucial part:
-        // We prioritize the data from the dialog (`updatedData`),
-        // then fill in any missing pieces from the original recurring task,
-        // and finally ensure it's a non-recurring exception.
         const fullDataForInstance = {
-            ...originalTaskData,  // Base data from the recurring task
-            ...updatedData,       // Overwrite with changes from the dialog
-            recurrence: null,     // This is now a standalone exception
+            ...originalTaskData,
+            ...updatedData,
+            recurrence: null,     
             userId: user.uid,
         };
         
         setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullDataForInstance, { merge: true });
     } else {
-        // It's a regular, non-recurring task, so just update it.
         updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
     }
   };
@@ -226,18 +228,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   ) => {
     if (!user) return;
 
-    // Optimistically remove from UI
     setOptimisticallyDeleted(prev => [...prev, itemId]);
 
-    // Create a timer for the actual deletion
     const deleteTimeout = setTimeout(() => {
         deleteFn().catch(error => {
             console.error(`Error permanently deleting ${itemType}:`, error);
-            // If permanent deletion fails, add it back to the UI
             setOptimisticallyDeleted(prev => prev.filter(id => id !== itemId));
             toast({ variant: 'destructive', title: `Lỗi xóa ${itemType}`, description: `Không thể xóa vĩnh viễn "${itemName}".`});
         });
-    }, 5000); // 5-second delay
+    }, 5000); 
 
     const handleUndo = () => {
         clearTimeout(deleteTimeout);
@@ -370,22 +369,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const duplicateTask = (taskId: string) => {
     if (!user) return;
-    // Find the specific instance of the task to get its data (including modified dates)
     const taskToDuplicate = getTaskById(taskId);
     if (!taskToDuplicate) {
         toast({ variant: 'destructive', title: 'Lỗi', description: 'Không tìm thấy nhiệm vụ để nhân bản.' });
         return;
     }
 
-    // Destructure to remove fields that should be new
-    const { id, createdAt, recurrence, ...taskData } = taskToDuplicate;
+    const { id, createdAt, ...taskData } = taskToDuplicate;
+    const originalStartDate = getDateFromFirestore(taskData.startDate);
+    const originalEndDate = getDateFromFirestore(taskData.endDate);
 
+    let newStartDate, newEndDate;
+    let duration = 30; // Default duration in minutes
+
+    if (originalStartDate && originalEndDate) {
+        duration = differenceInMinutes(originalEndDate, originalStartDate);
+    }
+
+    if (originalEndDate) {
+        newStartDate = new Date(originalEndDate);
+    } else if (originalStartDate) {
+        newStartDate = addMinutes(originalStartDate, duration);
+    } else {
+        newStartDate = new Date(); // Fallback to now if no dates
+    }
+    
+    newEndDate = addMinutes(newStartDate, duration);
+    
     const newTaskData = {
-        ...taskData, // This includes potentially modified startDate, endDate, notes, etc.
+        ...taskData,
         text: `Bản sao của ${taskToDuplicate.text}`,
         status: 'chưa bắt đầu' as const,
         createdAt: serverTimestamp(),
-        recurrence: null, // The new task is always a single, non-recurring instance
+        recurrence: null, 
+        startDate: newStartDate,
+        endDate: newEndDate,
     };
 
     addTask(newTaskData);
