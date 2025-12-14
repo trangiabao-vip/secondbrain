@@ -17,7 +17,7 @@ export function GamePageLayout({ children }: { children?: ReactNode }) {
   return (
     <SidebarProvider>
       <Sidebar>
-        <InterestSidebar />
+        <InterestSidebar isInGameLayout={true}/>
       </Sidebar>
       <SidebarInset className="flex flex-col @container/main">
         <Header isInGameLayout={true}/>

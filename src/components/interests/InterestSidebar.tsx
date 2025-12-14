@@ -20,9 +20,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSearch } from "../search/GlobalSearchDialog";
+import { useFirebase } from "@/firebase";
 
-export function InterestSidebar() {
-  const { interests, selectedInterestId, selectInterest, deleteInterest, viewMode, setViewMode, isDataLoading } = useAppContext();
+interface InterestSidebarProps {
+  isInGameLayout?: boolean;
+}
+
+export function InterestSidebar({ isInGameLayout = false }: InterestSidebarProps) {
+  const appContext = !isInGameLayout ? useAppContext() : null;
+  const { interests, selectedInterestId, selectInterest, deleteInterest, viewMode, setViewMode, isDataLoading } = appContext || {
+    interests: [],
+    selectedInterestId: null,
+    selectInterest: () => {},
+    deleteInterest: () => {},
+    viewMode: 'games',
+    setViewMode: () => {},
+    isDataLoading: true,
+  };
+  const { user } = useFirebase();
+
   const { setOpen: setSearchOpen } = useSearch();
   const pathname = usePathname();
   const isGameView = pathname.startsWith('/games');
@@ -30,40 +46,67 @@ export function InterestSidebar() {
   const isScheduleView = viewMode === 'global-schedule' && !isGameView && !isSalesPageView;
   const isDashboardView = viewMode === 'dashboard' && !isGameView && !isSalesPageView;
 
-  const handleSetViewMode = (mode: 'global-schedule' | 'dashboard' | 'sales-pages' | 'games' | 'interests') => {
-    if (mode === 'games') {
-      if (!isGameView) router.push('/games');
-    } else if (mode === 'sales-pages') {
-      if (!isSalesPageView) router.push('/sales-pages');
-    } else {
-      setViewMode(mode);
-      if (pathname !== '/') router.push('/');
-    }
-  };
-  
   const isActive = (id: string) => {
     return selectedInterestId === id && !isGameView && !isScheduleView && !isDashboardView && !isSalesPageView
   }
 
-  if (isDataLoading) {
-    return (
-      <>
-        <SidebarHeader className="border-b p-2">
+  const renderInterests = () => {
+    if (isInGameLayout) {
+        return (
+            <div className="p-2 space-y-2">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+            </div>
+        );
+    }
+
+    if (isDataLoading) {
+      return (
+        <div className="p-2 space-y-2">
           <Skeleton className="h-8 w-full" />
-        </SidebarHeader>
-        <SidebarContent className="p-2">
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-          </div>
-        </SidebarContent>
-        <SidebarFooter className="p-2 border-t">
-          <Skeleton className="h-10 w-full" />
-        </SidebarFooter>
-      </>
-    )
-  }
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+        </div>
+      );
+    }
+    
+    return interests.map((interest) => (
+        <SidebarMenuItem key={interest.id}>
+            <SidebarMenuButton
+                asChild
+                isActive={isActive(interest.id)}
+                tooltip={interest.name}
+            >
+                <Link href="/" onClick={() => selectInterest(interest.id)}>
+                <Icons.interest />
+                <span>{interest.name}</span>
+                </Link>
+            </SidebarMenuButton>
+            <div className="absolute top-1.5 right-1">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover/menu-item:opacity-100">
+                    <Icons.ellipsis className="h-4 w-4" />
+                </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                <EditInterestDialog interestId={interest.id}>
+                    <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
+                        <Icons.edit className="mr-2 h-4 w-4" />
+                        Đổi tên
+                    </button>
+                </EditInterestDialog>
+                <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); deleteInterest(interest.id); }}>
+                    <Icons.delete className="mr-2 h-4 w-4" />
+                    Xóa
+                </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            </div>
+        </SidebarMenuItem>
+    ));
+  };
+
 
   return (
     <>
@@ -93,7 +136,7 @@ export function InterestSidebar() {
                 isActive={isScheduleView}
                 tooltip="Lịch"
               >
-                <Link href="/" onClick={() => setViewMode('global-schedule')}>
+                <Link href="/" onClick={() => setViewMode && setViewMode('global-schedule')}>
                   <Icons.calendar />
                   <span>Lịch</span>
                 </Link>
@@ -129,7 +172,7 @@ export function InterestSidebar() {
                 isActive={isDashboardView}
                 tooltip="Tổng hợp"
               >
-                <Link href="/" onClick={() => setViewMode('dashboard')}>
+                <Link href="/" onClick={() => setViewMode && setViewMode('dashboard')}>
                   <Icons.dashboard />
                   <span>Tổng hợp</span>
                 </Link>
@@ -138,46 +181,12 @@ export function InterestSidebar() {
         </SidebarMenu>
         <SidebarSeparator />
         <SidebarMenu>
-          {interests.map((interest) => (
-            <SidebarMenuItem key={interest.id}>
-               <SidebarMenuButton
-                  asChild
-                  isActive={isActive(interest.id)}
-                  tooltip={interest.name}
-                >
-                  <Link href="/" onClick={() => selectInterest(interest.id)}>
-                    <Icons.interest />
-                    <span>{interest.name}</span>
-                  </Link>
-                </SidebarMenuButton>
-              <div className="absolute top-1.5 right-1">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover/menu-item:opacity-100">
-                      <Icons.ellipsis className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <EditInterestDialog interestId={interest.id}>
-                       <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
-                          <Icons.edit className="mr-2 h-4 w-4" />
-                          Đổi tên
-                       </button>
-                    </EditInterestDialog>
-                    <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); deleteInterest(interest.id); }}>
-                      <Icons.delete className="mr-2 h-4 w-4" />
-                      Xóa
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </SidebarMenuItem>
-          ))}
+          {renderInterests()}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-2 border-t">
         <AddInterestDialog>
-            <Button variant="ghost" className="w-full justify-start">
+            <Button variant="ghost" className="w-full justify-start" disabled={isInGameLayout}>
               <Icons.add className="mr-2 h-4 w-4" />
               Thêm sở thích mới
             </Button>
