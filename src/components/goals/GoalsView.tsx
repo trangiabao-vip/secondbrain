@@ -336,16 +336,7 @@ export function GoalsView() {
           })}
         </div>
       )}
-
-      {filteredStandaloneTasks.length > 0 && typeFilter !== 'goal' && (
-         <Card>
-            <CardContent className="p-4">
-               <h4 className="font-semibold mb-4">Nhiệm vụ độc lập</h4>
-               <TaskList tasks={filteredStandaloneTasks} />
-            </CardContent>
-         </Card>
-      )}
-
+      
       {filteredGoals.length === 0 && filteredStandaloneTasks.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-card p-12 text-center">
             <Icons.goal className="h-12 w-12 text-muted-foreground" />
