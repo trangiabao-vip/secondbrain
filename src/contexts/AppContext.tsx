@@ -206,11 +206,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const originalTask = getTaskById(originalTaskId);
         if (!originalTask || !user) return;
         
+        // This is the key: Combine the original task data with the new updates.
+        // The order is important: `updatedData` must come after `originalTask`
+        // to ensure new values (like `startDate`) overwrite the old ones.
         const { id, createdAt, ...originalTaskData } = originalTask;
-        
         const fullDataForInstance = {
-            ...originalTaskData, // Base data from original task
-            ...updatedData,      // New changes (e.g., status, text)
+            ...originalTaskData,
+            ...updatedData,      // New changes (e.g., status, text, startDate)
             recurrence: null,    // This is an exception, not a recurring task itself
             userId: user.uid,
         };
@@ -370,71 +372,71 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const duplicateTask = (taskId: string) => {
+const duplicateTask = (taskId: string) => {
     if (!user) return;
+
     const isRecurringInstance = taskId.includes('-recur-');
     const originalTaskId = isRecurringInstance ? taskId.split('-recur-')[0] : taskId;
 
-    // First, find the source task data. This could be an instance or an original task.
-    let taskToDuplicate: Task | undefined = getTaskById(originalTaskId);
+    // 1. Get the definitive source data for the task being duplicated.
+    const taskToDuplicate = getTaskById(originalTaskId);
     if (!taskToDuplicate) {
         toast({ variant: 'destructive', title: 'Lỗi', description: 'Không tìm thấy nhiệm vụ để nhân bản.' });
         return;
     }
-
-    // If it's a recurring instance, we need to find its specific data, especially the date.
+    
     let sourceData = { ...taskToDuplicate };
+    let instanceDate: Date | null = null;
+    
+    // If it's a recurring instance, we need to construct its specific data.
     if (isRecurringInstance) {
-        const instanceTask = getTaskById(taskId);
-        // An instance might have its own document (if modified) or it's a virtual one.
-        // We'll construct its data based on the original task and the instance date.
+        const instanceTask = getTaskById(taskId); // Check if it's already an exception
+        if (instanceTask) {
+            sourceData = { ...sourceData, ...instanceTask };
+        }
+        
+        // The date is encoded in the ID.
         const dateStr = taskId.split('-recur-')[1];
-        const instanceDate = parseISO(dateStr);
+        instanceDate = parseISO(dateStr);
         const originalStartDate = getDateFromFirestore(taskToDuplicate.startDate);
-
+        
         if (originalStartDate) {
             instanceDate.setHours(originalStartDate.getHours(), originalStartDate.getMinutes());
         }
-
-        sourceData.startDate = instanceDate;
-        if (taskToDuplicate.endDate && originalStartDate) {
-            const duration = getDateFromFirestore(taskToDuplicate.endDate)!.getTime() - originalStartDate.getTime();
-            sourceData.endDate = new Date(instanceDate.getTime() + duration);
-        } else {
-             sourceData.endDate = addMinutes(instanceDate, 30);
-        }
-
-        // If the instance was already modified and saved, use its specific data
-        if (instanceTask) {
-           sourceData = { ...sourceData, ...instanceTask};
-        }
     }
 
-    // Now, calculate the new times for the duplicate
-    const originalStartDate = getDateFromFirestore(sourceData.startDate);
-    const originalEndDate = getDateFromFirestore(sourceData.endDate);
-
-    let newStartDate: Date;
-    let newEndDate: Date;
-    let duration = 30 * 60 * 1000; // Default 30 minutes in milliseconds
-
-    if (originalStartDate && originalEndDate) {
-        duration = originalEndDate.getTime() - originalStartDate.getTime();
+    // 2. Determine the start and end times for the source task.
+    const sourceStartDate = instanceDate ? instanceDate : getDateFromFirestore(sourceData.startDate);
+    
+    // If there's no start date at all, we can't position the duplicate.
+    if (!sourceStartDate) {
+        toast({ variant: 'destructive', title: 'Lỗi nhân bản', description: 'Không thể nhân bản nhiệm vụ không có thời gian bắt đầu.' });
+        return;
     }
-    
-    // The new task starts right after the original one ends.
-    const anchorDate = originalEndDate || (originalStartDate ? addMinutes(originalStartDate, 30) : new Date());
-    newStartDate = new Date(anchorDate);
-    newEndDate = new Date(newStartDate.getTime() + duration);
-    
-    const { id, createdAt, recurrence, ...taskData } = sourceData;
+
+    let durationMs = 30 * 60 * 1000; // Default 30 minutes
+    const sourceEndDate = getDateFromFirestore(sourceData.endDate);
+
+    if (sourceEndDate && sourceStartDate) {
+        durationMs = sourceEndDate.getTime() - sourceStartDate.getTime();
+        if (durationMs < 0) durationMs = 30 * 60 * 1000; // Fallback for invalid duration
+    }
+
+    // 3. Calculate times for the new duplicated task.
+    // The anchor date is where the original task ends.
+    const anchorDate = sourceEndDate || addMinutes(sourceStartDate, 30);
+    const newStartDate = new Date(anchorDate);
+    const newEndDate = new Date(newStartDate.getTime() + durationMs);
+
+    // 4. Prepare the new task data.
+    const { id, createdAt, recurrence, ...taskDataToCopy } = sourceData;
     
     const newTaskData = {
-        ...taskData,
+        ...taskDataToCopy,
         text: `Bản sao của ${sourceData.text}`,
         status: 'chưa bắt đầu' as const,
         createdAt: serverTimestamp(),
-        recurrence: null, // Duplicates are always single instances
+        recurrence: null, // Duplicates are always single instances.
         startDate: newStartDate,
         endDate: newEndDate,
         userId: user.uid,
@@ -442,7 +444,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     addTask(newTaskData);
     toast({ title: "Đã nhân bản nhiệm vụ", description: `Một bản sao của "${sourceData.text}" đã được tạo.` });
-  };
+};
   
   const addWikiPage = (pageData: Partial<Omit<WikiPage, 'id'>>) => {
     if (!selectedTopicId || !user) return;
