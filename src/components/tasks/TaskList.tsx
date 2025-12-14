@@ -75,7 +75,7 @@ export function TaskList({ goalId, tasks: customTasks, filterStatus = 'all' }: T
   }
   
   const handleStatusChange = (task: Task, status: TaskStatus) => {
-    updateTask(task.id, { status }, getDateFromFirestore(task.startDate) ?? undefined);
+    updateTask(task.id, { status });
   };
   
   if (tasksToRender.length === 0 && goalId) {
