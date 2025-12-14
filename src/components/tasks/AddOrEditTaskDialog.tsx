@@ -181,22 +181,25 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
         setTaskText(task.text);
         setNotes(task.notes || '');
         setDifficulty(task.difficulty || 'Vừa');
-        // For recurring instances, force the status to 'chưa bắt đầu' in the dialog
-        setStatus(isRecurringInstance ? 'chưa bắt đầu' : task.status);
-        setSelectedGoalId(task.goalId || undefined);
         
+        let currentStatus = task.status;
         let sDate;
-        if(isRecurringInstance) {
-            const dateStr = taskId.split('-recur-')[1];
-            sDate = parseISO(dateStr);
-            const originalStartDate = getDateFromFirestore(task.startDate);
-            if (originalStartDate) {
-                sDate.setHours(originalStartDate.getHours(), originalStartDate.getMinutes());
-            }
+
+        if (isRecurringInstance) {
+          const instanceTask = getTaskById(taskId);
+          currentStatus = instanceTask?.status ?? 'chưa bắt đầu';
+          const dateStr = taskId.split('-recur-')[1];
+          sDate = parseISO(dateStr);
+          const originalStartDate = getDateFromFirestore(task.startDate);
+          if (originalStartDate) {
+              sDate.setHours(originalStartDate.getHours(), originalStartDate.getMinutes());
+          }
         } else {
             sDate = getDateFromFirestore(task.startDate);
         }
 
+        setStatus(currentStatus);
+        setSelectedGoalId(task.goalId || undefined);
         setStartDate(sDate);
         if (sDate) setStartTime(format(sDate, "HH:mm"));
         else setStartTime('09:00');
@@ -270,10 +273,7 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
           return acc;
         }, {} as { [key: string]: string });
       
-      const originalTask = getTaskById(originalTaskId!);
-
       const taskData: Partial<Omit<Task, 'id'>> = {
-        ...(originalTask || {}), // Start with original data
         text: taskText.trim(),
         notes: notes,
         difficulty: difficulty,
@@ -290,19 +290,7 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
       }
 
       if (mode === 'edit' && taskId) {
-        if (isRecurringInstance) {
-            // When editing a recurring instance, we create a new standalone task
-            // by setting recurrence to null. This "overwrites" the virtual instance.
-            const oneOffTaskData: Partial<Omit<Task, 'id'>> = {
-              ...taskData,
-              recurrence: null, // This is now a standalone task
-            };
-             // We use updateTask with the specific instance ID to perform a `setDoc`
-             // which will create the document if it doesn't exist.
-            updateTask(taskId, oneOffTaskData);
-        } else {
-            updateTask(taskId, taskData);
-        }
+        updateTask(taskId, taskData);
       } else {
         addTask(taskData);
       }
@@ -631,7 +619,7 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
                       Xóa
                     </Button>
                   )}
-                  <Button variant="secondary" onClick={handleDuplicateTask} disabled={isRecurringInstance}>
+                  <Button variant="secondary" onClick={handleDuplicateTask}>
                     <Icons.copy className="mr-2 h-4 w-4" />
                     Nhân bản
                   </Button>
