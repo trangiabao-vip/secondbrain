@@ -10,7 +10,7 @@ import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent, DropdownMenuSeparator, DropdownMenuCheckboxItem } from "../ui/dropdown-menu";
 import { Progress } from "../ui/progress";
 import { vi } from 'date-fns/locale';
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent, CardHeader } from "../ui/card";
 import { EditGoalDialog } from "./EditGoalDialog";
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
