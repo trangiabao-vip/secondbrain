@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState } from "react";
 import { useAppContext } from "@/contexts/AppContext";
@@ -331,7 +332,7 @@ export function GoalsView() {
         </div>
       )}
 
-      {filteredStandaloneTasks.length > 0 && (
+      {(typeFilter === 'all' || typeFilter === 'task') && (
         <Card>
             <CardHeader>
                 <div className="flex items-center justify-between">
@@ -345,7 +346,13 @@ export function GoalsView() {
                 </div>
             </CardHeader>
             <CardContent>
-                <TaskList tasks={filteredStandaloneTasks} />
+                {filteredStandaloneTasks.length > 0 ? (
+                    <TaskList tasks={filteredStandaloneTasks} />
+                ) : (
+                    <div className="text-center py-4 text-sm text-muted-foreground">
+                        Không có nhiệm vụ độc lập nào trong chủ đề này.
+                    </div>
+                )}
             </CardContent>
         </Card>
       )}
