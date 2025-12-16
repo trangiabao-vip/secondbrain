@@ -137,19 +137,19 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
             if (!hasTime && (!item.endDate || differenceInMinutes(getDateFromFirestore(item.endDate)!, startDate) >= 1440)) return null;
 
             let endDate = getDateFromFirestore(item.endDate) || setMinutes(startDate, getMinutes(startDate) + 30);
-            return { ...item, startDate, endDate, top: 0, height: 0, left: 0, width: 0 };
+            return { ...item, startDate, endDate };
         })
         .filter((item): item is NonNullable<typeof item> => item !== null)
-        .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+        .sort((a, b) => a.startDate.getTime() - b.startDate.getTime() || a.endDate.getTime() - b.endDate.getTime());
 
     if (timedItems.length === 0) return [];
-
-    let eventGroups: PositionedItem[][] = [];
+    
+    let eventGroups: (typeof timedItems)[] = [];
     if (timedItems.length > 0) {
-        let currentGroup: PositionedItem[] = [timedItems[0]];
+        let currentGroup = [timedItems[0]];
         for (let i = 1; i < timedItems.length; i++) {
             const event = timedItems[i];
-            const groupEndTime = currentGroup.reduce((maxEnd, ev) => (ev.endDate && ev.endDate > maxEnd ? ev.endDate : maxEnd), currentGroup[0].endDate!);
+            const groupEndTime = currentGroup.reduce((maxEnd, ev) => ev.endDate > maxEnd ? ev.endDate : maxEnd, new Date(0));
 
             if (event.startDate < groupEndTime) {
                 currentGroup.push(event);
@@ -164,15 +164,13 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
     const finalLayout: PositionedItem[] = [];
 
     eventGroups.forEach(group => {
-        const columns: PositionedItem[][] = [];
-        group.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-
+        const columns: (typeof group)[] = [];
         group.forEach(event => {
             let placed = false;
             for (let i = 0; i < columns.length; i++) {
                 const column = columns[i];
                 const lastEventInColumn = column[column.length - 1];
-                if (!lastEventInColumn || !areIntervalsOverlapping({start: event.startDate, end: event.endDate!}, {start: lastEventInColumn.startDate, end: lastEventInColumn.endDate!})) {
+                if (!areIntervalsOverlapping({start: event.startDate, end: event.endDate!}, {start: lastEventInColumn.startDate, end: lastEventInColumn.endDate!})) {
                     column.push(event);
                     placed = true;
                     break;
@@ -359,17 +357,17 @@ export function GlobalScheduleView() {
                       <p className="font-semibold text-lg">{format(day, 'd')}</p>
                     </div>
                     {/* All day section */}
-                    <div className="h-14 border-b p-0.5 space-y-0.5 overflow-y-auto">
+                    <div className="min-h-14 border-b p-1 flex items-start gap-1 overflow-x-auto">
                       {getItemsForAllday(day).map(item => {
                         const originalId = item.id.includes('-recur-') ? item.id.split('-recur-')[0] : item.id;
                         const content = (
                           <div className={cn(
-                            "text-xs rounded-sm px-1 py-0.5 truncate border cursor-pointer hover:bg-opacity-80 flex items-center gap-1",
-                            item.type === 'goal'
+                            "text-xs rounded-sm px-1.5 py-0.5 whitespace-nowrap border cursor-pointer hover:bg-opacity-80 flex items-center gap-1.5",
+                             item.type === 'goal'
                               ? 'bg-blue-500/20 text-blue-900 border-blue-500/50 dark:text-blue-200'
                               : 'bg-secondary/80 text-secondary-foreground border-secondary-foreground/50'
                           )}>
-                            {item.type === 'goal' ? <Icons.goal className="h-3 w-3 flex-shrink-0" /> : <Icons.task className="h-3 w-3 flex-shrink-0" />}
+                             {item.type === 'goal' ? <Icons.goal className="h-3 w-3 flex-shrink-0" /> : <Icons.task className="h-3 w-3 flex-shrink-0" />}
                             <span className="truncate">{(item as Goal).title || (item as Task).text}</span>
                           </div>
                         );
