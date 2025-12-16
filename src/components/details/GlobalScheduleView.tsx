@@ -140,7 +140,7 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
             return { ...item, startDate, endDate };
         })
         .filter((item): item is NonNullable<typeof item> => item !== null)
-        .sort((a, b) => a.startDate.getTime() - b.startDate.getTime() || a.endDate.getTime() - b.endDate.getTime());
+        .sort((a, b) => a.startDate.getTime() - b.startDate.getTime() || b.endDate.getTime() - a.endDate.getTime());
 
     if (timedItems.length === 0) return [];
     
@@ -169,8 +169,16 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
             let placed = false;
             for (let i = 0; i < columns.length; i++) {
                 const column = columns[i];
-                const lastEventInColumn = column[column.length - 1];
-                if (!areIntervalsOverlapping({start: event.startDate, end: event.endDate!}, {start: lastEventInColumn.startDate, end: lastEventInColumn.endDate!})) {
+                // Check against all events in the column, not just the last one
+                const hasOverlap = column.some(existingEvent =>
+                    areIntervalsOverlapping(
+                        { start: event.startDate, end: event.endDate! },
+                        { start: existingEvent.startDate, end: existingEvent.endDate! },
+                        { inclusive: true }
+                    )
+                );
+
+                if (!hasOverlap) {
                     column.push(event);
                     placed = true;
                     break;
@@ -334,7 +342,7 @@ export function GlobalScheduleView() {
             {/* Time column */}
             <div className="w-16 text-xs text-center text-muted-foreground sticky left-0 bg-background z-20">
               <div className="h-10 border-b"></div>
-              <div className="h-14 flex items-center justify-center border-b">Cả ngày</div>
+              <div className="h-28 flex items-center justify-center border-b">Cả ngày</div>
               {hours.map(hour => (
                 <div key={hour} className="h-16 text-right pr-2 relative">
                   <span className="relative -top-2">
@@ -357,11 +365,11 @@ export function GlobalScheduleView() {
                       <p className="font-semibold text-lg">{format(day, 'd')}</p>
                     </div>
                     {/* All day section */}
-                    <div className="min-h-14 border-b p-1 flex items-start gap-1 overflow-x-auto">
+                    <div className="h-28 border-b p-1 space-y-1 overflow-y-auto">
                       {getItemsForAllday(day).map(item => {
                         const originalId = item.id.includes('-recur-') ? item.id.split('-recur-')[0] : item.id;
                         const content = (
-                          <div className={cn(
+                           <div className={cn(
                             "text-xs rounded-sm px-1.5 py-0.5 whitespace-nowrap border cursor-pointer hover:bg-opacity-80 flex items-center gap-1.5",
                              item.type === 'goal'
                               ? 'bg-blue-500/20 text-blue-900 border-blue-500/50 dark:text-blue-200'
