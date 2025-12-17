@@ -68,22 +68,23 @@ export function GoalsView() {
     if (statusFilters.length === 0) return true;
     return statusFilters.includes(goal.status);
   });
-
+  
   const filteredStandaloneTasks = tasks.filter(task => {
     // A task is a standalone task for the current topic if it has no goalId and its topicId matches.
     if (task.goalId || task.topicId !== selectedTopic?.id) {
-      return false;
-    }
-    // If there are status filters, the task status must be included.
-    if (statusFilters.length > 0 && !statusFilters.includes(task.status)) {
       return false;
     }
     // If the type filter is 'goal', don't show any tasks.
     if (typeFilter === 'goal') {
       return false;
     }
+    // If there are status filters, the task status must be included.
+    if (statusFilters.length > 0 && !statusFilters.includes(task.status)) {
+      return false;
+    }
     return true;
   });
+
 
   if (isDataLoading) {
     return (
