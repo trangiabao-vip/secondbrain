@@ -152,7 +152,7 @@ const generateRecurrenceDates = (rule: RecurrenceRule, startDate: Date | undefin
 };
 
 function TaskDialogContent({ taskId, initialGoalId, initialTopicId, mode, closeDialog }: { taskId?: string, initialGoalId?: string, initialTopicId?: string, mode: 'add' | 'edit', closeDialog: () => void }) {
-  const { getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic, duplicateTask } = useAppContext();
+  const { getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic, duplicateTask, getGoalById } = useAppContext();
   
   const [taskText, setTaskText] = useState('');
   const [notes, setNotes] = useState('');
@@ -282,13 +282,23 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, mode, closeD
         startDate: finalStartDate,
         endDate: finalEndDate,
         goalId: selectedGoalId === 'none' || selectedGoalId === undefined ? null : selectedGoalId,
-        topicId: initialTopicId,
         recurrence: isRecurring && !isRecurringInstance ? recurrenceRule : null,
         customProperties: customPropsObject,
       };
       
-      if (!taskData.goalId && selectedTopic) {
-        taskData.topicId = taskData.topicId || selectedTopic.id;
+      // Explicitly handle topicId
+      if (taskData.goalId) {
+        // If there's a goal, derive topicId from the goal
+        const parentGoal = getGoalById(taskData.goalId);
+        if (parentGoal) {
+          taskData.topicId = parentGoal.topicId;
+        }
+      } else if (initialTopicId) {
+        // If it's a standalone task, use the initialTopicId passed in
+        taskData.topicId = initialTopicId;
+      } else if (selectedTopic) {
+        // As a fallback, use the globally selected topic
+        taskData.topicId = selectedTopic.id;
       }
 
       if (mode === 'edit' && taskId) {
