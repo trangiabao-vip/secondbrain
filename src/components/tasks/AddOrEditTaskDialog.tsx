@@ -32,6 +32,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 interface AddOrEditTaskDialogProps {
   taskId?: string;
   goalId?: string;
+  topicId?: string;
   children: ReactNode;
   mode: 'add' | 'edit';
 }
@@ -150,7 +151,7 @@ const generateRecurrenceDates = (rule: RecurrenceRule, startDate: Date | undefin
     return occurrences;
 };
 
-function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskId?: string, initialGoalId?: string, mode: 'add' | 'edit', closeDialog: () => void }) {
+function TaskDialogContent({ taskId, initialGoalId, initialTopicId, mode, closeDialog }: { taskId?: string, initialGoalId?: string, initialTopicId?: string, mode: 'add' | 'edit', closeDialog: () => void }) {
   const { getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic, duplicateTask } = useAppContext();
   
   const [taskText, setTaskText] = useState('');
@@ -281,12 +282,13 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
         startDate: finalStartDate,
         endDate: finalEndDate,
         goalId: selectedGoalId === 'none' || selectedGoalId === undefined ? null : selectedGoalId,
+        topicId: initialTopicId,
         recurrence: isRecurring && !isRecurringInstance ? recurrenceRule : null,
         customProperties: customPropsObject,
       };
       
       if (!taskData.goalId && selectedTopic) {
-        taskData.topicId = selectedTopic.id;
+        taskData.topicId = taskData.topicId || selectedTopic.id;
       }
 
       if (mode === 'edit' && taskId) {
@@ -638,14 +640,14 @@ function TaskDialogContent({ taskId, initialGoalId, mode, closeDialog }: { taskI
   );
 }
 
-export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, children, mode }: AddOrEditTaskDialogProps) {
+export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, topicId: initialTopicId, children, mode }: AddOrEditTaskDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-xl">
-        {isOpen && <TaskDialogContent taskId={taskId} initialGoalId={initialGoalId} mode={mode} closeDialog={() => setIsOpen(false)} />}
+        {isOpen && <TaskDialogContent taskId={taskId} initialGoalId={initialGoalId} initialTopicId={initialTopicId} mode={mode} closeDialog={() => setIsOpen(false)} />}
       </DialogContent>
     </Dialog>
   );

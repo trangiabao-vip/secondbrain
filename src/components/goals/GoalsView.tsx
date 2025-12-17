@@ -337,7 +337,7 @@ export function GoalsView() {
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <h4 className="font-semibold text-base">Nhiệm vụ độc lập</h4>
-                    <AddOrEditTaskDialog mode="add">
+                    <AddOrEditTaskDialog mode="add" topicId={selectedTopic.id}>
                         <Button variant="outline" size="sm">
                         <Icons.add className="mr-2 h-4 w-4" />
                         Thêm nhiệm vụ
@@ -367,7 +367,7 @@ export function GoalsView() {
                 Hãy thử thay đổi bộ lọc hoặc tạo một mục tiêu / nhiệm vụ mới.
             </p>
             <div className="mt-6 flex gap-4">
-                <AddOrEditTaskDialog mode="add">
+                <AddOrEditTaskDialog mode="add" topicId={selectedTopic.id}>
                     <Button variant="outline">
                         <Icons.add className="mr-2 h-4 w-4" />
                         Thêm nhiệm vụ
