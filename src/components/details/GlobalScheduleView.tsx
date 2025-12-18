@@ -22,206 +22,80 @@ const getDateFromFirestore = (date: any): Date | null => {
     return null;
 };
 
-type ScheduledItem = (Goal | Task) & { type: 'goal' | 'task', startDate: Date, endDate?: Date };
+type ScheduledItem = (Goal | Task) & { type: 'goal' | 'task', startDate: Date, endDate: Date };
 type PositionedItem = ScheduledItem & { top: number; height: number; left: number; width: number; };
 
-const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date): Task[] => {
-    if (!task.recurrence || !task.startDate) return [];
-
-    const occurrences: Task[] = [];
-    const rule = task.recurrence;
-    const taskStartDate = getDateFromFirestore(task.startDate);
-    if (!taskStartDate) return [];
-
-    const taskDuration = task.endDate ? differenceInMinutes(getDateFromFirestore(task.endDate)!, taskStartDate) : 30;
-    
-    let currentDate = new Date(taskStartDate);
-    const dayNameToIndex = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
-
-    // Move to the first potential start date within or before the range
-    while(currentDate < rangeStart && (!rule.endDate || currentDate < getDateFromFirestore(rule.endDate)!)) {
-         switch (rule.frequency) {
-            case 'daily':
-                currentDate = addDays(currentDate, rule.interval || 1);
-                break;
-            case 'weekly':
-                currentDate = addWeeks(currentDate, rule.interval || 1);
-                break;
-            case 'monthly':
-                currentDate = addMonths(currentDate, rule.interval || 1);
-                break;
-        }
-    }
-     // Go back one step to include events starting just before the range but overlapping into it
-    switch (rule.frequency) {
-        case 'daily': currentDate = addDays(currentDate, -(rule.interval || 1)); break;
-        case 'weekly': currentDate = addWeeks(currentDate, -(rule.interval || 1)); break;
-        case 'monthly': currentDate = addMonths(currentDate, -(rule.interval || 1)); break;
-    }
-
-
-    for (let i = 0; i < 100; i++) { // Limit to 100 iterations to prevent infinite loops
-        if (rule.endDate && currentDate > getDateFromFirestore(rule.endDate)!) {
-            break;
-        }
-        if (currentDate > rangeEnd) {
-            break;
-        }
-
-        if (rule.frequency === 'weekly' && rule.daysOfWeek && rule.daysOfWeek.length > 0) {
-            for (const day of rule.daysOfWeek) {
-                const dayIndex = dayNameToIndex[day as keyof typeof dayNameToIndex];
-                const currentDayIndex = getDay(currentDate);
-                const dateInWeek = addDays(currentDate, dayIndex - currentDayIndex);
-
-                if (isBefore(dateInWeek, taskStartDate)) {
-                  continue;
-                }
-
-                if (dateInWeek >= rangeStart && dateInWeek <= rangeEnd) {
-                     const occurrenceStartDate = new Date(dateInWeek);
-                     occurrenceStartDate.setHours(getHours(taskStartDate), getMinutes(taskStartDate));
-                     const occurrenceEndDate = addMinutes(occurrenceStartDate, taskDuration);
-                    
-                    occurrences.push({
-                        ...task,
-                        id: `${task.id}-recur-${format(occurrenceStartDate, 'yyyy-MM-dd')}`,
-                        startDate: occurrenceStartDate,
-                        endDate: occurrenceEndDate,
-                        status: 'chưa bắt đầu',
-                    });
-                }
-            }
-        } else {
-             if (currentDate >= rangeStart && currentDate <= rangeEnd && !isBefore(currentDate, taskStartDate)) {
-                  const occurrenceStartDate = new Date(currentDate);
-                  occurrenceStartDate.setHours(getHours(taskStartDate), getMinutes(taskStartDate));
-                  const occurrenceEndDate = addMinutes(occurrenceStartDate, taskDuration);
-                 occurrences.push({
-                     ...task,
-                     id: `${task.id}-recur-${format(occurrenceStartDate, 'yyyy-MM-dd')}`,
-                     startDate: occurrenceStartDate,
-                     endDate: occurrenceEndDate,
-                     status: 'chưa bắt đầu',
-                 });
-             }
-        }
-        
-        switch (rule.frequency) {
-            case 'daily':
-                currentDate = addDays(currentDate, rule.interval || 1);
-                break;
-            case 'weekly':
-                currentDate = addWeeks(currentDate, rule.interval || 1);
-                break;
-            case 'monthly':
-                currentDate = addMonths(currentDate, rule.interval || 1);
-                break;
-            default:
-                return occurrences;
-        }
-    }
-
-    return occurrences.filter((value, index, self) =>
-      index === self.findIndex((t) => t.id === value.id)
-    );
-}
-
-
 const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
-    const timedItems = items
+    const sortedItems = items
         .map(item => {
             const startDate = getDateFromFirestore(item.startDate);
             if (!startDate) return null;
             const hasTime = getHours(startDate) !== 0 || getMinutes(startDate) !== 0;
-            if (!hasTime && (!item.endDate || differenceInMinutes(getDateFromFirestore(item.endDate)!, startDate) >= 1440)) return null;
+            const endDate = getDateFromFirestore(item.endDate) || addMinutes(startDate, 30);
+            const duration = differenceInMinutes(endDate, startDate);
 
-            let endDate = getDateFromFirestore(item.endDate) || addMinutes(startDate, 30);
+            if (!hasTime && duration >= 1440) return null;
+
             return { ...item, startDate, endDate };
         })
-        .filter((item): item is NonNullable<typeof item> => item !== null)
-        .sort((a, b) => a.startDate.getTime() - b.startDate.getTime() || b.endDate.getTime() - a.endDate.getTime());
+        .filter((item): item is ScheduledItem => !!item)
+        .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 
-    if (timedItems.length === 0) return [];
-    
-    // This will hold the final layout with position info
-    const layout: PositionedItem[] = [];
-
-    // Tracks which columns are occupied at any given time
-    const columns: ScheduledItem[][] = [];
-
-    for (const event of timedItems) {
-        let placed = false;
-        // Try to place the event in an existing column
-        for (let i = 0; i < columns.length; i++) {
-            const lastEventInColumn = columns[i][columns[i].length - 1];
-            if (event.startDate >= lastEventInColumn.endDate!) {
-                columns[i].push(event);
-                placed = true;
-                break;
-            }
-        }
-
-        // If it couldn't be placed, start a new column
-        if (!placed) {
-            columns.push([event]);
-        }
-    }
-    
-    // Now that we have groups, let's process them to find overlapping items
-    const processedEvents = new Set<ScheduledItem>();
-    
-    for (const event of timedItems) {
-        if (processedEvents.has(event)) {
-            continue;
-        }
+    const positionedItems: PositionedItem[] = [];
+    let i = 0;
+    while (i < sortedItems.length) {
+        let overlappingGroup: ScheduledItem[] = [sortedItems[i]];
+        let groupEndTime = sortedItems[i].endDate;
         
-        const overlappingGroup: ScheduledItem[] = [event];
-        processedEvents.add(event);
-
-        for (const otherEvent of timedItems) {
-            if (processedEvents.has(otherEvent)) continue;
-            
-            if (areIntervalsOverlapping({start: event.startDate, end: event.endDate!}, {start: otherEvent.startDate, end: otherEvent.endDate!})) {
-                overlappingGroup.push(otherEvent);
-                processedEvents.add(otherEvent);
+        // Find all events that overlap with the current event or subsequent events in the group
+        for (let j = i + 1; j < sortedItems.length; j++) {
+            if (sortedItems[j].startDate < groupEndTime) {
+                overlappingGroup.push(sortedItems[j]);
+                if (sortedItems[j].endDate > groupEndTime) {
+                    groupEndTime = sortedItems[j].endDate;
+                }
             }
         }
 
-        const groupColumns: ScheduledItem[][] = [];
-        for (const groupEvent of overlappingGroup) {
+        const columns: ScheduledItem[][] = [];
+        overlappingGroup.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+
+        for (const event of overlappingGroup) {
             let placed = false;
-            for (let i = 0; i < groupColumns.length; i++) {
-                 const hasOverlapInColumn = groupColumns[i].some(e => areIntervalsOverlapping({start: e.startDate, end: e.endDate!}, {start: groupEvent.startDate, end: groupEvent.endDate!}));
-                 if (!hasOverlapInColumn) {
-                    groupColumns[i].push(groupEvent);
+            for (let colIndex = 0; colIndex < columns.length; colIndex++) {
+                const column = columns[colIndex];
+                // Check if the event overlaps with ANY event in the current column
+                const hasOverlap = column.some(e => areIntervalsOverlapping({start: e.startDate, end: e.endDate}, {start: event.startDate, end: event.endDate}));
+                if (!hasOverlap) {
+                    column.push(event);
                     placed = true;
                     break;
-                 }
+                }
             }
             if (!placed) {
-                groupColumns.push([groupEvent]);
+                columns.push([event]);
+            }
+        }
+
+        const numColumns = columns.length;
+        for (let colIndex = 0; colIndex < numColumns; colIndex++) {
+            for (const event of columns[colIndex]) {
+                const top = (getHours(event.startDate) * 64) + (getMinutes(event.startDate) / 60 * 64);
+                const height = differenceInMinutes(event.endDate, event.startDate) / 60 * 64;
+                positionedItems.push({
+                    ...event,
+                    top,
+                    height,
+                    left: (100 / numColumns) * colIndex,
+                    width: (100 / numColumns),
+                });
             }
         }
         
-        const numColumns = groupColumns.length;
-        for (let i = 0; i < numColumns; i++) {
-            for (const item of groupColumns[i]) {
-                 const top = (getHours(item.startDate) * 64) + (getMinutes(item.startDate) / 60 * 64);
-                 const height = differenceInMinutes(item.endDate!, item.startDate) / 60 * 64;
-
-                 layout.push({
-                     ...item,
-                     top,
-                     height,
-                     left: (100 / numColumns) * i,
-                     width: 100 / numColumns,
-                 });
-            }
-        }
+        i += overlappingGroup.length;
     }
 
-    return layout;
+    return positionedItems;
 };
 
 
@@ -248,19 +122,20 @@ export function GlobalScheduleView() {
 
     const goalItems: ScheduledItem[] = goals
         .filter(g => g.startDate && g.status !== 'huỷ')
-        .map(g => ({ ...g, type: 'goal' as const, startDate: getDateFromFirestore(g.startDate)!, endDate: getDateFromFirestore(g.endDate) }))
-        .filter(item => item.startDate);
+        .map(g => ({ ...g, type: 'goal' as const, startDate: getDateFromFirestore(g.startDate)!, endDate: getDateFromFirestore(g.endDate) || addMinutes(getDateFromFirestore(g.startDate)!, 30) }))
+        .filter((item): item is ScheduledItem => !!item.startDate);
 
     const baseTasks: ScheduledItem[] = tasks
         .filter(t => t.startDate && !t.recurrence && t.status !== 'huỷ')
-        .map(t => ({ ...t, type: 'task' as const, startDate: getDateFromFirestore(t.startDate)!, endDate: getDateFromFirestore(t.endDate) }))
-        .filter(item => item.startDate);
+        .map(t => ({ ...t, type: 'task' as const, startDate: getDateFromFirestore(t.startDate)!, endDate: getDateFromFirestore(t.endDate) || addMinutes(getDateFromFirestore(t.startDate)!, 30) }))
+        .filter((item): item is ScheduledItem => !!item.startDate);
 
     const recurringTaskInstances: ScheduledItem[] = tasks
         .filter(t => t.recurrence && t.startDate)
         .flatMap(t => generateRecurrencesInRange(t, rangeStart, rangeEnd))
         .map(t => ({ ...t, type: 'task' as const, startDate: getDateFromFirestore(t.startDate)!, endDate: getDateFromFirestore(t.endDate)!, status: t.status || 'chưa bắt đầu' }))
-        .filter(item => item.startDate && !tasks.some(existingTask => existingTask.id === item.id) && item.status !== 'huỷ');
+        .filter((item): item is ScheduledItem => !!item.startDate)
+        .filter(item => !tasks.some(existingTask => existingTask.id === item.id) && item.status !== 'huỷ');
         
     return [...goalItems, ...baseTasks, ...recurringTaskInstances];
   }, [goals, tasks, currentDate]);
@@ -297,11 +172,14 @@ export function GlobalScheduleView() {
         if (!startDate) return false;
         
         const hasTime = getHours(startDate) !== 0 || getMinutes(startDate) !== 0;
+        const endDate = getDateFromFirestore(item.endDate)
+        if(!endDate) return false;
+        
         if(hasTime) return false;
 
-        const isMultiDay = item.endDate && differenceInMinutes(getDateFromFirestore(item.endDate)!, startDate) >= 1440;
+        const isMultiDay = differenceInMinutes(endDate, startDate) >= 1440;
 
-        return isSameDay(startDate, day) || (isMultiDay && areIntervalsOverlapping({ start: day, end: endOfDay(day) }, { start: startDate, end: getDateFromFirestore(item.endDate)! }));
+        return isSameDay(startDate, day) || (isMultiDay && areIntervalsOverlapping({ start: day, end: endOfDay(day) }, { start: startDate, end: endDate }));
     });
   };
 
@@ -443,7 +321,7 @@ export function GlobalScheduleView() {
                                     "text-[10px] opacity-80"
                                   )}>
                                     {item.startDate && format(item.startDate, 'HH:mm')}
-                                    {item.endDate && ` - ${format(getDateFromFirestore(item.endDate)!, 'HH:mm')}`}
+                                    {item.endDate && ` - ${format(item.endDate, 'HH:mm')}`}
                                   </p>
                               </div>
                           );
@@ -473,3 +351,5 @@ export function GlobalScheduleView() {
     </div>
   );
 }
+
+    
