@@ -215,7 +215,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       };
       
       // Use setDoc to create a new, separate document for this exception.
-      setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullDataForInstance);
+      setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullDataForInstance, {});
     } else {
       // It's a regular task, just update it.
       updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
@@ -434,16 +434,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const sourceStartDate = getDateFromFirestore(sourceTask.startDate);
     const sourceEndDate = getDateFromFirestore(sourceTask.endDate);
   
-    if (!sourceStartDate) {
-      toast({ variant: 'destructive', title: 'Lỗi', description: 'Nhiệm vụ gốc thiếu ngày bắt đầu.' });
-      return;
-    }
-  
-    const duration = sourceEndDate ? differenceInMinutes(sourceEndDate, sourceStartDate) : 30;
-    
-    const newStartDate = sourceEndDate || addMinutes(sourceStartDate, duration);
-    const newEndDate = addMinutes(newStartDate, duration);
-  
     const newTaskData = {
       ...taskDataToCopy,
       text: `Bản sao của ${sourceTask.text}`,
@@ -451,8 +441,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createdAt: serverTimestamp(),
       recurrence: null,
       userId: user.uid,
-      startDate: newStartDate,
-      endDate: newEndDate,
+      startDate: sourceStartDate,
+      endDate: sourceEndDate,
     };
   
     addTask(newTaskData);
