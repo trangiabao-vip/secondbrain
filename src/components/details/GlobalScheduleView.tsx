@@ -25,6 +25,89 @@ const getDateFromFirestore = (date: any): Date | null => {
 type ScheduledItem = (Goal | Task) & { type: 'goal' | 'task', startDate: Date, endDate: Date };
 type PositionedItem = ScheduledItem & { top: number; height: number; left: number; width: number; };
 
+const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date): Task[] => {
+    if (!task.recurrence || !task.startDate) return [];
+
+    const instances: Task[] = [];
+    const originalStartDate = getDateFromFirestore(task.startDate);
+    if (!originalStartDate || originalStartDate > rangeEnd) return [];
+
+    const duration = task.endDate ? differenceInMinutes(getDateFromFirestore(task.endDate)!, originalStartDate) : 30;
+
+    let currentDate = originalStartDate;
+    const ruleEndDate = task.recurrence.endDate ? getDateFromFirestore(task.recurrence.endDate) : null;
+    const dayNameToIndex: { [key: string]: number } = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
+
+    while (isBefore(currentDate, ruleEndDate || rangeEnd)) {
+        if (isBefore(currentDate, rangeStart)) {
+            // Move to next possible date if current is before range
+             switch (task.recurrence.frequency) {
+                case 'daily':
+                    currentDate = addDays(currentDate, task.recurrence.interval || 1);
+                    break;
+                case 'weekly':
+                    currentDate = addWeeks(currentDate, task.recurrence.interval || 1);
+                    break;
+                case 'monthly':
+                    currentDate = addMonths(currentDate, task.recurrence.interval || 1);
+                    break;
+            }
+            continue;
+        }
+
+        let isValidDay = false;
+        switch (task.recurrence.frequency) {
+            case 'daily':
+                isValidDay = true;
+                break;
+            case 'weekly':
+                 if (task.recurrence.daysOfWeek && task.recurrence.daysOfWeek.length > 0) {
+                    const currentDayOfWeek = getDay(currentDate);
+                    isValidDay = task.recurrence.daysOfWeek.includes(Object.keys(dayNameToIndex).find(key => dayNameToIndex[key as keyof typeof dayNameToIndex] === currentDayOfWeek) as any);
+                } else {
+                    isValidDay = getDay(currentDate) === getDay(originalStartDate);
+                }
+                break;
+            case 'monthly':
+                isValidDay = currentDate.getDate() === originalStartDate.getDate();
+                break;
+        }
+        
+        if (isValidDay) {
+            const instanceStartDate = currentDate;
+            const instanceEndDate = addMinutes(instanceStartDate, duration);
+            if (areIntervalsOverlapping({ start: instanceStartDate, end: instanceEndDate }, { start: rangeStart, end: rangeEnd })) {
+                instances.push({
+                    ...task,
+                    id: `${task.id}-recur-${format(instanceStartDate, 'yyyy-MM-dd')}`,
+                    startDate: instanceStartDate,
+                    endDate: instanceEndDate,
+                    status: task.status, // We might want to check for exceptions here later
+                    recurrence: null,
+                });
+            }
+        }
+        
+        // Increment date
+        if (task.recurrence.frequency === 'weekly' && task.recurrence.daysOfWeek && task.recurrence.daysOfWeek.length > 0) {
+             currentDate = addDays(currentDate, 1);
+        } else {
+             switch (task.recurrence.frequency) {
+                case 'daily':
+                    currentDate = addDays(currentDate, task.recurrence.interval || 1);
+                    break;
+                case 'weekly':
+                    currentDate = addWeeks(currentDate, task.recurrence.interval || 1);
+                    break;
+                case 'monthly':
+                    currentDate = addMonths(currentDate, task.recurrence.interval || 1);
+                    break;
+            }
+        }
+    }
+    return instances;
+}
+
 const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
     const sortedItems = items
         .map(item => {
@@ -42,59 +125,60 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
         .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 
     const positionedItems: PositionedItem[] = [];
-    let i = 0;
-    while (i < sortedItems.length) {
-        let overlappingGroup: ScheduledItem[] = [sortedItems[i]];
-        let groupEndTime = sortedItems[i].endDate;
-        
-        // Find all events that overlap with the current event or subsequent events in the group
-        for (let j = i + 1; j < sortedItems.length; j++) {
-            if (sortedItems[j].startDate < groupEndTime) {
-                overlappingGroup.push(sortedItems[j]);
-                if (sortedItems[j].endDate > groupEndTime) {
-                    groupEndTime = sortedItems[j].endDate;
-                }
+    const groups: ScheduledItem[][] = [];
+
+    for (const item of sortedItems) {
+        let placed = false;
+        for (const group of groups) {
+            const lastItemInGroup = group[group.length - 1];
+            if (item.startDate < lastItemInGroup.endDate) {
+                group.push(item);
+                placed = true;
+                break;
             }
         }
+        if (!placed) {
+            groups.push([item]);
+        }
+    }
 
+    for (const group of groups) {
         const columns: ScheduledItem[][] = [];
-        overlappingGroup.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-
-        for (const event of overlappingGroup) {
+        group.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+        
+        for (const item of group) {
             let placed = false;
-            for (let colIndex = 0; colIndex < columns.length; colIndex++) {
-                const column = columns[colIndex];
-                // Check if the event overlaps with ANY event in the current column
-                const hasOverlap = column.some(e => areIntervalsOverlapping({start: e.startDate, end: e.endDate}, {start: event.startDate, end: event.endDate}));
-                if (!hasOverlap) {
-                    column.push(event);
+            for (const column of columns) {
+                if (!column.some(existingItem => areIntervalsOverlapping(
+                    { start: existingItem.startDate, end: existingItem.endDate },
+                    { start: item.startDate, end: item.endDate }
+                ))) {
+                    column.push(item);
                     placed = true;
                     break;
                 }
             }
             if (!placed) {
-                columns.push([event]);
+                columns.push([item]);
             }
         }
 
         const numColumns = columns.length;
-        for (let colIndex = 0; colIndex < numColumns; colIndex++) {
-            for (const event of columns[colIndex]) {
-                const top = (getHours(event.startDate) * 64) + (getMinutes(event.startDate) / 60 * 64);
-                const height = differenceInMinutes(event.endDate, event.startDate) / 60 * 64;
+        for (let i = 0; i < numColumns; i++) {
+            for (const item of columns[i]) {
+                const top = (getHours(item.startDate) * 64) + (getMinutes(item.startDate) / 60 * 64);
+                const height = differenceInMinutes(item.endDate, item.startDate) / 60 * 64;
                 positionedItems.push({
-                    ...event,
+                    ...item,
                     top,
                     height,
-                    left: (100 / numColumns) * colIndex,
+                    left: (100 / numColumns) * i,
                     width: (100 / numColumns),
                 });
             }
         }
-        
-        i += overlappingGroup.length;
     }
-
+    
     return positionedItems;
 };
 
@@ -351,5 +435,3 @@ export function GlobalScheduleView() {
     </div>
   );
 }
-
-    
