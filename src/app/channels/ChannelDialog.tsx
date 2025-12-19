@@ -104,8 +104,7 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
     setIsOpen(false);
   };
   
-  const handleTopicToggle = (event: Event, topicId: string) => {
-    event.preventDefault();
+  const handleTopicSelect = (topicId: string) => {
     setSelectedTopicIds(prev =>
       prev.includes(topicId)
         ? prev.filter(id => id !== topicId)
@@ -168,11 +167,12 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
                     <Command>
                         <CommandInput placeholder="Tìm kiếm chủ đề..." />
                         <CommandEmpty>Không tìm thấy chủ đề.</CommandEmpty>
-                        <CommandGroup>
+                        <CommandGroup onSelect={(e) => e.preventDefault()}>
                         {topics.map((topic) => (
                             <CommandItem
                                 key={topic.id}
-                                onSelect={(e) => handleTopicToggle(e, topic.id)}
+                                value={topic.id}
+                                onSelect={() => handleTopicSelect(topic.id)}
                             >
                                 <Check
                                     className={cn(
