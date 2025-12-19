@@ -104,6 +104,14 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
     setIsOpen(false);
   };
   
+  const handleTopicToggle = (topicId: string) => {
+    setSelectedTopicIds(prev =>
+      prev.includes(topicId)
+        ? prev.filter(id => id !== topicId)
+        : [...prev, topicId]
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
@@ -163,21 +171,15 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
                         {topics.map((topic) => (
                             <CommandItem
                                 key={topic.id}
-                                onSelect={() => {
-                                    setSelectedTopicIds(prev => 
-                                        prev.includes(topic.id) 
-                                            ? prev.filter(id => id !== topic.id)
-                                            : [...prev, topic.id]
-                                    )
-                                }}
+                                onSelect={() => handleTopicToggle(topic.id)}
                             >
-                            <Check
-                                className={cn(
-                                "mr-2 h-4 w-4",
-                                selectedTopicIds.includes(topic.id) ? "opacity-100" : "opacity-0"
-                                )}
-                            />
-                            {topic.name}
+                                <Check
+                                    className={cn(
+                                    "mr-2 h-4 w-4",
+                                    selectedTopicIds.includes(topic.id) ? "opacity-100" : "opacity-0"
+                                    )}
+                                />
+                                {topic.name}
                             </CommandItem>
                         ))}
                         </CommandGroup>
