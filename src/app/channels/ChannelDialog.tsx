@@ -41,6 +41,7 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
   const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [isInternalOpen, setIsInternalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [facebook, setFacebook] = useState('');
   const [youtube, setYoutube] = useState('');
@@ -112,6 +113,8 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
     );
   };
 
+  const filteredTopics = topics.filter(topic => topic.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
@@ -165,14 +168,18 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0" align="start">
                     <Command>
-                        <CommandInput placeholder="Tìm kiếm chủ đề..." />
+                        <CommandInput 
+                          placeholder="Tìm kiếm chủ đề..." 
+                          value={searchTerm}
+                          onValueChange={setSearchTerm}
+                        />
                         <CommandEmpty>Không tìm thấy chủ đề.</CommandEmpty>
-                        <CommandGroup onSelect={(e) => e.preventDefault()}>
-                        {topics.map((topic) => (
-                            <CommandItem
+                        <CommandGroup>
+                        {filteredTopics.map((topic) => (
+                            <div
                                 key={topic.id}
-                                value={topic.id}
-                                onSelect={() => handleTopicSelect(topic.id)}
+                                className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent"
+                                onClick={() => handleTopicSelect(topic.id)}
                             >
                                 <Check
                                     className={cn(
@@ -180,8 +187,8 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
                                     selectedTopicIds.includes(topic.id) ? "opacity-100" : "opacity-0"
                                     )}
                                 />
-                                {topic.name}
-                            </CommandItem>
+                                <span>{topic.name}</span>
+                            </div>
                         ))}
                         </CommandGroup>
                     </Command>
