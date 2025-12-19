@@ -104,7 +104,8 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
     setIsOpen(false);
   };
   
-  const handleTopicToggle = (topicId: string) => {
+  const handleTopicToggle = (event: Event, topicId: string) => {
+    event.preventDefault();
     setSelectedTopicIds(prev =>
       prev.includes(topicId)
         ? prev.filter(id => id !== topicId)
@@ -171,7 +172,7 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
                         {topics.map((topic) => (
                             <CommandItem
                                 key={topic.id}
-                                onSelect={() => handleTopicToggle(topic.id)}
+                                onSelect={(e) => handleTopicToggle(e, topic.id)}
                             >
                                 <Check
                                     className={cn(
