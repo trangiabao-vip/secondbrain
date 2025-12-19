@@ -16,13 +16,13 @@ import { Label } from '@/components/ui/label';
 import { useAppContext } from '@/contexts/AppContext';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ChannelDialogProps {
   mode: 'add' | 'edit';
@@ -166,32 +166,44 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
-                    <Command>
-                        <CommandInput 
-                          placeholder="Tìm kiếm chủ đề..." 
-                          value={searchTerm}
-                          onValueChange={setSearchTerm}
-                        />
-                        <CommandEmpty>Không tìm thấy chủ đề.</CommandEmpty>
-                        <CommandGroup>
-                        {filteredTopics.map((topic) => (
-                            <div
-                                key={topic.id}
-                                className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent"
-                                onClick={() => handleTopicSelect(topic.id)}
-                            >
-                                <Check
-                                    className={cn(
-                                    "mr-2 h-4 w-4",
-                                    selectedTopicIds.includes(topic.id) ? "opacity-100" : "opacity-0"
-                                    )}
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                        <div className="p-2">
+                            <div className="relative">
+                                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                placeholder="Tìm kiếm chủ đề..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-8"
                                 />
-                                <span>{topic.name}</span>
                             </div>
-                        ))}
-                        </CommandGroup>
-                    </Command>
+                        </div>
+
+                        <Separator />
+
+                        <ScrollArea className="h-48">
+                            <div className="p-2 space-y-1">
+                            {filteredTopics.length > 0 ? (
+                                filteredTopics.map((topic) => (
+                                <div
+                                    key={topic.id}
+                                    onClick={() => handleTopicSelect(topic.id)}
+                                    className="flex cursor-pointer items-center rounded-md p-2 text-sm hover:bg-accent"
+                                >
+                                    <Check
+                                        className={cn(
+                                            'mr-2 h-4 w-4',
+                                            selectedTopicIds.includes(topic.id) ? 'opacity-100' : 'opacity-0'
+                                        )}
+                                    />
+                                    <span>{topic.name}</span>
+                                </div>
+                                ))
+                            ) : (
+                                <p className="p-2 text-center text-sm text-muted-foreground">Không tìm thấy chủ đề.</p>
+                            )}
+                            </div>
+                        </ScrollArea>
                     </PopoverContent>
                 </Popover>
             </div>
