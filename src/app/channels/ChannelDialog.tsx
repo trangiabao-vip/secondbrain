@@ -163,10 +163,7 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
                         {topics.map((topic) => (
                             <CommandItem
                                 key={topic.id}
-                                value={topic.name}
-                                onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
+                                onSelect={() => {
                                     setSelectedTopicIds(prev => 
                                         prev.includes(topic.id) 
                                             ? prev.filter(id => id !== topic.id)
