@@ -392,7 +392,7 @@
     "Channel": {
       "title": "Channel",
       "type": "object",
-      "description": "Represents a channel that can be associated with one or more topics.",
+      "description": "Represents a channel that can be associated with one or more topics, containing social media links.",
       "properties": {
         "name": {
           "type": "string",
@@ -409,6 +409,10 @@
             "type": "string"
           }
         },
+        "facebook": { "type": "string", "description": "URL for the Facebook page/group." },
+        "youtube": { "type": "string", "description": "URL for the YouTube channel." },
+        "discord": { "type": "string", "description": "URL for the Discord server." },
+        "zalo": { "type": "string", "description": "URL for the Zalo group/page." },
         "userId": {
           "type": "string",
           "description": "The ID of the user who owns this channel."
@@ -470,9 +474,7 @@
     },
     "/channels/{channelId}": {
       "schema": { "$ref": "#/entities/Channel" },
-      "description": "Collection for channels, which can be linked to topics."
+      "description": "Collection for channels, which can be linked to topics and contain social media links."
     }
   }
 }
-
-    

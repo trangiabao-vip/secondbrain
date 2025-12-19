@@ -4,7 +4,7 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
-import { type Interest, type Topic, type Goal, type Task, type WikiPage, type SalesPage } from '@/lib/data';
+import { type Interest, type Topic, type Goal, type Task, type WikiPage, type SalesPage, type Channel } from '@/lib/data';
 import { toast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, serverTimestamp, writeBatch, query, where, addDoc, setDoc, runTransaction, deleteDoc } from 'firebase/firestore';
@@ -18,7 +18,7 @@ import { signOut } from 'firebase/auth';
 import { ToastAction } from '@/components/ui/toast';
 import { addMinutes, differenceInMinutes, parseISO } from 'date-fns';
 
-type ViewMode = 'interests' | 'global-schedule' | 'games' | 'dashboard' | 'sales-pages';
+type ViewMode = 'interests' | 'global-schedule' | 'games' | 'dashboard' | 'sales-pages' | 'channels';
 
 interface AppContextType {
   interests: Interest[];
@@ -27,6 +27,7 @@ interface AppContextType {
   tasks: Task[];
   wikiPages: WikiPage[];
   salesPages: SalesPage[];
+  channels: Channel[];
   selectedInterestId: string | null;
   selectedTopicId: string | null;
   topicBreadcrumbs: Topic[];
@@ -55,6 +56,9 @@ interface AppContextType {
   addSalesPage: (pageData: Partial<Omit<SalesPage, 'id'>>) => Promise<string | undefined>;
   updateSalesPage: (pageId: string, updatedData: Partial<Omit<SalesPage, 'id'>>) => void;
   deleteSalesPage: (pageId: string) => void;
+  addChannel: (channelData: Partial<Omit<Channel, 'id'>>) => Promise<string | undefined>;
+  updateChannel: (channelId: string, updatedData: Partial<Omit<Channel, 'id'>>) => void;
+  deleteChannel: (channelId: string) => void;
   selectedInterest: Interest | null;
   selectedTopic: Topic | null;
   getInterestById: (id: string) => Interest | undefined;
@@ -64,6 +68,7 @@ interface AppContextType {
   getTopicById: (id: string) => Topic | undefined;
   getWikiPageById: (id: string) => WikiPage | undefined;
   getSalesPageById: (id: string) => SalesPage | undefined;
+  getChannelById: (id: string) => Channel | undefined;
   logout: () => void;
 }
 
@@ -91,6 +96,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const tasksQuery = useMemoFirebase(() => user ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const wikiPagesQuery = useMemoFirebase(() => user ? query(collection(firestore, 'wikiPages'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const salesPagesQuery = useMemoFirebase(() => user ? query(collection(firestore, 'salesPages'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const channelsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'channels'), where('userId', '==', user.uid)) : null, [firestore, user]);
 
   const { data: interestsData, isLoading: interestsLoading } = useCollection<Interest>(interestsQuery);
   const { data: topicsData, isLoading: topicsLoading } = useCollection<Topic>(topicsQuery);
@@ -98,6 +104,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { data: tasksData, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
   const { data: wikiPagesData, isLoading: wikiPagesLoading } = useCollection<WikiPage>(wikiPagesQuery);
   const { data: salesPagesData, isLoading: salesPagesLoading } = useCollection<SalesPage>(salesPagesQuery);
+  const { data: channelsData, isLoading: channelsLoading } = useCollection<Channel>(channelsQuery);
   
   const interests = interestsData || [];
   const topics = topicsData || [];
@@ -105,17 +112,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const tasks = tasksData || [];
   const wikiPages = wikiPagesData || [];
   const salesPages = salesPagesData || [];
+  const channels = channelsData || [];
 
   const [optimisticallyDeleted, setOptimisticallyDeleted] = useState<string[]>([]);
   const isDataLoading = useMemo(() => {
-    return isUserLoading || interestsLoading || topicsLoading || goalsLoading || tasksLoading || wikiPagesLoading || salesPagesLoading;
-  }, [isUserLoading, interestsLoading, topicsLoading, goalsLoading, tasksLoading, wikiPagesLoading, salesPagesLoading]);
+    return isUserLoading || interestsLoading || topicsLoading || goalsLoading || tasksLoading || wikiPagesLoading || salesPagesLoading || channelsLoading;
+  }, [isUserLoading, interestsLoading, topicsLoading, goalsLoading, tasksLoading, wikiPagesLoading, salesPagesLoading, channelsLoading]);
 
   const filteredInterests = useMemo(() => interests.filter(i => !optimisticallyDeleted.includes(i.id)), [interests, optimisticallyDeleted]);
   const filteredTopics = useMemo(() => topics.filter(t => !optimisticallyDeleted.includes(t.id)), [topics, optimisticallyDeleted]);
   const filteredGoals = useMemo(() => goals.filter(g => !optimisticallyDeleted.includes(g.id)), [goals, optimisticallyDeleted]);
   const filteredTasks = useMemo(() => tasks.filter(t => !optimisticallyDeleted.includes(t.id)), [tasks, optimisticallyDeleted]);
   const filteredWikiPages = useMemo(() => wikiPages.filter(wp => !optimisticallyDeleted.includes(wp.id)), [wikiPages, optimisticallyDeleted]);
+  const filteredSalesPages = useMemo(() => salesPages.filter(p => !optimisticallyDeleted.includes(p.id)), [salesPages, optimisticallyDeleted]);
+  const filteredChannels = useMemo(() => channels.filter(c => !optimisticallyDeleted.includes(c.id)), [channels, optimisticallyDeleted]);
 
 
   const selectInterest = (id: string | null) => {
@@ -515,6 +525,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const addChannel = async (channelData: Partial<Omit<Channel, 'id'>>) => {
+    if (!user) return;
+    const newChannel = {
+      ...channelData,
+      userId: user.uid,
+      createdAt: serverTimestamp(),
+    };
+    try {
+        const docRef = await addDoc(collection(firestore, 'channels'), newChannel);
+        toast({ title: "Đã tạo kênh", description: `"${channelData.name}" đã được tạo.` });
+        return docRef.id;
+    } catch(e) {
+        console.error("Error adding channel: ", e);
+        toast({ variant: 'destructive', title: "Lỗi", description: 'Không thể tạo kênh.' });
+    }
+  };
+
+  const updateChannel = (channelId: string, updatedData: Partial<Omit<Channel, 'id'>>) => {
+    updateDocumentNonBlocking(doc(firestore, 'channels', channelId), updatedData);
+    toast({ title: "Kênh đã được cập nhật" });
+  };
+
+  const deleteChannel = (channelId: string) => {
+    const channel = getChannelById(channelId);
+    createUndoableDelete('kênh', channelId, channel?.name, async () => {
+        await deleteDoc(doc(firestore, 'channels', channelId));
+    });
+  };
+
   const selectedInterest = useMemo(() => filteredInterests.find((i) => i.id === selectedInterestId) ?? null, [filteredInterests, selectedInterestId]);
   const selectedTopic = useMemo(() => filteredTopics.find((t) => t.id === selectedTopicId) ?? null, [filteredTopics, selectedTopicId]);
 
@@ -525,6 +564,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const getTopicById = (id: string) => topics.find(t => t.id === id);
   const getWikiPageById = (id: string) => wikiPages.find(p => p.id === id);
   const getSalesPageById = (id: string) => salesPages.find(p => p.id === id);
+  const getChannelById = (id: string) => channels.find(c => c.id === id);
   
   const getTopicBreadcrumbs = useCallback((topicId: string | null): Topic[] => {
     if (!topicId) return [];
@@ -551,7 +591,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     goals: filteredGoals,
     tasks: filteredTasks,
     wikiPages: filteredWikiPages,
-    salesPages,
+    salesPages: filteredSalesPages,
+    channels: filteredChannels,
     isDataLoading,
     selectedInterestId,
     selectedTopicId,
@@ -566,7 +607,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateTopic,
     addGoal,
     updateGoal,
-    addTask,
+addTask,
     updateTask,
     deleteInterest,
     deleteTopic,
@@ -580,6 +621,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addSalesPage,
     updateSalesPage,
     deleteSalesPage,
+    addChannel,
+    updateChannel,
+    deleteChannel,
     selectedInterest,
     selectedTopic,
     getInterestById,
@@ -589,6 +633,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getTopicById,
     getWikiPageById,
     getSalesPageById,
+    getChannelById,
     logout,
   };
 

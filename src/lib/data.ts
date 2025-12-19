@@ -138,6 +138,10 @@ export interface Channel {
   name: string;
   description?: string;
   topicIds: string[];
+  facebook?: string;
+  youtube?: string;
+  discord?: string;
+  zalo?: string;
   userId: string;
   createdAt: any;
 }
@@ -164,5 +168,3 @@ export const initialData: DataType = {
   salesPages: [],
   channels: [],
 };
-
-    
