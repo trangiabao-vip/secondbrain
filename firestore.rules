@@ -52,6 +52,12 @@ service cloud.firestore {
        allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
+    
+    // Channels can be read, created, updated, or deleted by their owner.
+    match /channels/{channelId} {
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
 
     // Loosened rules for watch rooms to allow public listing
     match /watchRooms/{roomId} {
@@ -83,3 +89,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

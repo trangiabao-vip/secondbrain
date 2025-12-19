@@ -17,6 +17,7 @@ import {
   Lightbulb,
   MoreHorizontal,
   Plus,
+  Radio,
   Send,
   Sparkles,
   Star,
@@ -73,6 +74,7 @@ export const Icons = {
   salesPage: FileText,
   search: Search,
   recurrence: Repeat,
+  channel: Radio,
   whoIsTheSpy: ({ className }: { className?: string }) => (
     <svg 
       className={className}
@@ -108,3 +110,5 @@ export const Icons = {
     </svg>
   ),
 };
+
+    

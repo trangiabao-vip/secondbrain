@@ -133,6 +133,15 @@ export interface SalesPage {
   updatedAt: any;
 }
 
+export interface Channel {
+  id: string;
+  name: string;
+  description?: string;
+  topicIds: string[];
+  userId: string;
+  createdAt: any;
+}
+
 
 export type DataType = {
   interests: Interest[];
@@ -141,6 +150,7 @@ export type DataType = {
   tasks: Task[];
   wikiPages: WikiPage[];
   salesPages: SalesPage[];
+  channels: Channel[];
 };
 
 // This initialData is now only for reference and will not be used
@@ -152,4 +162,7 @@ export const initialData: DataType = {
   tasks: [],
   wikiPages: [],
   salesPages: [],
+  channels: [],
 };
+
+    

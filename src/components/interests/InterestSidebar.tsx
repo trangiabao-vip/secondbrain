@@ -30,11 +30,12 @@ export function InterestSidebar() {
   const pathname = usePathname();
   const isGameView = pathname.startsWith('/games');
   const isSalesPageView = pathname.startsWith('/sales-pages');
-  const isScheduleView = viewMode === 'global-schedule' && !isGameView && !isSalesPageView;
-  const isDashboardView = viewMode === 'dashboard' && !isGameView && !isSalesPageView;
+  const isChannelsView = pathname.startsWith('/channels');
+  const isScheduleView = viewMode === 'global-schedule' && !isGameView && !isSalesPageView && !isChannelsView;
+  const isDashboardView = viewMode === 'dashboard' && !isGameView && !isSalesPageView && !isChannelsView;
 
   const isActive = (id: string) => {
-    return selectedInterestId === id && !isGameView && !isScheduleView && !isDashboardView && !isSalesPageView
+    return selectedInterestId === id && !isGameView && !isScheduleView && !isDashboardView && !isSalesPageView && !isChannelsView
   }
 
   const renderInterests = () => {
@@ -147,6 +148,18 @@ export function InterestSidebar() {
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
+                isActive={isChannelsView}
+                tooltip="Kênh"
+              >
+                <Link href="/channels">
+                  <Icons.channel />
+                  <span>Kênh</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
                 isActive={isDashboardView}
                 tooltip="Tổng hợp"
               >
@@ -173,3 +186,5 @@ export function InterestSidebar() {
     </>
   );
 }
+
+    

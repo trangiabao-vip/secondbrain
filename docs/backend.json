@@ -388,6 +388,38 @@
         }
       },
       "required": ["title", "slug", "content", "userId", "createdAt", "updatedAt"]
+    },
+    "Channel": {
+      "title": "Channel",
+      "type": "object",
+      "description": "Represents a channel that can be associated with one or more topics.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the channel."
+        },
+        "description": {
+          "type": "string",
+          "description": "A short description of the channel."
+        },
+        "topicIds": {
+          "type": "array",
+          "description": "A list of topic IDs this channel is associated with.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this channel."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the channel was created.",
+          "format": "date-time"
+        }
+      },
+      "required": ["name", "userId", "createdAt"]
     }
   },
   "auth": {
@@ -435,6 +467,12 @@
     "/salesPages/{pageId}": {
       "schema": { "$ref": "#/entities/SalesPage" },
       "description": "Collection for public sales pages. Document ID is the page ID, contains a userId for ownership."
+    },
+    "/channels/{channelId}": {
+      "schema": { "$ref": "#/entities/Channel" },
+      "description": "Collection for channels, which can be linked to topics."
     }
   }
 }
+
+    
