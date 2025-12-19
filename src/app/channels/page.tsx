@@ -1,5 +1,6 @@
 
 'use client';
+import { useState } from 'react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAppContext } from '@/contexts/AppContext';
@@ -25,6 +26,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ChannelDialog } from './ChannelDialog';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +41,7 @@ const socialIcons: Record<string, React.FC<{ className?: string }>> = {
 
 function ChannelManager() {
   const { channels, topics, isDataLoading, deleteChannel } = useAppContext();
+  const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
 
   if (isDataLoading) {
     return (
@@ -56,6 +59,7 @@ function ChannelManager() {
   }
 
   return (
+    <>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">Quản lý Kênh</h2>
@@ -71,7 +75,7 @@ function ChannelManager() {
         <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {channels.map((channel) => {
             const channelTopics = getTopicNames(channel.topicIds);
-            const socialLinks = Object.entries(channel).filter(([key]) => ['facebook', 'youtube', 'discord', 'zalo'].includes(key) && channel[key as keyof typeof channel]);
+            const socialLinks = Object.entries(channel).filter(([key, value]) => ['facebook', 'youtube', 'discord', 'zalo'].includes(key) && value);
 
             return (
                 <Card key={channel.id} className="flex flex-col">
@@ -114,12 +118,10 @@ function ChannelManager() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <ChannelDialog mode="edit" channelId={channel.id}>
-                          <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
+                        <DropdownMenuItem onSelect={() => setEditingChannelId(channel.id)}>
                             <Icons.edit className="mr-2 h-4 w-4" />
                             Chỉnh sửa
-                          </button>
-                        </ChannelDialog>
+                        </DropdownMenuItem>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive">
@@ -165,6 +167,15 @@ function ChannelManager() {
         </div>
       )}
     </div>
+    {editingChannelId && (
+        <ChannelDialog 
+            mode="edit" 
+            channelId={editingChannelId} 
+            open={!!editingChannelId} 
+            onOpenChange={(open) => !open && setEditingChannelId(null)}
+        />
+    )}
+    </>
   );
 }
 

@@ -27,10 +27,12 @@ import { Icons } from '@/components/icons';
 interface ChannelDialogProps {
   mode: 'add' | 'edit';
   channelId?: string;
-  children: ReactNode;
+  children?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps) {
+export function ChannelDialog({ mode, channelId, children, open, onOpenChange }: ChannelDialogProps) {
   const { topics, getChannelById, addChannel, updateChannel } = useAppContext();
   const { toast } = useToast();
 
@@ -38,12 +40,15 @@ export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps)
   const [description, setDescription] = useState('');
   const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isInternalOpen, setIsInternalOpen] = useState(false);
 
   const [facebook, setFacebook] = useState('');
   const [youtube, setYoutube] = useState('');
   const [discord, setDiscord] = useState('');
   const [zalo, setZalo] = useState('');
+
+  const isOpen = open !== undefined ? open : isInternalOpen;
+  const setIsOpen = onOpenChange !== undefined ? onOpenChange : setIsInternalOpen;
   
   useEffect(() => {
     if (isOpen) {
@@ -101,7 +106,7 @@ export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps)
   
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
@@ -162,8 +167,6 @@ export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps)
                                 onMouseDown={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                }}
-                                onSelect={() => {
                                     setSelectedTopicIds(prev => 
                                         prev.includes(topic.id) 
                                             ? prev.filter(id => id !== topic.id)
