@@ -160,7 +160,20 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
                         <div className="flex gap-1 flex-wrap">
                             {selectedTopicIds.length > 0 ? selectedTopicIds.map(id => {
                                 const topic = topics.find(t => t.id === id);
-                                return <Badge key={id} variant="secondary">{topic?.name || id}</Badge>
+                                return (
+                                    <Badge key={id} variant="secondary" className="flex items-center gap-1">
+                                        {topic?.name || id}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleTopicSelect(id);
+                                            }}
+                                            className="rounded-full hover:bg-muted-foreground/20 p-0.5"
+                                        >
+                                            <Icons.close className="h-3 w-3" />
+                                        </button>
+                                    </Badge>
+                                )
                             }) : "Chọn chủ đề..."}
                         </div>
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
