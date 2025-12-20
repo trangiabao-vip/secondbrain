@@ -23,6 +23,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ChannelDialog } from './ChannelDialog';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +40,7 @@ function ChannelManager() {
   const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
   const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [channelToDelete, setChannelToDelete] = useState<string | null>(null);
 
   const handleOpenDialog = (mode: 'add' | 'edit', channelId?: string) => {
     setDialogMode(mode);
@@ -208,5 +210,3 @@ export default function ChannelsPage() {
         </AuthGuard>
     )
 }
-
-    
