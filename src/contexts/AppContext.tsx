@@ -78,13 +78,13 @@ const getDateFromFirestore = (date: any): Date | null => {
     return null;
 };
 
-export function AppProvider({ children, interestId: interestIdProp, topicId: topicIdProp }: { children: ReactNode, interestId?: string | null, topicId?: string | null }) {
+export function AppProvider({ children }: { children: ReactNode }) {
   const { firestore, user, isUserLoading, auth } = useFirebase();
   const router = useRouter();
   const params = useParams();
   
-  const interestId = (params.interestId as string) || interestIdProp || null;
-  const topicId = (params.topicId as string) || topicIdProp || null;
+  const interestId = (params.interestId as string) || null;
+  const topicId = (params.topicId as string) || null;
 
   const interestsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'interests'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const topicsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'topics'), where('userId', '==', user.uid)) : null, [firestore, user]);

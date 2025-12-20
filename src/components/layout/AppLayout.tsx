@@ -3,8 +3,7 @@ import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar"
 import { InterestSidebar } from "@/components/interests/InterestSidebar";
 import { Header } from "./Header";
 import type { ReactNode } from "react";
-import { useParams, usePathname } from "next/navigation";
-import { InterestHubApp } from "../InterestHubApp";
+import { usePathname } from "next/navigation";
 
 export function AppLayout({ children }: { children?: ReactNode }) {
   const pathname = usePathname();

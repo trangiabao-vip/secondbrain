@@ -2,9 +2,9 @@
 import { AppProvider } from '@/contexts/AppContext';
 import type { ReactNode } from 'react';
 
-export function InterestHubApp({ children, interestId, topicId }: { children: ReactNode, interestId?: string | null, topicId?: string | null }) {
+export function InterestHubApp({ children }: { children: ReactNode }) {
   return (
-    <AppProvider interestId={interestId} topicId={topicId}>
+    <AppProvider>
       {children}
     </AppProvider>
   );
