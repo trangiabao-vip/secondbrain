@@ -116,10 +116,13 @@ export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps)
     event?.preventDefault();
     const isSelected = selectedTopicIds.includes(topicId);
     if (isSelected) {
-      setSelectedTopicIds(prev => prev.filter(id => id !== topicId));
-      // Also deselect goals related to the deselected topic
-      const goalsToDeselect = goals.filter(g => g.topicId === topicId).map(g => g.id);
-      setSelectedGoalIds(prev => prev.filter(id => !goalsToDeselect.includes(id)));
+      setSelectedTopicIds(prev => {
+        const newSelectedTopicIds = prev.filter(id => id !== topicId);
+        // Also deselect goals related to the deselected topic
+        const goalsToDeselect = goals.filter(g => g.topicId === topicId).map(g => g.id);
+        setSelectedGoalIds(prevGoals => prevGoals.filter(id => !goalsToDeselect.includes(id)));
+        return newSelectedTopicIds;
+      });
     } else {
       setSelectedTopicIds(prev => [...prev, topicId]);
     }
@@ -246,7 +249,7 @@ export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps)
                   </Popover>
               </div>
 
-              {selectedTopicIds.length > 0 && (
+              {selectedTopicIds.length > 0 && availableGoals.length > 0 && (
                 <div className="space-y-2">
                   <Label>Mục tiêu liên quan</Label>
                   <Popover open={goalPopoverOpen} onOpenChange={setGoalPopoverOpen}>
@@ -256,7 +259,6 @@ export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps)
                           role="combobox"
                           aria-expanded={goalPopoverOpen}
                           className="w-full justify-between h-auto"
-                          disabled={availableGoals.length === 0}
                       >
                           <div className="flex gap-1 flex-wrap">
                               {selectedGoalIds.length > 0 ? selectedGoalIds.map(id => {
@@ -275,7 +277,7 @@ export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps)
                                           </button>
                                       </Badge>
                                   )
-                              }) : (availableGoals.length > 0 ? "Chọn mục tiêu..." : "Không có mục tiêu nào")}
+                              }) : "Chọn mục tiêu..."}
                           </div>
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
