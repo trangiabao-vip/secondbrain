@@ -23,19 +23,14 @@ import { useSearch } from "../search/GlobalSearchDialog";
 import { useFirebase } from "@/firebase";
 
 export function InterestSidebar() {
-  const { interests, selectedInterestId, selectInterest, deleteInterest, viewMode, setViewMode, isDataLoading } = useAppContext();
+  const { interests, selectedInterestId, selectInterest, deleteInterest, isDataLoading } = useAppContext();
   const { user } = useFirebase();
 
   const { setOpen: setSearchOpen } = useSearch();
   const pathname = usePathname();
-  const isGameView = pathname.startsWith('/games');
-  const isSalesPageView = pathname.startsWith('/sales-pages');
-  const isChannelsView = pathname.startsWith('/channels');
-  const isScheduleView = viewMode === 'global-schedule' && !isGameView && !isSalesPageView && !isChannelsView;
-  const isDashboardView = viewMode === 'dashboard' && !isGameView && !isSalesPageView && !isChannelsView;
 
   const isActive = (id: string) => {
-    return selectedInterestId === id && !isGameView && !isScheduleView && !isDashboardView && !isSalesPageView && !isChannelsView
+    return pathname.startsWith(`/interests/${id}`);
   }
 
   const renderInterests = () => {
@@ -56,7 +51,7 @@ export function InterestSidebar() {
                 isActive={isActive(interest.id)}
                 tooltip={interest.name}
             >
-                <Link href="/" onClick={() => selectInterest(interest.id)}>
+                <Link href={`/interests/${interest.id}`} onClick={() => selectInterest(interest.id)}>
                 <Icons.interest />
                 <span>{interest.name}</span>
                 </Link>
@@ -112,10 +107,10 @@ export function InterestSidebar() {
            <SidebarMenuItem>
              <SidebarMenuButton
                 asChild
-                isActive={isScheduleView}
+                isActive={pathname.startsWith('/schedule')}
                 tooltip="Lịch"
               >
-                <Link href="/" onClick={() => setViewMode && setViewMode('global-schedule')}>
+                <Link href="/schedule">
                   <Icons.calendar />
                   <span>Lịch</span>
                 </Link>
@@ -124,7 +119,7 @@ export function InterestSidebar() {
              <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                isActive={isGameView}
+                isActive={pathname.startsWith('/games')}
                 tooltip="Game"
               >
                 <Link href="/games">
@@ -136,7 +131,7 @@ export function InterestSidebar() {
              <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                isActive={isSalesPageView}
+                isActive={pathname.startsWith('/sales-pages')}
                 tooltip="Sales Pages"
               >
                 <Link href="/sales-pages">
@@ -148,7 +143,7 @@ export function InterestSidebar() {
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                isActive={isChannelsView}
+                isActive={pathname.startsWith('/channels')}
                 tooltip="Kênh"
               >
                 <Link href="/channels">
@@ -160,10 +155,10 @@ export function InterestSidebar() {
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                isActive={isDashboardView}
+                isActive={pathname.startsWith('/dashboard')}
                 tooltip="Tổng hợp"
               >
-                <Link href="/" onClick={() => setViewMode && setViewMode('dashboard')}>
+                <Link href="/dashboard">
                   <Icons.dashboard />
                   <span>Tổng hợp</span>
                 </Link>

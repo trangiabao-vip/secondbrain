@@ -23,7 +23,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 export function Header() {
-  const { selectedInterest, topicBreadcrumbs, selectInterest, selectTopic, viewMode } = useAppContext();
+  const { selectedInterest, topicBreadcrumbs, selectInterest, selectTopic } = useAppContext();
   const { auth, user } = useFirebase();
   const pathname = usePathname();
 
@@ -36,45 +36,14 @@ export function Header() {
   }
 
   const renderBreadcrumbs = () => {
-    if (pathname.startsWith('/games')) {
-      const gameName = pathname.split('/').pop()?.replace(/-/g, ' ');
+    if (pathname.startsWith('/interests')) {
       return (
-        <>
-          <Icons.right className="h-4 w-4" />
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/games">Game</Link>
-          </Button>
-          {pathname !== '/games' && (
-            <>
-              <Icons.right className="h-4 w-4" />
-              <Button variant="ghost" size="sm" className="text-foreground capitalize">
-                {gameName}
-              </Button>
-            </>
-          )}
-        </>
-      )
-    }
-    
-    if (viewMode === 'global-schedule') {
-      return (
-        <>
-          <Icons.right className="h-4 w-4" />
-          <Button variant="ghost" size="sm" className="text-foreground">
-            Lịch toàn cục
-          </Button>
-        </>
-      )
-    }
-
-    if (viewMode === 'interests') {
-       return (
         <>
           {selectedInterest && (
             <>
               <Icons.right className="h-4 w-4" />
-              <Button variant="ghost" size="sm" onClick={() => selectInterest(null)}>
-                {selectedInterest.name}
+              <Button variant="ghost" size="sm" asChild>
+                <Link href={`/interests/${selectedInterest.id}`}>{selectedInterest.name}</Link>
               </Button>
             </>
           )}
@@ -83,17 +52,46 @@ export function Header() {
                 <Icons.right className="h-4 w-4" />
                 <Button 
                     variant="ghost" 
+                    asChild
                     size="sm" 
-                    onClick={() => selectTopic(topic.id)}
                     className={index === topicBreadcrumbs.length -1 ? 'text-foreground' : ''}
                 >
-                    {topic.name}
+                    <Link href={`/interests/${topic.interestId}/${topic.id}`}>{topic.name}</Link>
                 </Button>
              </React.Fragment>
           ))}
         </>
-       )
+      )
     }
+
+    if (pathname.startsWith('/dashboard')) {
+        return <><Icons.right className="h-4 w-4" /><span className="text-sm font-medium">Tổng hợp</span></>;
+    }
+     if (pathname.startsWith('/schedule')) {
+        return <><Icons.right className="h-4 w-4" /><span className="text-sm font-medium">Lịch</span></>;
+    }
+     if (pathname.startsWith('/games')) {
+        const pathSegments = pathname.split('/').filter(Boolean);
+        return (
+            <>
+                <Icons.right className="h-4 w-4" />
+                <Button variant="ghost" size="sm" asChild><Link href="/games">Game</Link></Button>
+                {pathSegments.length > 1 && (
+                    <>
+                        <Icons.right className="h-4 w-4" />
+                        <span className="text-sm font-medium capitalize">{pathSegments[1].replace(/-/g, ' ')}</span>
+                    </>
+                )}
+            </>
+        )
+    }
+    if (pathname.startsWith('/sales-pages')) {
+        return <><Icons.right className="h-4 w-4" /><span className="text-sm font-medium">Trang bán hàng</span></>;
+    }
+    if (pathname.startsWith('/channels')) {
+        return <><Icons.right className="h-4 w-4" /><span className="text-sm font-medium">Kênh</span></>;
+    }
+
     return null;
   }
 
@@ -103,9 +101,8 @@ export function Header() {
       <div className="flex items-center gap-2 flex-1">
         <SidebarTrigger className="md:hidden" />
         <nav className="hidden md:flex items-center text-sm font-medium text-muted-foreground">
-          <Button variant="ghost" size="sm" className="gap-1" onClick={() => selectInterest(null)}>
-            <Icons.home className="h-4 w-4" />
-            Trang chủ
+          <Button variant="ghost" size="sm" className="gap-1" asChild>
+            <Link href="/dashboard"><Icons.home className="h-4 w-4" />Trang chủ</Link>
           </Button>
           {renderBreadcrumbs()}
         </nav>

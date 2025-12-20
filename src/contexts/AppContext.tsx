@@ -17,8 +17,7 @@ import {
 import { signOut } from 'firebase/auth';
 import { ToastAction } from '@/components/ui/toast';
 import { addMinutes, differenceInMinutes, parseISO } from 'date-fns';
-
-type ViewMode = 'interests' | 'global-schedule' | 'games' | 'dashboard' | 'sales-pages' | 'channels';
+import { usePathname, useRouter } from 'next/navigation';
 
 interface AppContextType {
   interests: Interest[];
@@ -31,9 +30,7 @@ interface AppContextType {
   selectedInterestId: string | null;
   selectedTopicId: string | null;
   topicBreadcrumbs: Topic[];
-  viewMode: ViewMode;
   isDataLoading: boolean;
-  setViewMode: (mode: ViewMode) => void;
   selectInterest: (id: string | null) => void;
   selectTopic: (id: string | null) => void;
   addInterest: (name: string) => void;
@@ -85,10 +82,11 @@ const getDateFromFirestore = (date: any): Date | null => {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const { firestore, user, isUserLoading, auth } = useFirebase();
+  const pathname = usePathname();
+  const router = useRouter();
 
   const [selectedInterestId, setSelectedInterestId] = useState<string | null>(null);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('interests');
   
   const interestsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'interests'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const topicsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'topics'), where('userId', '==', user.uid)) : null, [firestore, user]);
@@ -119,6 +117,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return isUserLoading || interestsLoading || topicsLoading || goalsLoading || tasksLoading || wikiPagesLoading || salesPagesLoading || channelsLoading;
   }, [isUserLoading, interestsLoading, topicsLoading, goalsLoading, tasksLoading, wikiPagesLoading, salesPagesLoading, channelsLoading]);
 
+  // Sync state with URL
+  useEffect(() => {
+    const pathSegments = pathname.split('/').filter(Boolean);
+    if (pathSegments[0] === 'interests' && pathSegments[1]) {
+      setSelectedInterestId(pathSegments[1]);
+      if (pathSegments[2]) {
+        setSelectedTopicId(pathSegments[2]);
+      } else {
+        setSelectedTopicId(null);
+      }
+    } else {
+      setSelectedInterestId(null);
+      setSelectedTopicId(null);
+    }
+  }, [pathname]);
+
   const filteredInterests = useMemo(() => interests.filter(i => !optimisticallyDeleted.includes(i.id)), [interests, optimisticallyDeleted]);
   const filteredTopics = useMemo(() => topics.filter(t => !optimisticallyDeleted.includes(t.id)), [topics, optimisticallyDeleted]);
   const filteredGoals = useMemo(() => goals.filter(g => !optimisticallyDeleted.includes(g.id)), [goals, optimisticallyDeleted]);
@@ -129,13 +143,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
 
   const selectInterest = (id: string | null) => {
-    setViewMode('interests');
-    setSelectedInterestId(id);
-    setSelectedTopicId(null);
+    if (id === null) {
+      router.push('/dashboard');
+    } else {
+      router.push(`/interests/${id}`);
+    }
   };
 
   const selectTopic = (id: string | null) => {
-    setSelectedTopicId(id);
+    if (id === null) {
+      if(selectedInterestId) {
+        router.push(`/interests/${selectedInterestId}`);
+      } else {
+        router.push('/dashboard');
+      }
+    } else {
+        const topic = topics.find(t => t.id === id);
+        if (topic) {
+            router.push(`/interests/${topic.interestId}/${id}`);
+        }
+    }
   };
 
   const addInterest = (name: string) => {
@@ -597,8 +624,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     selectedInterestId,
     selectedTopicId,
     topicBreadcrumbs,
-    viewMode,
-    setViewMode,
     selectInterest,
     selectTopic,
     addInterest,
@@ -607,7 +632,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateTopic,
     addGoal,
     updateGoal,
-addTask,
+    addTask,
     updateTask,
     deleteInterest,
     deleteTopic,
