@@ -31,19 +31,22 @@ interface ChannelDialogProps {
 }
 
 export function ChannelDialog({ open, onOpenChange, mode, channelId }: ChannelDialogProps) {
-  const { topics, goals, getChannelById, addChannel, updateChannel } = useAppContext();
+  const { topics, goals, tasks, getChannelById, addChannel, updateChannel } = useAppContext();
   const { toast } = useToast();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
   const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
   const [topicPopoverOpen, setTopicPopoverOpen] = useState(false);
   const [goalPopoverOpen, setGoalPopoverOpen] = useState(false);
+  const [taskPopoverOpen, setTaskPopoverOpen] = useState(false);
   
   const [topicSearchTerm, setTopicSearchTerm] = useState('');
   const [goalSearchTerm, setGoalSearchTerm] = useState('');
+  const [taskSearchTerm, setTaskSearchTerm] = useState('');
 
   const [facebook, setFacebook] = useState('');
   const [youtube, setYoutube] = useState('');
@@ -59,6 +62,7 @@ export function ChannelDialog({ open, onOpenChange, mode, channelId }: ChannelDi
                 setDescription(channel.description || '');
                 setSelectedTopicIds(channel.topicIds || []);
                 setSelectedGoalIds(channel.goalIds || []);
+                setSelectedTaskIds(channel.taskIds || []);
                 setFacebook(channel.facebook || '');
                 setYoutube(channel.youtube || '');
                 setDiscord(channel.discord || '');
@@ -69,6 +73,7 @@ export function ChannelDialog({ open, onOpenChange, mode, channelId }: ChannelDi
             setDescription('');
             setSelectedTopicIds([]);
             setSelectedGoalIds([]);
+            setSelectedTaskIds([]);
             setFacebook('');
             setYoutube('');
             setDiscord('');
@@ -92,6 +97,7 @@ export function ChannelDialog({ open, onOpenChange, mode, channelId }: ChannelDi
         description,
         topicIds: selectedTopicIds,
         goalIds: selectedGoalIds,
+        taskIds: selectedTaskIds,
         facebook,
         youtube,
         discord,
@@ -113,9 +119,11 @@ export function ChannelDialog({ open, onOpenChange, mode, channelId }: ChannelDi
     if (isSelected) {
       setSelectedTopicIds(prev => {
         const newSelectedTopicIds = prev.filter(id => id !== topicId);
-        // Also deselect goals related to the deselected topic
+        // Also deselect goals and tasks related to the deselected topic
         const goalsToDeselect = goals.filter(g => g.topicId === topicId).map(g => g.id);
         setSelectedGoalIds(prevGoals => prevGoals.filter(id => !goalsToDeselect.includes(id)));
+        const tasksToDeselect = tasks.filter(t => t.topicId === topicId || goalsToDeselect.includes(t.goalId!)).map(t => t.id);
+        setSelectedTaskIds(prevTasks => prevTasks.filter(id => !tasksToDeselect.includes(id)));
         return newSelectedTopicIds;
       });
     } else {
@@ -132,13 +140,32 @@ export function ChannelDialog({ open, onOpenChange, mode, channelId }: ChannelDi
     );
   };
 
+  const handleTaskToggle = (taskId: string, event?: React.MouseEvent) => {
+    event?.preventDefault();
+    setSelectedTaskIds(prev =>
+      prev.includes(taskId)
+        ? prev.filter(id => id !== taskId)
+        : [...prev, taskId]
+    );
+  };
+
   const filteredTopics = topics.filter(topic => topic.name.toLowerCase().includes(topicSearchTerm.toLowerCase()));
 
   const availableGoals = useMemo(() => {
     return goals.filter(goal => selectedTopicIds.includes(goal.topicId));
   }, [goals, selectedTopicIds]);
-
+  
   const filteredGoals = availableGoals.filter(goal => goal.title.toLowerCase().includes(goalSearchTerm.toLowerCase()));
+  
+  const availableTasks = useMemo(() => {
+    const selectedGoalIdsSet = new Set(selectedGoalIds);
+    return tasks.filter(task => 
+      selectedTopicIds.includes(task.topicId!) || 
+      (task.goalId && selectedGoalIdsSet.has(task.goalId))
+    );
+  }, [tasks, selectedTopicIds, selectedGoalIds]);
+
+  const filteredTasks = availableTasks.filter(task => task.text.toLowerCase().includes(taskSearchTerm.toLowerCase()));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -316,6 +343,79 @@ export function ChannelDialog({ open, onOpenChange, mode, channelId }: ChannelDi
                 </div>
               )}
               
+              {selectedTopicIds.length > 0 && availableTasks.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Nhiệm vụ liên quan</Label>
+                  <Popover open={taskPopoverOpen} onOpenChange={setTaskPopoverOpen}>
+                      <PopoverTrigger asChild>
+                      <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={taskPopoverOpen}
+                          className="w-full justify-between h-auto"
+                      >
+                          <div className="flex gap-1 flex-wrap">
+                              {selectedTaskIds.length > 0 ? selectedTaskIds.map(id => {
+                                  const task = tasks.find(t => t.id === id);
+                                  return (
+                                      <Badge key={id} variant="secondary" className="flex items-center gap-1">
+                                          {task?.text || id}
+                                           <button
+                                              onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleTaskToggle(id, e);
+                                              }}
+                                              className="rounded-full hover:bg-muted-foreground/20 p-0.5"
+                                          >
+                                              <Icons.close className="h-3 w-3" />
+                                          </button>
+                                      </Badge>
+                                  )
+                              }) : "Chọn nhiệm vụ..."}
+                          </div>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                      </PopoverTrigger>
+                       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                          <div className="p-2">
+                              <div className="relative">
+                                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                  <Input
+                                  placeholder="Tìm kiếm nhiệm vụ..."
+                                  value={taskSearchTerm}
+                                  onChange={(e) => setTaskSearchTerm(e.target.value)}
+                                  className="pl-8"
+                                  />
+                              </div>
+                          </div>
+
+                          <Separator />
+                          <div className="p-2 space-y-1 max-h-48 overflow-y-auto">
+                          {filteredTasks.length > 0 ? (
+                              filteredTasks.map((task) => (
+                              <div
+                                  key={task.id}
+                                  onClick={(e) => handleTaskToggle(task.id, e)}
+                                  className="flex cursor-pointer items-center rounded-md p-2 text-sm hover:bg-accent"
+                              >
+                                  <Check
+                                      className={cn(
+                                          'mr-2 h-4 w-4',
+                                          selectedTaskIds.includes(task.id) ? 'opacity-100' : 'opacity-0'
+                                      )}
+                                  />
+                                  <span className="truncate">{task.text}</span>
+                              </div>
+                              ))
+                          ) : (
+                              <p className="p-2 text-center text-sm text-muted-foreground">Không có nhiệm vụ phù hợp.</p>
+                          )}
+                          </div>
+                      </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+
               <Separator />
               
               <div className="space-y-2">
@@ -350,3 +450,5 @@ export function ChannelDialog({ open, onOpenChange, mode, channelId }: ChannelDi
     </Dialog>
   );
 }
+
+    

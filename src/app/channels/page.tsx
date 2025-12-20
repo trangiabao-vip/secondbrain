@@ -35,7 +35,7 @@ const socialIcons: Record<string, React.FC<{ className?: string }>> = {
 };
 
 function ChannelManager() {
-  const { channels, topics, goals, isDataLoading, deleteChannel } = useAppContext();
+  const { channels, topics, goals, tasks, isDataLoading, deleteChannel } = useAppContext();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
   const [selectedChannelId, setSelectedChannelId] = useState<string | undefined>(undefined);
@@ -64,6 +64,10 @@ function ChannelManager() {
     return goalIds.map(id => goals.find(g => g.id === id)?.title).filter(Boolean);
   }
 
+  const getTaskTexts = (taskIds: string[] = []) => {
+    return taskIds.map(id => tasks.find(t => t.id === id)?.text).filter(Boolean);
+  }
+
   return (
     <>
       <div className="space-y-6">
@@ -80,6 +84,7 @@ function ChannelManager() {
             {channels.map((channel) => {
               const channelTopics = getTopicNames(channel.topicIds);
               const channelGoals = getGoalTitles(channel.goalIds);
+              const channelTasks = getTaskTexts(channel.taskIds);
               const socialLinks = Object.entries(channel).filter(([key, value]) => ['facebook', 'youtube', 'discord', 'zalo'].includes(key) && value);
 
               return (
@@ -105,6 +110,16 @@ function ChannelManager() {
                               <div className="flex flex-wrap gap-1">
                                   {channelGoals.map(title => (
                                       <Badge key={title} variant="outline">{title}</Badge>
+                                  ))}
+                              </div>
+                          </div>
+                      )}
+                       {channelTasks.length > 0 && (
+                          <div>
+                              <h4 className="text-sm font-semibold mb-2">Nhiệm vụ</h4>
+                              <div className="flex flex-wrap gap-1">
+                                  {channelTasks.map(text => (
+                                      <Badge key={text} variant="outline" className="bg-blue-500/10 border-blue-500/50 text-blue-800 dark:text-blue-300">{text}</Badge>
                                   ))}
                               </div>
                           </div>
@@ -198,3 +213,5 @@ export default function ChannelsPage() {
         </AuthGuard>
     )
 }
+
+    

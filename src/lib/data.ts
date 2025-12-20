@@ -139,6 +139,7 @@ export interface Channel {
   description?: string;
   topicIds: string[];
   goalIds?: string[];
+  taskIds?: string[];
   facebook?: string;
   youtube?: string;
   discord?: string;

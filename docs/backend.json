@@ -392,7 +392,7 @@
     "Channel": {
       "title": "Channel",
       "type": "object",
-      "description": "Represents a channel that can be associated with one or more topics, containing social media links.",
+      "description": "Represents a channel that can be associated with one or more topics, goals, or tasks, and contains social media links.",
       "properties": {
         "name": {
           "type": "string",
@@ -412,6 +412,13 @@
         "goalIds": {
           "type": "array",
           "description": "A list of goal IDs this channel is associated with.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "taskIds": {
+          "type": "array",
+          "description": "A list of task IDs this channel is associated with.",
           "items": {
             "type": "string"
           }
