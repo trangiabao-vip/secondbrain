@@ -85,9 +85,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const [selectedInterestId, setSelectedInterestId] = useState<string | null>(null);
-  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
-  
   const interestsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'interests'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const topicsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'topics'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const goalsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'goals'), where('userId', '==', user.uid)) : null, [firestore, user]);
@@ -117,21 +114,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return isUserLoading || interestsLoading || topicsLoading || goalsLoading || tasksLoading || wikiPagesLoading || salesPagesLoading || channelsLoading;
   }, [isUserLoading, interestsLoading, topicsLoading, goalsLoading, tasksLoading, wikiPagesLoading, salesPagesLoading, channelsLoading]);
 
-  // Sync state with URL
-  useEffect(() => {
-    const pathSegments = pathname.split('/').filter(Boolean);
-    if (pathSegments[0] === 'interests' && pathSegments[1]) {
-      setSelectedInterestId(pathSegments[1]);
-      if (pathSegments[2]) {
-        setSelectedTopicId(pathSegments[2]);
-      } else {
-        setSelectedTopicId(null);
-      }
-    } else {
-      setSelectedInterestId(null);
-      setSelectedTopicId(null);
-    }
-  }, [pathname]);
+
+  const pathSegments = pathname.split('/').filter(Boolean);
+  const selectedInterestId = pathSegments[0] === 'interests' && pathSegments[1] ? pathSegments[1] : null;
+  const selectedTopicId = pathSegments[0] === 'interests' && pathSegments[2] ? pathSegments[2] : null;
+
 
   const filteredInterests = useMemo(() => interests.filter(i => !optimisticallyDeleted.includes(i.id)), [interests, optimisticallyDeleted]);
   const filteredTopics = useMemo(() => topics.filter(t => !optimisticallyDeleted.includes(t.id)), [topics, optimisticallyDeleted]);
