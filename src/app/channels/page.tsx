@@ -40,19 +40,11 @@ function ChannelManager() {
   const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
   const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [channelToDelete, setChannelToDelete] = useState<string | null>(null);
 
   const handleOpenDialog = (mode: 'add' | 'edit', channelId?: string) => {
     setDialogMode(mode);
     setEditingChannelId(channelId || null);
     setIsDialogOpen(true);
-  };
-
-  const handleDialogClose = (open: boolean) => {
-    if (!open) {
-      setIsDialogOpen(false);
-      setEditingChannelId(null);
-    }
   };
 
 
@@ -79,10 +71,12 @@ function ChannelManager() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">Quản lý Kênh</h2>
-        <Button onClick={() => handleOpenDialog('add')}>
-            <Icons.add className="mr-2 h-4 w-4" />
-            Tạo kênh mới
-        </Button>
+        <ChannelDialog mode="add">
+          <Button>
+              <Icons.add className="mr-2 h-4 w-4" />
+              Tạo kênh mới
+          </Button>
+        </ChannelDialog>
       </div>
 
       {channels.length > 0 ? (
@@ -136,39 +130,41 @@ function ChannelManager() {
                      )}
                   </CardContent>
                   <CardFooter className="flex justify-end">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Icons.ellipsis className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleOpenDialog('edit', channel.id)}>
-                            <Icons.edit className="mr-2 h-4 w-4" />
-                            Chỉnh sửa
-                        </DropdownMenuItem>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive">
-                              <Icons.delete className="mr-2 h-4 w-4" />
-                              Xóa
-                            </button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Bạn có chắc chắn không?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Hành động này không thể được hoàn tác. Thao tác này sẽ xóa vĩnh viễn kênh.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Hủy</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteChannel(channel.id)} className="bg-destructive hover:bg-destructive/90">Xóa</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                     <ChannelDialog mode="edit" channelId={channel.id}>
+                       <DropdownMenu>
+                         <DropdownMenuTrigger asChild>
+                           <Button variant="ghost" size="icon" className="h-8 w-8">
+                             <Icons.ellipsis className="h-4 w-4" />
+                           </Button>
+                         </DropdownMenuTrigger>
+                         <DropdownMenuContent align="end">
+                           <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                               <Icons.edit className="mr-2 h-4 w-4" />
+                               Chỉnh sửa
+                           </DropdownMenuItem>
+                           <AlertDialog>
+                             <AlertDialogTrigger asChild>
+                               <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive">
+                                 <Icons.delete className="mr-2 h-4 w-4" />
+                                 Xóa
+                               </button>
+                             </AlertDialogTrigger>
+                             <AlertDialogContent>
+                               <AlertDialogHeader>
+                                 <AlertDialogTitle>Bạn có chắc chắn không?</AlertDialogTitle>
+                                 <AlertDialogDescription>
+                                   Hành động này không thể được hoàn tác. Thao tác này sẽ xóa vĩnh viễn kênh.
+                                 </AlertDialogDescription>
+                               </AlertDialogHeader>
+                               <AlertDialogFooter>
+                                 <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                 <AlertDialogAction onClick={() => deleteChannel(channel.id)} className="bg-destructive hover:bg-destructive/90">Xóa</AlertDialogAction>
+                               </AlertDialogFooter>
+                             </AlertDialogContent>
+                           </AlertDialog>
+                         </DropdownMenuContent>
+                       </DropdownMenu>
+                    </ChannelDialog>
                   </CardFooter>
                 </Card>
             )
@@ -182,20 +178,16 @@ function ChannelManager() {
             Hãy tạo kênh đầu tiên của bạn để bắt đầu.
           </p>
           <div className="mt-6">
-             <Button onClick={() => handleOpenDialog('add')}>
-                <Icons.add className="mr-2 h-4 w-4" />
-                Tạo kênh mới
-             </Button>
+             <ChannelDialog mode="add">
+                 <Button>
+                    <Icons.add className="mr-2 h-4 w-4" />
+                    Tạo kênh mới
+                 </Button>
+             </ChannelDialog>
           </div>
         </div>
       )}
     </div>
-    <ChannelDialog 
-        mode={dialogMode} 
-        channelId={editingChannelId || undefined} 
-        open={isDialogOpen} 
-        onOpenChange={handleDialogClose}
-    />
     </>
   );
 }

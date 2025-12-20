@@ -27,12 +27,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface ChannelDialogProps {
   mode: 'add' | 'edit';
   channelId?: string;
-  children?: ReactNode;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
+  children: ReactNode;
 }
 
-export function ChannelDialog({ mode, channelId, children, open, onOpenChange }: ChannelDialogProps) {
+export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps) {
   const { topics, goals, getChannelById, addChannel, updateChannel } = useAppContext();
   const { toast } = useToast();
 
@@ -54,8 +52,8 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
   const [discord, setDiscord] = useState('');
   const [zalo, setZalo] = useState('');
 
-  const isOpen = open !== undefined ? open : isInternalOpen;
-  const setIsOpen = onOpenChange !== undefined ? onOpenChange : setIsInternalOpen;
+  const isOpen = isInternalOpen;
+  const setIsOpen = setIsInternalOpen;
   
   useEffect(() => {
     if (isOpen) {
@@ -114,7 +112,8 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
     setIsOpen(false);
   };
   
-  const handleTopicToggle = (topicId: string) => {
+  const handleTopicToggle = (topicId: string, event?: React.MouseEvent) => {
+    event?.preventDefault();
     const isSelected = selectedTopicIds.includes(topicId);
     if (isSelected) {
       setSelectedTopicIds(prev => prev.filter(id => id !== topicId));
@@ -126,7 +125,8 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
     }
   };
 
-  const handleGoalToggle = (goalId: string) => {
+  const handleGoalToggle = (goalId: string, event?: React.MouseEvent) => {
+    event?.preventDefault();
     setSelectedGoalIds(prev =>
       prev.includes(goalId)
         ? prev.filter(id => id !== goalId)
@@ -144,7 +144,7 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
@@ -194,7 +194,7 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
                                           <button
                                               onClick={(e) => {
                                                   e.stopPropagation();
-                                                  handleTopicToggle(id);
+                                                  handleTopicToggle(id, e);
                                               }}
                                               className="rounded-full hover:bg-muted-foreground/20 p-0.5"
                                           >
@@ -226,7 +226,7 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
                               filteredTopics.map((topic) => (
                               <div
                                   key={topic.id}
-                                  onClick={(e) => { e.stopPropagation(); handleTopicToggle(topic.id); }}
+                                  onClick={(e) => handleTopicToggle(topic.id, e)}
                                   className="flex cursor-pointer items-center rounded-md p-2 text-sm hover:bg-accent"
                               >
                                   <Check
@@ -267,7 +267,7 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
                                            <button
                                               onClick={(e) => {
                                                   e.stopPropagation();
-                                                  handleGoalToggle(id);
+                                                  handleGoalToggle(id, e);
                                               }}
                                               className="rounded-full hover:bg-muted-foreground/20 p-0.5"
                                           >
@@ -299,7 +299,7 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
                               filteredGoals.map((goal) => (
                               <div
                                   key={goal.id}
-                                  onClick={(e) => { e.stopPropagation(); handleGoalToggle(goal.id); }}
+                                  onClick={(e) => handleGoalToggle(goal.id, e)}
                                   className="flex cursor-pointer items-center rounded-md p-2 text-sm hover:bg-accent"
                               >
                                   <Check
@@ -354,5 +354,3 @@ export function ChannelDialog({ mode, channelId, children, open, onOpenChange }:
     </Dialog>
   );
 }
-
-    
