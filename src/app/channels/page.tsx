@@ -2,7 +2,6 @@
 'use client';
 import { useState } from 'react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { useAppContext } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -195,9 +194,7 @@ function ChannelManager() {
 export default function ChannelsPage() {
     return (
         <AuthGuard>
-            <AppLayout>
-                <ChannelManager />
-            </AppLayout>
+            <ChannelManager />
         </AuthGuard>
     )
 }

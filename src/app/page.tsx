@@ -20,7 +20,7 @@ export default function Home() {
   }, [user, isUserLoading, router]);
 
   return (
-    <div className="flex h-screen w-screen items-center justify-center">
+    <div className="flex h-full w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">
             <Skeleton className="h-12 w-12 rounded-full" />
             <div className="space-y-2">

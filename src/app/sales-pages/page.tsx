@@ -2,7 +2,6 @@
 'use client';
 import { useState } from 'react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { useAppContext } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -67,7 +66,7 @@ function SalesPageManager() {
               </CardHeader>
               <CardContent className="flex-grow">
                 <p className="text-sm text-muted-foreground line-clamp-3 break-all">
-                  /{page.slug}
+                  /p/{page.slug}
                 </p>
               </CardContent>
               <CardFooter className="flex justify-between">
@@ -137,9 +136,7 @@ function SalesPageManager() {
 export default function SalesPagesPage() {
     return (
         <AuthGuard>
-            <AppLayout>
-                <SalesPageManager />
-            </AppLayout>
+            <SalesPageManager />
         </AuthGuard>
     )
 }

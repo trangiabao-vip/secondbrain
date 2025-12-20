@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import type { ReactNode } from 'react';
@@ -80,10 +78,12 @@ const getDateFromFirestore = (date: any): Date | null => {
     return null;
 };
 
-export function AppProvider({ children }: { children: ReactNode }) {
+export function AppProvider({ children, interestId, topicId }: { children: ReactNode, interestId?: string | null, topicId?: string | null }) {
   const { firestore, user, isUserLoading, auth } = useFirebase();
-  const pathname = usePathname();
   const router = useRouter();
+
+  const selectedInterestId = interestId ?? null;
+  const selectedTopicId = topicId ?? null;
 
   const interestsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'interests'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const topicsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'topics'), where('userId', '==', user.uid)) : null, [firestore, user]);
@@ -115,11 +115,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [isUserLoading, interestsLoading, topicsLoading, goalsLoading, tasksLoading, wikiPagesLoading, salesPagesLoading, channelsLoading]);
 
 
-  const pathSegments = pathname.split('/').filter(Boolean);
-  const selectedInterestId = pathSegments[0] === 'interests' && pathSegments[1] ? pathSegments[1] : null;
-  const selectedTopicId = pathSegments[0] === 'interests' && pathSegments[2] ? pathSegments[2] : null;
-
-
   const filteredInterests = useMemo(() => interests.filter(i => !optimisticallyDeleted.includes(i.id)), [interests, optimisticallyDeleted]);
   const filteredTopics = useMemo(() => topics.filter(t => !optimisticallyDeleted.includes(t.id)), [topics, optimisticallyDeleted]);
   const filteredGoals = useMemo(() => goals.filter(g => !optimisticallyDeleted.includes(g.id)), [goals, optimisticallyDeleted]);
@@ -139,11 +134,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const selectTopic = (id: string | null) => {
     if (id === null) {
-      if(selectedInterestId) {
-        router.push(`/interests/${selectedInterestId}`);
-      } else {
-        router.push('/dashboard');
-      }
+        const topic = topics.find(t => t.id === selectedTopicId);
+        if(topic) {
+            router.push(`/interests/${topic.interestId}`);
+        } else if(selectedInterestId) {
+            router.push(`/interests/${selectedInterestId}`);
+        } else {
+            router.push('/dashboard');
+        }
     } else {
         const topic = topics.find(t => t.id === id);
         if (topic) {

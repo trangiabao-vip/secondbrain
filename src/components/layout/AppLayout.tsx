@@ -3,46 +3,37 @@ import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar"
 import { InterestSidebar } from "@/components/interests/InterestSidebar";
 import { Header } from "./Header";
 import type { ReactNode } from "react";
-import { usePathname } from "next/navigation";
-import { TopicGrid } from "../topics/TopicGrid";
-import { WelcomeScreen } from "../WelcomeScreen";
-import { useAppContext } from "@/contexts/AppContext";
-import { TopicDetailView } from "../details/TopicDetailView";
-
-function AppContent() {
-    const { selectedInterest, selectedTopicId } = useAppContext();
-    
-    if (selectedTopicId) {
-        return <TopicDetailView />;
-    }
-
-    if (selectedInterest) {
-        return <TopicGrid />;
-    }
-    
-    return <WelcomeScreen />
-}
+import { useParams, usePathname } from "next/navigation";
+import { InterestHubApp } from "../InterestHubApp";
 
 export function AppLayout({ children }: { children?: ReactNode }) {
   const pathname = usePathname();
-  const isAuthPage = pathname === '/login' || pathname === '/signup';
-  const isGenericPage = !pathname.startsWith('/interests') && pathname !== '/';
+  const params = useParams();
+  
+  const interestId = params.interestId as string | undefined;
+  const topicId = params.topicId as string | undefined;
 
-  if (isAuthPage) {
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
+  const isCardPage = pathname.startsWith('/card/');
+  const isSalesPage = pathname.startsWith('/p/');
+
+  if (isAuthPage || isCardPage || isSalesPage) {
     return <main>{children}</main>;
   }
   
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <InterestSidebar />
-      </Sidebar>
-      <SidebarInset className="flex flex-col @container/main">
-        <Header />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto bg-background text-foreground">
-          {isGenericPage ? children : <AppContent />}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+    <InterestHubApp interestId={interestId} topicId={topicId}>
+      <SidebarProvider>
+        <Sidebar>
+          <InterestSidebar />
+        </Sidebar>
+        <SidebarInset className="flex flex-col @container/main">
+          <Header />
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto bg-background text-foreground">
+            {children}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </InterestHubApp>
   );
 }
