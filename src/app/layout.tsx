@@ -4,6 +4,8 @@ import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
 import { GlobalSearchDialog } from '@/components/search/GlobalSearchDialog';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { InterestHubApp } from '@/components/InterestHubApp';
+import { Suspense } from 'react';
 
 export const metadata: Metadata = {
   title: 'Trung tâm Sở thích',
@@ -24,11 +26,15 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-            <GlobalSearchDialog>
-              <AppLayout>
-                {children}
-              </AppLayout>
-            </GlobalSearchDialog>
+          <Suspense>
+            <InterestHubApp>
+              <GlobalSearchDialog>
+                <AppLayout>
+                  {children}
+                </AppLayout>
+              </GlobalSearchDialog>
+            </InterestHubApp>
+          </Suspense>
         </FirebaseClientProvider>
         <Toaster />
       </body>

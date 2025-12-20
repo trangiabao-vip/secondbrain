@@ -8,10 +8,6 @@ import { InterestHubApp } from "../InterestHubApp";
 
 export function AppLayout({ children }: { children?: ReactNode }) {
   const pathname = usePathname();
-  const params = useParams();
-  
-  const interestId = params.interestId as string | undefined;
-  const topicId = params.topicId as string | undefined;
 
   const isAuthPage = pathname === '/login' || pathname === '/signup';
   const isCardPage = pathname.startsWith('/card/');
@@ -22,7 +18,6 @@ export function AppLayout({ children }: { children?: ReactNode }) {
   }
   
   return (
-    <InterestHubApp interestId={interestId} topicId={topicId}>
       <SidebarProvider>
         <Sidebar>
           <InterestSidebar />
@@ -34,6 +29,5 @@ export function AppLayout({ children }: { children?: ReactNode }) {
           </main>
         </SidebarInset>
       </SidebarProvider>
-    </InterestHubApp>
   );
 }

@@ -15,7 +15,7 @@ import {
 import { signOut } from 'firebase/auth';
 import { ToastAction } from '@/components/ui/toast';
 import { addMinutes, differenceInMinutes, parseISO } from 'date-fns';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useParams } from 'next/navigation';
 
 interface AppContextType {
   interests: Interest[];
@@ -78,12 +78,13 @@ const getDateFromFirestore = (date: any): Date | null => {
     return null;
 };
 
-export function AppProvider({ children, interestId, topicId }: { children: ReactNode, interestId?: string | null, topicId?: string | null }) {
+export function AppProvider({ children, interestId: interestIdProp, topicId: topicIdProp }: { children: ReactNode, interestId?: string | null, topicId?: string | null }) {
   const { firestore, user, isUserLoading, auth } = useFirebase();
   const router = useRouter();
-
-  const selectedInterestId = interestId ?? null;
-  const selectedTopicId = topicId ?? null;
+  const params = useParams();
+  
+  const interestId = (params.interestId as string) || interestIdProp || null;
+  const topicId = (params.topicId as string) || topicIdProp || null;
 
   const interestsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'interests'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const topicsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'topics'), where('userId', '==', user.uid)) : null, [firestore, user]);
@@ -134,11 +135,11 @@ export function AppProvider({ children, interestId, topicId }: { children: React
 
   const selectTopic = (id: string | null) => {
     if (id === null) {
-        const topic = topics.find(t => t.id === selectedTopicId);
+        const topic = topics.find(t => t.id === topicId);
         if(topic) {
             router.push(`/interests/${topic.interestId}`);
-        } else if(selectedInterestId) {
-            router.push(`/interests/${selectedInterestId}`);
+        } else if(interestId) {
+            router.push(`/interests/${interestId}`);
         } else {
             router.push('/dashboard');
         }
@@ -162,8 +163,8 @@ export function AppProvider({ children, interestId, topicId }: { children: React
     toast({ title: "Sở thích đã được cập nhật", description: `Sở thích đã được đổi tên thành "${name}".` });
   }
 
-  const addTopic = (name: string, imageId: string, description?: string, interestId?: string, parentId?: string | null) => {
-    const finalInterestId = interestId || selectedInterestId;
+  const addTopic = (name: string, imageId: string, description?: string, interestIdToAdd?: string, parentId?: string | null) => {
+    const finalInterestId = interestIdToAdd || interestId;
     if (!finalInterestId || !user) return;
     const newTopic: Partial<Topic> = { 
         name, 
@@ -188,10 +189,10 @@ export function AppProvider({ children, interestId, topicId }: { children: React
   };
   
   const addGoal = (goalData: Partial<Omit<Goal, 'id'>>) => {
-    if (!selectedTopicId || !user) return;
+    if (!topicId || !user) return;
     const newGoal: Omit<Goal, 'id'> = {
       title: goalData.title || 'Mục tiêu không tên',
-      topicId: selectedTopicId,
+      topicId: topicId,
       status: 'chưa bắt đầu',
       userId: user.uid,
       createdAt: serverTimestamp(),
@@ -290,7 +291,7 @@ export function AppProvider({ children, interestId, topicId }: { children: React
         batch.delete(doc(firestore, 'interests', id));
         
         await batch.commit();
-         if (selectedInterestId === id) {
+         if (interestId === id) {
             selectInterest(null);
         }
     });
@@ -321,7 +322,7 @@ export function AppProvider({ children, interestId, topicId }: { children: React
         allTopicsToDelete.forEach(topicId => batch.delete(doc(firestore, 'topics', topicId)));
 
         await batch.commit();
-        if (selectedTopicId === id) {
+        if (topicId === id) {
             selectTopic(null);
         }
     });
@@ -472,11 +473,11 @@ export function AppProvider({ children, interestId, topicId }: { children: React
   };
   
   const addWikiPage = (pageData: Partial<Omit<WikiPage, 'id'>>) => {
-    if (!selectedTopicId || !user) return;
+    if (!topicId || !user) return;
     const newPage: Omit<WikiPage, 'id'> = {
       title: pageData.title || 'Trang không có tiêu đề',
       content: pageData.content || '',
-      topicId: selectedTopicId,
+      topicId: topicId,
       userId: user.uid,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -566,8 +567,8 @@ export function AppProvider({ children, interestId, topicId }: { children: React
     });
   };
 
-  const selectedInterest = useMemo(() => filteredInterests.find((i) => i.id === selectedInterestId) ?? null, [filteredInterests, selectedInterestId]);
-  const selectedTopic = useMemo(() => filteredTopics.find((t) => t.id === selectedTopicId) ?? null, [filteredTopics, selectedTopicId]);
+  const selectedInterest = useMemo(() => filteredInterests.find((i) => i.id === interestId) ?? null, [filteredInterests, interestId]);
+  const selectedTopic = useMemo(() => filteredTopics.find((t) => t.id === topicId) ?? null, [filteredTopics, topicId]);
 
   const getInterestById = (id: string) => interests.find(i => i.id === id);
   const getGoalById = (id: string) => goals.find(g => g.id === id);
@@ -589,7 +590,7 @@ export function AppProvider({ children, interestId, topicId }: { children: React
     return breadcrumbs;
   }, [filteredTopics]);
 
-  const topicBreadcrumbs = useMemo(() => getTopicBreadcrumbs(selectedTopicId), [selectedTopicId, getTopicBreadcrumbs]);
+  const topicBreadcrumbs = useMemo(() => getTopicBreadcrumbs(topicId), [topicId, getTopicBreadcrumbs]);
 
   const logout = () => {
     if(auth) {
@@ -606,8 +607,8 @@ export function AppProvider({ children, interestId, topicId }: { children: React
     salesPages: filteredSalesPages,
     channels: filteredChannels,
     isDataLoading,
-    selectedInterestId,
-    selectedTopicId,
+    selectedInterestId: interestId,
+    selectedTopicId: topicId,
     topicBreadcrumbs,
     selectInterest,
     selectTopic,
