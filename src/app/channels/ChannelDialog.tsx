@@ -7,7 +7,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -25,12 +24,13 @@ import { Icons } from '@/components/icons';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ChannelDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   mode: 'add' | 'edit';
   channelId?: string;
-  children: ReactNode;
 }
 
-export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps) {
+export function ChannelDialog({ open, onOpenChange, mode, channelId }: ChannelDialogProps) {
   const { topics, goals, getChannelById, addChannel, updateChannel } = useAppContext();
   const { toast } = useToast();
 
@@ -41,8 +41,6 @@ export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps)
 
   const [topicPopoverOpen, setTopicPopoverOpen] = useState(false);
   const [goalPopoverOpen, setGoalPopoverOpen] = useState(false);
-
-  const [isInternalOpen, setIsInternalOpen] = useState(false);
   
   const [topicSearchTerm, setTopicSearchTerm] = useState('');
   const [goalSearchTerm, setGoalSearchTerm] = useState('');
@@ -51,12 +49,9 @@ export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps)
   const [youtube, setYoutube] = useState('');
   const [discord, setDiscord] = useState('');
   const [zalo, setZalo] = useState('');
-
-  const isOpen = isInternalOpen;
-  const setIsOpen = setIsInternalOpen;
   
   useEffect(() => {
-    if (isOpen) {
+    if (open) {
         if (mode === 'edit' && channelId) {
             const channel = getChannelById(channelId);
             if (channel) {
@@ -80,7 +75,7 @@ export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps)
             setZalo('');
         }
     }
-  }, [isOpen, mode, channelId, getChannelById]);
+  }, [open, mode, channelId, getChannelById]);
 
   const handleSubmit = async () => {
     if (!name.trim()) {
@@ -109,7 +104,7 @@ export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps)
       updateChannel(channelId, channelData);
     }
     
-    setIsOpen(false);
+    onOpenChange(false);
   };
   
   const handleTopicToggle = (topicId: string, event?: React.MouseEvent) => {
@@ -146,8 +141,7 @@ export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps)
   const filteredGoals = availableGoals.filter(goal => goal.title.toLowerCase().includes(goalSearchTerm.toLowerCase()));
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
@@ -349,7 +343,7 @@ export function ChannelDialog({ mode, channelId, children }: ChannelDialogProps)
           </div>
         </ScrollArea>
         <DialogFooter>
-            <Button variant="outline" onClick={() => setIsOpen(false)}>Hủy</Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Hủy</Button>
             <Button onClick={handleSubmit}>{mode === 'add' ? 'Tạo kênh' : 'Lưu thay đổi'}</Button>
         </DialogFooter>
       </DialogContent>
