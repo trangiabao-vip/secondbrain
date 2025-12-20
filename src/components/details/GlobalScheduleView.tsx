@@ -124,87 +124,64 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
     .filter((item): item is ScheduledItem => !!item)
     .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 
-  if (sortedItems.length === 0) {
-    return [];
-  }
-
+  if (!sortedItems.length) return [];
+  
   const positionedItems: PositionedItem[] = [];
-
-  // This will store columns of non-overlapping items
-  const columns: ScheduledItem[][] = [];
+  const processed = new Set<string>();
 
   for (const item of sortedItems) {
-    let placedInColumn = false;
-    // Find a column where this item doesn't overlap
-    for (const column of columns) {
-      const lastItemInColumn = column[column.length - 1];
-      if (!areIntervalsOverlapping({ start: item.startDate, end: item.endDate }, { start: lastItemInColumn.startDate, end: lastItemInColumn.endDate })) {
-        column.push(item);
-        placedInColumn = true;
-        break;
+    if (processed.has(item.id)) continue;
+
+    // Find all overlapping items for the current item
+    const conflictGroup: ScheduledItem[] = [item];
+    processed.add(item.id);
+
+    for (const other of sortedItems) {
+      if (processed.has(other.id)) continue;
+      // An item is part of the conflict group if it overlaps with ANY item already in the group
+      if (conflictGroup.some(member => areIntervalsOverlapping({start: member.startDate, end: member.endDate}, {start: other.startDate, end: other.endDate}))) {
+        conflictGroup.push(other);
+        processed.add(other.id);
       }
     }
-    // If it couldn't be placed in any existing column, create a new one
-    if (!placedInColumn) {
-      columns.push([item]);
-    }
-  }
+    
+    // Now layout the conflict group
+    const columns: ScheduledItem[][] = [];
+    conflictGroup.sort((a,b) => a.startDate.getTime() - b.startDate.getTime());
 
-  const conflictGroups: ScheduledItem[][] = [];
-  const processedItems = new Set<string>();
-
-  for (const item of sortedItems) {
-    if (processedItems.has(item.id)) continue;
-
-    const group: ScheduledItem[] = [item];
-    processedItems.add(item.id);
-
-    for (const otherItem of sortedItems) {
-      if (processedItems.has(otherItem.id)) continue;
-
-      if (group.some(member => areIntervalsOverlapping({start: member.startDate, end: member.endDate}, {start: otherItem.startDate, end: otherItem.endDate}))) {
-        group.push(otherItem);
-        processedItems.add(otherItem.id);
-      }
-    }
-    conflictGroups.push(group);
-  }
-
-  for (const group of conflictGroups) {
-    const groupColumns: ScheduledItem[][] = [];
-    for (const item of group) {
-      let placed = false;
-      for (const col of groupColumns) {
-        if (!col.some(existing => areIntervalsOverlapping({start: existing.startDate, end: existing.endDate}, {start: item.startDate, end: item.endDate}))) {
-          col.push(item);
-          placed = true;
-          break;
+    for(const event of conflictGroup) {
+        let placed = false;
+        for(const column of columns) {
+            const lastEventInColumn = column[column.length - 1];
+            if(!areIntervalsOverlapping({start: lastEventInColumn.startDate, end: lastEventInColumn.endDate}, {start: event.startDate, end: event.endDate})) {
+                column.push(event);
+                placed = true;
+                break;
+            }
         }
-      }
-      if (!placed) {
-        groupColumns.push([item]);
-      }
+        if(!placed) {
+            columns.push([event]);
+        }
     }
 
-    const numColumns = groupColumns.length;
-    for (let i = 0; i < numColumns; i++) {
-      for (const item of groupColumns[i]) {
-        const top = (getHours(item.startDate) * 64) + (getMinutes(item.startDate) / 60 * 64);
-        const height = differenceInMinutes(item.endDate, item.startDate) / 60 * 64;
+    const numColumns = columns.length;
+    columns.forEach((column, colIndex) => {
+      column.forEach(event => {
+        const top = (getHours(event.startDate) * 64) + (getMinutes(event.startDate) / 60 * 64);
+        const height = differenceInMinutes(event.endDate, event.startDate) / 60 * 64;
         positionedItems.push({
-          ...item,
-          top,
-          height,
-          left: (100 / numColumns) * i,
+          ...event,
+          top: top,
+          height: Math.max(height, 24), // min height
+          left: (100 / numColumns) * colIndex,
           width: 100 / numColumns,
         });
-      }
-    }
+      });
+    });
   }
-  
+
   return positionedItems;
 };
-
 
 export function GlobalScheduleView() {
   const { goals, tasks } = useAppContext();
