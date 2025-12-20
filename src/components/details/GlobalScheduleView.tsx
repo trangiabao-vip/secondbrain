@@ -109,77 +109,100 @@ const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date
 }
 
 const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
-    const sortedItems = items
-        .map(item => {
-            const startDate = getDateFromFirestore(item.startDate);
-            if (!startDate) return null;
-            const hasTime = getHours(startDate) !== 0 || getMinutes(startDate) !== 0;
-            const endDate = getDateFromFirestore(item.endDate) || addMinutes(startDate, 30);
-            const duration = differenceInMinutes(endDate, startDate);
+  const sortedItems = items
+    .map(item => {
+      const startDate = getDateFromFirestore(item.startDate);
+      if (!startDate) return null;
+      const hasTime = getHours(startDate) !== 0 || getMinutes(startDate) !== 0;
+      const endDate = getDateFromFirestore(item.endDate) || addMinutes(startDate, 30);
+      const duration = differenceInMinutes(endDate, startDate);
 
-            if (!hasTime && duration >= 1440) return null;
+      if (!hasTime && duration >= 1440) return null;
 
-            return { ...item, startDate, endDate };
-        })
-        .filter((item): item is ScheduledItem => !!item)
-        .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+      return { ...item, startDate, endDate };
+    })
+    .filter((item): item is ScheduledItem => !!item)
+    .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 
-    const positionedItems: PositionedItem[] = [];
-    const groups: ScheduledItem[][] = [];
+  if (sortedItems.length === 0) {
+    return [];
+  }
 
-    for (const item of sortedItems) {
-        let placed = false;
-        for (const group of groups) {
-            const lastItemInGroup = group[group.length - 1];
-            if (item.startDate < lastItemInGroup.endDate) {
-                group.push(item);
-                placed = true;
-                break;
-            }
+  const positionedItems: PositionedItem[] = [];
+
+  // This will store columns of non-overlapping items
+  const columns: ScheduledItem[][] = [];
+
+  for (const item of sortedItems) {
+    let placedInColumn = false;
+    // Find a column where this item doesn't overlap
+    for (const column of columns) {
+      const lastItemInColumn = column[column.length - 1];
+      if (!areIntervalsOverlapping({ start: item.startDate, end: item.endDate }, { start: lastItemInColumn.startDate, end: lastItemInColumn.endDate })) {
+        column.push(item);
+        placedInColumn = true;
+        break;
+      }
+    }
+    // If it couldn't be placed in any existing column, create a new one
+    if (!placedInColumn) {
+      columns.push([item]);
+    }
+  }
+
+  const conflictGroups: ScheduledItem[][] = [];
+  const processedItems = new Set<string>();
+
+  for (const item of sortedItems) {
+    if (processedItems.has(item.id)) continue;
+
+    const group: ScheduledItem[] = [item];
+    processedItems.add(item.id);
+
+    for (const otherItem of sortedItems) {
+      if (processedItems.has(otherItem.id)) continue;
+
+      if (group.some(member => areIntervalsOverlapping({start: member.startDate, end: member.endDate}, {start: otherItem.startDate, end: otherItem.endDate}))) {
+        group.push(otherItem);
+        processedItems.add(otherItem.id);
+      }
+    }
+    conflictGroups.push(group);
+  }
+
+  for (const group of conflictGroups) {
+    const groupColumns: ScheduledItem[][] = [];
+    for (const item of group) {
+      let placed = false;
+      for (const col of groupColumns) {
+        if (!col.some(existing => areIntervalsOverlapping({start: existing.startDate, end: existing.endDate}, {start: item.startDate, end: item.endDate}))) {
+          col.push(item);
+          placed = true;
+          break;
         }
-        if (!placed) {
-            groups.push([item]);
-        }
+      }
+      if (!placed) {
+        groupColumns.push([item]);
+      }
     }
 
-    for (const group of groups) {
-        const columns: ScheduledItem[][] = [];
-        group.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-        
-        for (const item of group) {
-            let placed = false;
-            for (const column of columns) {
-                if (!column.some(existingItem => areIntervalsOverlapping(
-                    { start: existingItem.startDate, end: existingItem.endDate },
-                    { start: item.startDate, end: item.endDate }
-                ))) {
-                    column.push(item);
-                    placed = true;
-                    break;
-                }
-            }
-            if (!placed) {
-                columns.push([item]);
-            }
-        }
-
-        const numColumns = columns.length;
-        for (let i = 0; i < numColumns; i++) {
-            for (const item of columns[i]) {
-                const top = (getHours(item.startDate) * 64) + (getMinutes(item.startDate) / 60 * 64);
-                const height = differenceInMinutes(item.endDate, item.startDate) / 60 * 64;
-                positionedItems.push({
-                    ...item,
-                    top,
-                    height,
-                    left: (100 / numColumns) * i,
-                    width: (100 / numColumns),
-                });
-            }
-        }
+    const numColumns = groupColumns.length;
+    for (let i = 0; i < numColumns; i++) {
+      for (const item of groupColumns[i]) {
+        const top = (getHours(item.startDate) * 64) + (getMinutes(item.startDate) / 60 * 64);
+        const height = differenceInMinutes(item.endDate, item.startDate) / 60 * 64;
+        positionedItems.push({
+          ...item,
+          top,
+          height,
+          left: (100 / numColumns) * i,
+          width: 100 / numColumns,
+        });
+      }
     }
-    
-    return positionedItems;
+  }
+  
+  return positionedItems;
 };
 
 
@@ -392,9 +415,9 @@ export function GlobalScheduleView() {
                                   )}
                                   style={{
                                       top: `${item.top}px`,
-                                      height: `${Math.max(item.height - 2, 24)}px`,
-                                      left: `calc(${item.left}% + 1px)`,
-                                      width: `calc(${item.width}% - 2px)`,
+                                      height: `${Math.max(item.height, 24)}px`,
+                                      left: `${item.left}%`,
+                                      width: `${item.width}%`,
                                   }}
                               >
                                   <p className="text-xs font-bold truncate flex items-center gap-1.5">
