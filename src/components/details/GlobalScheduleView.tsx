@@ -109,78 +109,84 @@ const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date
 }
 
 const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
-  const sortedItems = items
-    .map(item => {
-      const startDate = getDateFromFirestore(item.startDate);
-      if (!startDate) return null;
-      const hasTime = getHours(startDate) !== 0 || getMinutes(startDate) !== 0;
-      const endDate = getDateFromFirestore(item.endDate) || addMinutes(startDate, 30);
-      const duration = differenceInMinutes(endDate, startDate);
+    const sortedItems = items
+        .map(item => {
+            const startDate = getDateFromFirestore(item.startDate);
+            if (!startDate) return null;
+            const hasTime = getHours(startDate) !== 0 || getMinutes(startDate) !== 0;
+            const endDate = getDateFromFirestore(item.endDate) || addMinutes(startDate, 30);
+            const duration = differenceInMinutes(endDate, startDate);
 
-      if (!hasTime && duration >= 1440) return null;
+            if (!hasTime && duration >= 1440) return null;
 
-      return { ...item, startDate, endDate };
-    })
-    .filter((item): item is ScheduledItem => !!item)
-    .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+            return { ...item, startDate, endDate };
+        })
+        .filter((item): item is ScheduledItem => !!item)
+        .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 
-  if (!sortedItems.length) return [];
-  
-  const positionedItems: PositionedItem[] = [];
-  const processed = new Set<string>();
-
-  for (const item of sortedItems) {
-    if (processed.has(item.id)) continue;
-
-    // Find all overlapping items for the current item
-    const conflictGroup: ScheduledItem[] = [item];
-    processed.add(item.id);
-
-    for (const other of sortedItems) {
-      if (processed.has(other.id)) continue;
-      // An item is part of the conflict group if it overlaps with ANY item already in the group
-      if (conflictGroup.some(member => areIntervalsOverlapping({start: member.startDate, end: member.endDate}, {start: other.startDate, end: other.endDate}))) {
-        conflictGroup.push(other);
-        processed.add(other.id);
-      }
-    }
+    if (!sortedItems.length) return [];
     
-    // Now layout the conflict group
-    const columns: ScheduledItem[][] = [];
-    conflictGroup.sort((a,b) => a.startDate.getTime() - b.startDate.getTime());
+    // This will hold the final layout properties for each item.
+    const layout: (Omit<PositionedItem, 'left' | 'width'> & { col?: number; numCols?: number })[] = [];
 
-    for(const event of conflictGroup) {
+    for (const item of sortedItems) {
+        const top = (getHours(item.startDate) * 64) + (getMinutes(item.startDate) / 60 * 64);
+        const height = differenceInMinutes(item.endDate, item.startDate) / 60 * 64;
+        layout.push({
+            ...item,
+            top: top,
+            height: Math.max(height, 24),
+        });
+    }
+
+    const columns: ScheduledItem[][] = [];
+    let lastEventEnding: Date | null = null;
+    for (const item of layout) {
+        if (lastEventEnding !== null && item.startDate >= lastEventEnding) {
+            pack(columns);
+            columns.length = 0;
+            lastEventEnding = null;
+        }
+
         let placed = false;
-        for(const column of columns) {
-            const lastEventInColumn = column[column.length - 1];
-            if(!areIntervalsOverlapping({start: lastEventInColumn.startDate, end: lastEventInColumn.endDate}, {start: event.startDate, end: event.endDate})) {
-                column.push(event);
+        for (const col of columns) {
+            const lastInCol = col[col.length - 1];
+            if (lastInCol.endDate <= item.startDate) {
+                col.push(item);
                 placed = true;
                 break;
             }
         }
-        if(!placed) {
-            columns.push([event]);
+
+        if (!placed) {
+            columns.push([item]);
+        }
+
+        if (lastEventEnding === null || item.endDate > lastEventEnding) {
+            lastEventEnding = item.endDate;
         }
     }
 
-    const numColumns = columns.length;
-    columns.forEach((column, colIndex) => {
-      column.forEach(event => {
-        const top = (getHours(event.startDate) * 64) + (getMinutes(event.startDate) / 60 * 64);
-        const height = differenceInMinutes(event.endDate, event.startDate) / 60 * 64;
-        positionedItems.push({
-          ...event,
-          top: top,
-          height: Math.max(height, 24), // min height
-          left: (100 / numColumns) * colIndex,
-          width: 100 / numColumns,
-        });
-      });
-    });
-  }
+    if (columns.length > 0) {
+        pack(columns);
+    }
+    
+    function pack(cols: any[][]) {
+        const numCols = cols.length;
+        for (let i = 0; i < numCols; i++) {
+            const col = cols[i];
+            for (const item of col) {
+                item.col = i;
+                item.numCols = numCols;
+            }
+        }
+    }
 
-  return positionedItems;
+    return layout.map(item => ({
+        ...item,
+        width: 100 / (item.numCols || 1),
+        left: (item.col || 0) * (100 / (item.numCols || 1)),
+    }));
 };
 
 export function GlobalScheduleView() {
