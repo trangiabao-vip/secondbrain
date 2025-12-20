@@ -409,6 +409,13 @@
             "type": "string"
           }
         },
+        "goalIds": {
+          "type": "array",
+          "description": "A list of goal IDs this channel is associated with.",
+          "items": {
+            "type": "string"
+          }
+        },
         "facebook": { "type": "string", "description": "URL for the Facebook page/group." },
         "youtube": { "type": "string", "description": "URL for the YouTube channel." },
         "discord": { "type": "string", "description": "URL for the Discord server." },
@@ -478,3 +485,5 @@
     }
   }
 }
+
+    

@@ -8,9 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
-import Link from 'next/link';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,11 +23,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ChannelDialog } from './ChannelDialog';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 
 const socialIcons: Record<string, React.FC<{ className?: string }>> = {
   facebook: Icons.facebook,
@@ -40,22 +35,41 @@ const socialIcons: Record<string, React.FC<{ className?: string }>> = {
 };
 
 function ChannelManager() {
-  const { channels, topics, isDataLoading, deleteChannel } = useAppContext();
+  const { channels, topics, goals, isDataLoading, deleteChannel } = useAppContext();
   const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
+  const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleOpenDialog = (mode: 'add' | 'edit', channelId?: string) => {
+    setDialogMode(mode);
+    setEditingChannelId(channelId || null);
+    setIsDialogOpen(true);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      setIsDialogOpen(false);
+      setEditingChannelId(null);
+    }
+  };
+
 
   if (isDataLoading) {
     return (
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <Skeleton className="h-48" />
-        <Skeleton className="h-48" />
-        <Skeleton className="h-48" />
+        <Skeleton className="h-52" />
+        <Skeleton className="h-52" />
+        <Skeleton className="h-52" />
       </div>
     );
   }
 
-  const getTopicNames = (topicIds: string[]) => {
-    if (!topicIds) return [];
+  const getTopicNames = (topicIds: string[] = []) => {
     return topicIds.map(id => topics.find(t => t.id === id)?.name).filter(Boolean);
+  }
+  
+  const getGoalTitles = (goalIds: string[] = []) => {
+    return goalIds.map(id => goals.find(g => g.id === id)?.title).filter(Boolean);
   }
 
   return (
@@ -63,18 +77,17 @@ function ChannelManager() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">Quản lý Kênh</h2>
-        <ChannelDialog mode="add">
-          <Button>
+        <Button onClick={() => handleOpenDialog('add')}>
             <Icons.add className="mr-2 h-4 w-4" />
             Tạo kênh mới
-          </Button>
-        </ChannelDialog>
+        </Button>
       </div>
 
       {channels.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {channels.map((channel) => {
             const channelTopics = getTopicNames(channel.topicIds);
+            const channelGoals = getGoalTitles(channel.goalIds);
             const socialLinks = Object.entries(channel).filter(([key, value]) => ['facebook', 'youtube', 'discord', 'zalo'].includes(key) && value);
 
             return (
@@ -86,10 +99,20 @@ function ChannelManager() {
                   <CardContent className="flex-grow space-y-4">
                      {channelTopics.length > 0 && (
                         <div>
-                            <h4 className="text-sm font-semibold mb-2">Chủ đề liên quan</h4>
+                            <h4 className="text-sm font-semibold mb-2">Chủ đề</h4>
                             <div className="flex flex-wrap gap-1">
                                 {channelTopics.map(name => (
                                     <Badge key={name} variant="secondary">{name}</Badge>
+                                ))}
+                            </div>
+                        </div>
+                     )}
+                      {channelGoals.length > 0 && (
+                        <div>
+                            <h4 className="text-sm font-semibold mb-2">Mục tiêu</h4>
+                            <div className="flex flex-wrap gap-1">
+                                {channelGoals.map(title => (
+                                    <Badge key={title} variant="outline">{title}</Badge>
                                 ))}
                             </div>
                         </div>
@@ -118,7 +141,7 @@ function ChannelManager() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => setEditingChannelId(channel.id)}>
+                        <DropdownMenuItem onSelect={() => handleOpenDialog('edit', channel.id)}>
                             <Icons.edit className="mr-2 h-4 w-4" />
                             Chỉnh sửa
                         </DropdownMenuItem>
@@ -157,24 +180,20 @@ function ChannelManager() {
             Hãy tạo kênh đầu tiên của bạn để bắt đầu.
           </p>
           <div className="mt-6">
-            <ChannelDialog mode="add">
-              <Button>
+             <Button onClick={() => handleOpenDialog('add')}>
                 <Icons.add className="mr-2 h-4 w-4" />
                 Tạo kênh mới
-              </Button>
-            </ChannelDialog>
+             </Button>
           </div>
         </div>
       )}
     </div>
-    {editingChannelId && (
-        <ChannelDialog 
-            mode="edit" 
-            channelId={editingChannelId} 
-            open={!!editingChannelId} 
-            onOpenChange={(open) => !open && setEditingChannelId(null)}
-        />
-    )}
+    <ChannelDialog 
+        mode={dialogMode} 
+        channelId={editingChannelId || undefined} 
+        open={isDialogOpen} 
+        onOpenChange={handleDialogClose}
+    />
     </>
   );
 }
@@ -189,3 +208,5 @@ export default function ChannelsPage() {
         </AuthGuard>
     )
 }
+
+    
