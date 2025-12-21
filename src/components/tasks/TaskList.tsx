@@ -108,10 +108,11 @@ export function TaskList({ goalId, tasks: customTasks, dialogTriggers }: TaskLis
               />
               <div className="flex-grow">
                 <AddOrEditTaskDialog taskId={task.id} mode="edit">
-                  <button ref={el => dialogTriggers?.current.set(`task-${task.id}`, el)} className="hidden" />
-                  <span className={cn("text-sm cursor-pointer text-left", task.status === 'hoàn thành' && 'line-through text-muted-foreground')}>
+                  <button className={cn("text-sm cursor-pointer text-left", task.status === 'hoàn thành' && 'line-through text-muted-foreground')}
+                    ref={el => dialogTriggers?.current.set(`task-${task.id}`, el)}
+                  >
                       {task.text}
-                  </span>
+                  </button>
                 </AddOrEditTaskDialog>
 
                 <div className="flex items-center gap-2 flex-wrap mt-1">
