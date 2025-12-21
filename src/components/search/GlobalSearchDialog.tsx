@@ -36,7 +36,7 @@ export function GlobalSearchDialog({ children }: { children: ReactNode }) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResultItem[]>([]);
 
-    const { interests, topics, goals, tasks, wikiPages, selectInterest, selectTopic } = useAppContext();
+    const { interests, topics, goals, tasks, wikiPages, selectInterest, selectTopic, setItemToAutoOpen } = useAppContext();
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -96,20 +96,31 @@ export function GlobalSearchDialog({ children }: { children: ReactNode }) {
     }, [query, interests, topics, goals, tasks, wikiPages]);
 
     const handleSelect = (item: SearchResultItem) => {
-        if (item.itemType === 'Sở thích') {
+        const itemType = item.itemType;
+        let targetTopicId: string | null | undefined = null;
+
+        if (itemType === 'Sở thích') {
             selectInterest(item.id);
-        } else if (item.itemType === 'Chủ đề' || item.itemType === 'Mục tiêu' || item.itemType === 'Nhiệm vụ' || item.itemType === 'Wiki') {
-            const topicId = 'topicId' in item ? item.topicId : ('goalId' in item && item.goalId ? goals.find(g => g.id === item.goalId)?.topicId : null);
-            if (topicId) {
-                const topic = topics.find(t => t.id === topicId);
-                if (topic) {
-                    selectInterest(topic.interestId);
-                    // Use a timeout to ensure the interest selection has propagated before selecting the topic
-                    setTimeout(() => {
-                        selectTopic(topicId);
-                        // Further logic to open a specific goal/task dialog can be added here
-                    }, 50);
-                }
+        } else if (itemType === 'Chủ đề' || itemType === 'Wiki') {
+            targetTopicId = 'topicId' in item ? item.topicId : item.id;
+        } else if (itemType === 'Mục tiêu') {
+            targetTopicId = item.topicId;
+            setItemToAutoOpen({ type: 'goal', id: item.id });
+        } else if (itemType === 'Nhiệm vụ') {
+            if ('goalId' in item && item.goalId) {
+                const parentGoal = goals.find(g => g.id === item.goalId);
+                targetTopicId = parentGoal?.topicId;
+            } else if ('topicId' in item) {
+                targetTopicId = item.topicId;
+            }
+            setItemToAutoOpen({ type: 'task', id: item.id });
+        }
+        
+        if (targetTopicId) {
+            const topic = topics.find(t => t.id === targetTopicId);
+            if (topic) {
+                selectInterest(topic.interestId);
+                setTimeout(() => selectTopic(topic.id), 50);
             }
         }
         setOpen(false);

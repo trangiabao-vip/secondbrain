@@ -17,6 +17,11 @@ import { ToastAction } from '@/components/ui/toast';
 import { addMinutes, differenceInMinutes, parseISO } from 'date-fns';
 import { usePathname, useRouter, useParams } from 'next/navigation';
 
+interface ItemToOpen {
+  type: 'goal' | 'task';
+  id: string;
+}
+
 interface AppContextType {
   interests: Interest[];
   topics: Topic[];
@@ -29,6 +34,8 @@ interface AppContextType {
   selectedTopicId: string | null;
   topicBreadcrumbs: Topic[];
   isDataLoading: boolean;
+  itemToAutoOpen: ItemToOpen | null;
+  setItemToAutoOpen: (item: ItemToOpen | null) => void;
   selectInterest: (id: string | null) => void;
   selectTopic: (id: string | null) => void;
   addInterest: (name: string) => void;
@@ -85,6 +92,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const interestId = (params.interestId as string) || null;
   const topicId = (params.topicId as string) || null;
+  const [itemToAutoOpen, setItemToAutoOpen] = useState<ItemToOpen | null>(null);
 
   const interestsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'interests'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const topicsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'topics'), where('userId', '==', user.uid)) : null, [firestore, user]);
@@ -609,6 +617,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isDataLoading,
     selectedInterestId: interestId,
     selectedTopicId: topicId,
+    itemToAutoOpen,
+    setItemToAutoOpen,
     topicBreadcrumbs,
     selectInterest,
     selectTopic,

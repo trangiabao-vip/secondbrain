@@ -1,7 +1,7 @@
 
 
 'use client';
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { TaskList } from "@/components/tasks/TaskList";
 import { AddGoalDialog } from "@/components/goals/AddGoalDialog";
@@ -48,10 +48,25 @@ const typeOptions = {
 };
 
 export function GoalsView() {
-  const { goals, tasks, selectedTopic, deleteGoal, updateGoal, isDataLoading, duplicateGoal } = useAppContext();
+  const { goals, tasks, selectedTopic, deleteGoal, updateGoal, isDataLoading, duplicateGoal, itemToAutoOpen, setItemToAutoOpen } = useAppContext();
   const [statusFilters, setStatusFilters] = useLocalStorage<GoalStatus[]>('goalsViewStatusFilters', []);
   const [typeFilter, setTypeFilter] = useLocalStorage<'all' | 'goal' | 'task'>('goalsViewTypeFilter', 'all');
   
+  const dialogTriggers = useRef<Map<string, HTMLButtonElement | null>>(new Map());
+
+  useEffect(() => {
+    if (itemToAutoOpen && !isDataLoading) {
+        const trigger = dialogTriggers.current.get(`${itemToAutoOpen.type}-${itemToAutoOpen.id}`);
+        if (trigger) {
+            // Use a short timeout to ensure the UI is ready
+            setTimeout(() => {
+                trigger.click();
+                setItemToAutoOpen(null); // Clear the auto-open item
+            }, 100);
+        }
+    }
+  }, [itemToAutoOpen, isDataLoading, setItemToAutoOpen]);
+
   if (!selectedTopic) return null;
   
   const toggleStatusFilter = (status: GoalStatus) => {
@@ -207,6 +222,7 @@ export function GoalsView() {
                       </div>
                       <div className="flex items-center flex-shrink-0">
                           <EditGoalDialog goalId={goal.id}>
+                               <button ref={el => dialogTriggers.current.set(`goal-${goal.id}`, el)} className="hidden" />
                               <Button variant="ghost" size="icon" className="h-8 w-8">
                                   <Icons.edit className="h-4 w-4" />
                               </Button>
@@ -332,7 +348,7 @@ export function GoalsView() {
                     )}
                     
                     <div className="bg-secondary/50 p-4">
-                        <TaskList goalId={goal.id} />
+                        <TaskList goalId={goal.id} dialogTriggers={dialogTriggers} />
                     </div>
                   </CollapsibleContent>
                 </Card>
@@ -357,7 +373,7 @@ export function GoalsView() {
             </CardHeader>
             <CardContent>
                 {filteredStandaloneTasks.length > 0 ? (
-                    <TaskList tasks={filteredStandaloneTasks} />
+                    <TaskList tasks={filteredStandaloneTasks} dialogTriggers={dialogTriggers}/>
                 ) : (
                     <div className="text-center py-4 text-sm text-muted-foreground">
                         Không có nhiệm vụ độc lập nào trong chủ đề này.
