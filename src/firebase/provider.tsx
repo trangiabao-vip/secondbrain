@@ -154,15 +154,17 @@ export const useFirebaseApp = (): FirebaseApp => {
   return firebaseApp;
 };
 
-type MemoFirebase <T> = T & {__memo?: boolean};
-
-export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | (MemoFirebase<T>) {
-  const memoized = useMemo(factory, deps);
-  
-  if(typeof memoized !== 'object' || memoized === null) return memoized;
-  (memoized as MemoFirebase<T>).__memo = true;
-  
-  return memoized;
+/**
+ * A hook that memoizes a Firestore query or reference.
+ * It is crucial for preventing infinite loops and unnecessary re-renders when using `useCollection` or `useDoc`.
+ * 
+ * @param factory A function that returns a Firestore Query or DocumentReference.
+ * @param deps A dependency array, similar to `useMemo`. The factory will re-run when these change.
+ * @returns The memoized Firestore query or reference.
+ */
+export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(factory, deps);
 }
 
 /**
