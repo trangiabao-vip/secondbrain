@@ -49,7 +49,7 @@ const typeOptions = {
 
 export function GoalsView() {
   const { goals, tasks, selectedTopic, deleteGoal, updateGoal, isDataLoading, duplicateGoal, itemToAutoOpen, setItemToAutoOpen } = useAppContext();
-  const [statusFilters, setStatusFilters] = useLocalStorage<GoalStatus[]>('goalsViewStatusFilters', []);
+  const [statusFilters, setStatusFilters] = useLocalStorage<GoalStatus[]>('goalsViewStatusFilters', ['chưa bắt đầu', 'đang làm', 'hoàn thành']);
   const [typeFilter, setTypeFilter] = useLocalStorage<'all' | 'goal' | 'task'>('goalsViewTypeFilter', 'all');
   
   const dialogTriggers = useRef<Map<string, HTMLButtonElement | null>>(new Map());
@@ -103,14 +103,14 @@ export function GoalsView() {
 
   if (isDataLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-24" />
-          <Skeleton className="h-10 w-32" />
+      <div class="space-y-6">
+        <div class="flex items-center justify-between">
+          <Skeleton class="h-8 w-24" />
+          <Skeleton class="h-10 w-32" />
         </div>
-        <div className="space-y-4">
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-40 w-full" />
+        <div class="space-y-4">
+          <Skeleton class="h-40 w-full" />
+          <Skeleton class="h-40 w-full" />
         </div>
       </div>
     )
@@ -138,29 +138,29 @@ export function GoalsView() {
   };
   
   return (
-    <div className="space-y-6">
-       <div className="flex items-start justify-between">
+    <div class="space-y-6">
+       <div class="flex items-start justify-between">
         <div>
-            <h3 className="text-xl font-bold">Mục tiêu &amp; Nhiệm vụ</h3>
-            {selectedTopic.description && <p className="text-muted-foreground mt-1 max-w-2xl">{selectedTopic.description}</p>}
+            <h3 class="text-xl font-bold">Mục tiêu &amp; Nhiệm vụ</h3>
+            {selectedTopic.description && <p class="text-muted-foreground mt-1 max-w-2xl">{selectedTopic.description}</p>}
         </div>
-        <div className="flex gap-2 flex-shrink-0">
+        <div class="flex gap-2 flex-shrink-0">
           <AddGoalDialog>
             <Button>
-              <Icons.add className="mr-2 h-4 w-4" />
+              <Icons.add class="mr-2 h-4 w-4" />
               Mục tiêu mới
             </Button>
           </AddGoalDialog>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 p-2 rounded-lg border bg-card">
-        <span className="text-sm font-medium text-muted-foreground mr-2">Lọc theo:</span>
+      <div class="flex items-center gap-2 p-2 rounded-lg border bg-card">
+        <span class="text-sm font-medium text-muted-foreground mr-2">Lọc theo:</span>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
                     {typeOptions[typeFilter]}
-                    <Icons.down className="ml-2 h-4 w-4" />
+                    <Icons.down class="ml-2 h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
@@ -179,8 +179,8 @@ export function GoalsView() {
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
                     Trạng thái
-                    {statusFilters.length > 0 && <Badge variant="secondary" className="ml-2 rounded">{statusFilters.length}</Badge>}
-                    <Icons.down className="ml-2 h-4 w-4" />
+                    {statusFilters.length > 0 && <Badge variant="secondary" class="ml-2 rounded">{statusFilters.length}</Badge>}
+                    <Icons.down class="ml-2 h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
@@ -194,12 +194,16 @@ export function GoalsView() {
                         {value}
                     </DropdownMenuCheckboxItem>
                 ))}
+                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setStatusFilters([])}>
+                    Xóa tất cả bộ lọc
+                </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
       {filteredGoals.length > 0 && (
-        <div className="space-y-4">
+        <div class="space-y-4">
           {filteredGoals.map((goal) => {
             const endDate = getDateFromFirestore(goal.endDate);
             const priority = goal.priority || 'Vừa';
@@ -209,33 +213,33 @@ export function GoalsView() {
 
             return (
               <Collapsible key={goal.id} asChild>
-                <Card className="overflow-hidden">
-                  <div className="p-4">
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="flex items-center gap-2 flex-1">
+                <Card class="overflow-hidden">
+                  <div class="p-4">
+                    <div class="flex justify-between items-start gap-2">
+                      <div class="flex items-center gap-2 flex-1">
                         <CollapsibleTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
-                            <Icons.down className="h-4 w-4 transition-transform [&[data-state=open]]:-rotate-90" />
+                          <Button variant="ghost" size="icon" class="h-8 w-8 flex-shrink-0">
+                            <Icons.down class="h-4 w-4 transition-transform [&[data-state=open]]:-rotate-90" />
                           </Button>
                         </CollapsibleTrigger>
-                        <h4 className="font-semibold text-base">{goal.title}</h4>
+                        <h4 class="font-semibold text-base">{goal.title}</h4>
                       </div>
-                      <div className="flex items-center flex-shrink-0">
+                      <div class="flex items-center flex-shrink-0">
                           <EditGoalDialog goalId={goal.id}>
-                               <button ref={el => dialogTriggers.current.set(`goal-${goal.id}`, el)} className="hidden" />
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <Icons.edit className="h-4 w-4" />
+                               <button ref={el => dialogTriggers.current.set(`goal-${goal.id}`, el)} class="hidden" />
+                              <Button variant="ghost" size="icon" class="h-8 w-8">
+                                  <Icons.edit class="h-4 w-4" />
                               </Button>
                           </EditGoalDialog>
                           <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Icons.ellipsis className="h-4 w-4" />
+                              <Button variant="ghost" size="icon" class="h-8 w-8">
+                              <Icons.ellipsis class="h-4 w-4" />
                               </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => duplicateGoal(goal.id)}>
-                                  <Icons.copy className="mr-2 h-4 w-4" />
+                                  <Icons.copy class="mr-2 h-4 w-4" />
                                   Nhân bản
                               </DropdownMenuItem>
                               <DropdownMenuSub>
@@ -253,8 +257,8 @@ export function GoalsView() {
                                   </DropdownMenuPortal>
                               </DropdownMenuSub>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-destructive" onClick={() => deleteGoal(goal.id)}>
-                              <Icons.delete className="mr-2 h-4 w-4" />
+                              <DropdownMenuItem class="text-destructive" onClick={() => deleteGoal(goal.id)}>
+                              <Icons.delete class="mr-2 h-4 w-4" />
                               Xóa mục tiêu
                               </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -262,12 +266,12 @@ export function GoalsView() {
                       </div>
                     </div>
                     
-                    <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pl-10">
+                    <div class="mt-2 flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pl-10">
                         <TooltipProvider>
                           <Tooltip>
                               <TooltipTrigger asChild>
-                                  <Badge variant="outline" className={cn("capitalize", statusColors[goal.status])}>
-                                      <div className="w-2 h-2 rounded-full mr-2 bg-current"></div>
+                                  <Badge variant="outline" class={cn("capitalize", statusColors[goal.status])}>
+                                      <div class="w-2 h-2 rounded-full mr-2 bg-current"></div>
                                       {goal.status}
                                   </Badge>
                               </TooltipTrigger>
@@ -275,8 +279,8 @@ export function GoalsView() {
                           </Tooltip>
                           <Tooltip>
                               <TooltipTrigger asChild>
-                                  <div className={cn("flex items-center gap-1", priorityColor)}>
-                                      <IconComponent className="h-4 w-4" />
+                                  <div class={cn("flex items-center gap-1", priorityColor)}>
+                                      <IconComponent class="h-4 w-4" />
                                       <span>{priority}</span>
                                   </div>
                               </TooltipTrigger>
@@ -285,10 +289,10 @@ export function GoalsView() {
                           {endDate && (
                              <Tooltip>
                                <TooltipTrigger asChild>
-                                  <div className="flex items-center gap-1">
-                                      <Icons.calendar className="h-4 w-4" />
+                                  <div class="flex items-center gap-1">
+                                      <Icons.calendar class="h-4 w-4" />
                                       <span>{format(endDate, 'd MMM, yyyy', { locale: vi })}</span>
-                                      <span className="hidden sm:inline">({formatDistanceToNow(endDate, { addSuffix: true, locale: vi })})</span>
+                                      <span class="hidden sm:inline">({formatDistanceToNow(endDate, { addSuffix: true, locale: vi })})</span>
                                   </div>
                                </TooltipTrigger>
                                <TooltipContent><p>Hạn chót</p></TooltipContent>
@@ -299,11 +303,11 @@ export function GoalsView() {
                   </div>
 
                   <CollapsibleContent>
-                    <div className="px-4 pb-1">
+                    <div class="px-4 pb-1">
                        <TooltipProvider>
                         <Tooltip>
-                            <TooltipTrigger className="w-full">
-                                 <Progress value={progress} className="h-2 w-full" />
+                            <TooltipTrigger class="w-full">
+                                 <Progress value={progress} class="h-2 w-full" />
                             </TooltipTrigger>
                             <TooltipContent><p>{Math.round(progress)}% hoàn thành</p></TooltipContent>
                         </Tooltip>
@@ -311,32 +315,32 @@ export function GoalsView() {
                     </div>
 
                     {(goal.description || (goal.customProperties && Object.keys(goal.customProperties).length > 0)) && (
-                      <div className="px-4 pb-2 pt-4 space-y-4">
+                      <div class="px-4 pb-2 pt-4 space-y-4">
                          {goal.description && (
                             <div>
-                                <Label className="text-xs font-semibold text-muted-foreground">Mô tả</Label>
-                                <MarkdownRenderer className="text-sm">{goal.description}</MarkdownRenderer>
+                                <Label class="text-xs font-semibold text-muted-foreground">Mô tả</Label>
+                                <MarkdownRenderer class="text-sm">{goal.description}</MarkdownRenderer>
                             </div>
                          )}
                          {goal.customProperties && Object.keys(goal.customProperties).length > 0 && (
                             <div>
-                                <Label className="text-xs font-semibold text-muted-foreground">Thuộc tính</Label>
-                                <div className="flex items-center gap-x-4 gap-y-2 flex-wrap mt-2">
+                                <Label class="text-xs font-semibold text-muted-foreground">Thuộc tính</Label>
+                                <div class="flex items-center gap-x-4 gap-y-2 flex-wrap mt-2">
                                 {Object.entries(goal.customProperties).map(([key, value]) => {
                                     const lowerValue = String(value).toLowerCase();
                                     if (lowerValue === 'true' || lowerValue === 'false') {
                                     return (
-                                        <div key={key} className="flex items-center gap-2">
+                                        <div key={key} class="flex items-center gap-2">
                                         <Checkbox checked={lowerValue === 'true'} disabled id={`goal-prop-${goal.id}-${key}`} />
-                                        <Label htmlFor={`goal-prop-${goal.id}-${key}`} className="text-sm font-medium text-muted-foreground">
+                                        <Label htmlFor={`goal-prop-${goal.id}-${key}`} class="text-sm font-medium text-muted-foreground">
                                             {key}
                                         </Label>
                                         </div>
                                     );
                                     }
                                     return (
-                                    <Badge key={key} variant="outline" className="font-normal">
-                                        <span className="font-semibold mr-1.5">{key}:</span>
+                                    <Badge key={key} variant="outline" class="font-normal">
+                                        <span class="font-semibold mr-1.5">{key}:</span>
                                         <span>{String(value)}</span>
                                     </Badge>
                                     );
@@ -347,7 +351,7 @@ export function GoalsView() {
                       </div>
                     )}
                     
-                    <div className="bg-secondary/50 p-4">
+                    <div class="bg-secondary/50 p-4">
                         <TaskList goalId={goal.id} dialogTriggers={dialogTriggers} />
                     </div>
                   </CollapsibleContent>
@@ -361,11 +365,11 @@ export function GoalsView() {
       {(typeFilter === 'all' || typeFilter === 'task') && (
         <Card>
             <CardHeader>
-                <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-base">Nhiệm vụ độc lập</h4>
+                <div class="flex items-center justify-between">
+                    <h4 class="font-semibold text-base">Nhiệm vụ độc lập</h4>
                     <AddOrEditTaskDialog mode="add" topicId={selectedTopic.id}>
                         <Button variant="outline" size="sm">
-                        <Icons.add className="mr-2 h-4 w-4" />
+                        <Icons.add class="mr-2 h-4 w-4" />
                         Thêm nhiệm vụ
                         </Button>
                     </AddOrEditTaskDialog>
@@ -375,7 +379,7 @@ export function GoalsView() {
                 {filteredStandaloneTasks.length > 0 ? (
                     <TaskList tasks={filteredStandaloneTasks} dialogTriggers={dialogTriggers}/>
                 ) : (
-                    <div className="text-center py-4 text-sm text-muted-foreground">
+                    <div class="text-center py-4 text-sm text-muted-foreground">
                         Không có nhiệm vụ độc lập nào trong chủ đề này.
                     </div>
                 )}
@@ -384,24 +388,24 @@ export function GoalsView() {
       )}
       
       {filteredGoals.length === 0 && filteredStandaloneTasks.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-card p-12 text-center">
-            <Icons.goal className="h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">
+        <div class="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-card p-12 text-center">
+            <Icons.goal class="h-12 w-12 text-muted-foreground" />
+            <h3 class="mt-4 text-lg font-semibold">
                 Không tìm thấy kết quả
             </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p class="mt-2 text-sm text-muted-foreground">
                 Hãy thử thay đổi bộ lọc hoặc tạo một mục tiêu / nhiệm vụ mới.
             </p>
-            <div className="mt-6 flex gap-4">
+            <div class="mt-6 flex gap-4">
                 <AddOrEditTaskDialog mode="add" topicId={selectedTopic.id}>
                     <Button variant="outline">
-                        <Icons.add className="mr-2 h-4 w-4" />
+                        <Icons.add class="mr-2 h-4 w-4" />
                         Thêm nhiệm vụ
                     </Button>
                 </AddOrEditTaskDialog>
                 <AddGoalDialog>
                     <Button>
-                        <Icons.add className="mr-2 h-4 w-4" />
+                        <Icons.add class="mr-2 h-4 w-4" />
                         Mục tiêu mới
                     </Button>
                 </AddGoalDialog>
