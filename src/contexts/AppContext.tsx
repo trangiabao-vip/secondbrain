@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { type Interest, type Topic, type Goal, type Task, type WikiPage, type SalesPage, type Channel } from '@/lib/data';
 import { toast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
@@ -462,6 +462,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
     const { id, createdAt, recurrence, ...taskDataToCopy } = sourceTask;
     
+    // Ensure dates are actual Date objects before creating new task
     const sourceStartDate = getDateFromFirestore(sourceTask.startDate);
     const sourceEndDate = getDateFromFirestore(sourceTask.endDate);
   
@@ -470,9 +471,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       text: `Bản sao của ${sourceTask.text}`,
       status: 'chưa bắt đầu' as const,
       createdAt: serverTimestamp(),
-      recurrence: null,
+      recurrence: null, // Duplicated task is a single instance
       userId: user.uid,
-      startDate: sourceStartDate,
+      // Pass the Date objects directly
+      startDate: sourceStartDate, 
       endDate: sourceEndDate,
     };
   
