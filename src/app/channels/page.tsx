@@ -12,6 +12,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import {
   AlertDialog,
@@ -26,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ChannelDialog } from './ChannelDialog';
 import { Badge } from '@/components/ui/badge';
+import { AddOrEditTaskDialog } from '@/components/tasks/AddOrEditTaskDialog';
 
 const socialIcons: Record<string, React.FC<{ className?: string }>> = {
   facebook: Icons.facebook,
@@ -119,7 +121,7 @@ function ChannelManager() {
                               <h4 className="text-sm font-semibold mb-2">Nhiệm vụ</h4>
                               <div className="flex flex-wrap gap-1">
                                   {channelTasks.map(text => (
-                                      <Badge key={text} variant="outline" className="bg-blue-500/10 border-blue-500/50 text-blue-800 dark:text-blue-300">{text}</Badge>
+                                      <Badge key={text} variant="outline" className="bg-blue-500/10 border-blue-500/50 text-blue-800 dark:text-blue-300 max-w-full truncate">{text}</Badge>
                                   ))}
                               </div>
                           </div>
@@ -148,6 +150,13 @@ function ChannelManager() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <AddOrEditTaskDialog mode="add" topicId={channel.topicIds[0]} channelId={channel.id}>
+                               <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full" disabled={channel.topicIds.length === 0}>
+                                <Icons.task className="mr-2 h-4 w-4" />
+                                Thêm nhiệm vụ
+                               </button>
+                            </AddOrEditTaskDialog>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onSelect={() => handleOpenDialog('edit', channel.id)}>
                                 <Icons.edit className="mr-2 h-4 w-4" />
                                 Chỉnh sửa
@@ -213,5 +222,3 @@ export default function ChannelsPage() {
         </AuthGuard>
     )
 }
-
-    

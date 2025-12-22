@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ReactNode } from 'react';
@@ -44,7 +45,7 @@ interface AppContextType {
   updateTopic: (topicId: string, name: string, description?: string) => void;
   addGoal: (goalData: Partial<Omit<Goal, 'id'>>) => void;
   updateGoal: (goalId: string, updatedData: Partial<Omit<Goal, 'id'>>) => void;
-  addTask: (taskData: Partial<Omit<Task, 'id'>>) => void;
+  addTask: (taskData: Partial<Omit<Task, 'id'>>) => Promise<string | undefined>;
   updateTask: (taskId: string, updatedData: Partial<Task>, instanceDate?: Date) => void;
   deleteInterest: (id: string) => void;
   deleteTopic: (id: string) => void;
@@ -217,7 +218,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Mục tiêu đã được cập nhật", description: `Mục tiêu đã được cập nhật.` });
   };
 
-  const addTask = (taskData: Partial<Omit<Task, 'id'>>) => {
+  const addTask = async (taskData: Partial<Omit<Task, 'id'>>): Promise<string | undefined> => {
     if (!user) return;
     
     const newTask: Partial<Task> = {
@@ -227,7 +228,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createdAt: serverTimestamp()
     };
     
-    addDocumentNonBlocking(collection(firestore, 'tasks'), newTask);
+    const docRef = await addDocumentNonBlocking(collection(firestore, 'tasks'), newTask);
+    return docRef?.id;
   };
 
   const updateTask = (taskId: string, updatedData: Partial<Task>) => {

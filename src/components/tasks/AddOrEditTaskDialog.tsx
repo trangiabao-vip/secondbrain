@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, type ReactNode, useEffect, useMemo } from 'react';
 import {
@@ -33,6 +34,7 @@ interface AddOrEditTaskDialogProps {
   taskId?: string;
   goalId?: string;
   topicId?: string;
+  channelId?: string;
   children: ReactNode;
   mode: 'add' | 'edit';
 }
@@ -151,8 +153,8 @@ const generateRecurrenceDates = (rule: RecurrenceRule, startDate: Date | undefin
     return occurrences;
 };
 
-function TaskDialogContent({ taskId, initialGoalId, initialTopicId, mode, closeDialog }: { taskId?: string, initialGoalId?: string, initialTopicId?: string, mode: 'add' | 'edit', closeDialog: () => void }) {
-  const { getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic, duplicateTask, getGoalById } = useAppContext();
+function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChannelId, mode, closeDialog }: { taskId?: string, initialGoalId?: string, initialTopicId?: string, initialChannelId?: string, mode: 'add' | 'edit', closeDialog: () => void }) {
+  const { getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic, duplicateTask, getGoalById, updateChannel, getChannelById } = useAppContext();
   
   const [taskText, setTaskText] = useState('');
   const [notes, setNotes] = useState('');
@@ -171,7 +173,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, mode, closeD
     daysOfWeek: [],
   });
 
-  const topicGoals = goals.filter(g => g.topicId === selectedTopic?.id);
+  const topicGoals = goals.filter(g => g.topicId === (initialTopicId || selectedTopic?.id));
   const isRecurringInstance = taskId?.includes('-recur-');
   const originalTaskId = isRecurringInstance ? taskId.split('-recur-')[0] : taskId;
 
@@ -262,7 +264,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, mode, closeD
     setCustomProperties(customProperties.map(p => p.id === id ? { ...p, [field]: text } : p));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (taskText.trim()) {
       const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
       const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
@@ -304,7 +306,14 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, mode, closeD
       if (mode === 'edit' && taskId) {
         updateTask(taskId, taskData);
       } else {
-        addTask(taskData);
+        const newTaskId = await addTask(taskData);
+        if (newTaskId && initialChannelId) {
+            const channel = getChannelById(initialChannelId);
+            if (channel) {
+                const updatedTaskIds = [...(channel.taskIds || []), newTaskId];
+                updateChannel(initialChannelId, { taskIds: updatedTaskIds });
+            }
+        }
       }
       closeDialog();
     }
@@ -650,14 +659,14 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, mode, closeD
   );
 }
 
-export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, topicId: initialTopicId, children, mode }: AddOrEditTaskDialogProps) {
+export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, topicId: initialTopicId, channelId: initialChannelId, children, mode }: AddOrEditTaskDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-xl">
-        {isOpen && <TaskDialogContent taskId={taskId} initialGoalId={initialGoalId} initialTopicId={initialTopicId} mode={mode} closeDialog={() => setIsOpen(false)} />}
+        {isOpen && <TaskDialogContent taskId={taskId} initialGoalId={initialGoalId} initialTopicId={initialTopicId} initialChannelId={initialChannelId} mode={mode} closeDialog={() => setIsOpen(false)} />}
       </DialogContent>
     </Dialog>
   );
