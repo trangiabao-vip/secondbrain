@@ -26,15 +26,15 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          <Suspense>
-            <InterestHubApp>
+          <InterestHubApp>
+            <Suspense>
               <GlobalSearchDialog>
                 <AppLayout>
                   {children}
                 </AppLayout>
               </GlobalSearchDialog>
-            </InterestHubApp>
-          </Suspense>
+            </Suspense>
+          </InterestHubApp>
         </FirebaseClientProvider>
         <Toaster />
       </body>

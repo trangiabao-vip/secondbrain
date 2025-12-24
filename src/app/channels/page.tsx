@@ -28,6 +28,7 @@ import {
 import { ChannelDialog } from './ChannelDialog';
 import { Badge } from '@/components/ui/badge';
 import { AddOrEditTaskDialog } from '@/components/tasks/AddOrEditTaskDialog';
+import Link from 'next/link';
 
 const socialIcons: Record<string, React.FC<{ className?: string }>> = {
   facebook: Icons.facebook,
@@ -90,32 +91,33 @@ function ChannelManager() {
               const socialLinks = Object.entries(channel).filter(([key, value]) => ['facebook', 'youtube', 'discord', 'zalo'].includes(key) && value);
 
               return (
-                  <Card key={channel.id} className="flex flex-col">
-                    <CardHeader>
-                      <CardTitle className="line-clamp-2">{channel.name}</CardTitle>
-                      {channel.description && <CardDescription>{channel.description}</CardDescription>}
-                    </CardHeader>
-                    <CardContent className="flex-grow space-y-4">
-                      {channelTopics.length > 0 && (
-                          <div>
-                              <h4 className="text-sm font-semibold mb-2">Chủ đề</h4>
-                              <div className="flex flex-wrap gap-1">
-                                  {channelTopics.map(name => (
-                                      <Badge key={name} variant="secondary">{name}</Badge>
-                                  ))}
-                              </div>
-                          </div>
-                      )}
-                        {channelGoals.length > 0 && (
-                          <div>
-                              <h4 className="text-sm font-semibold mb-2">Mục tiêu</h4>
-                              <div className="flex flex-wrap gap-1">
-                                  {channelGoals.map(title => (
-                                      <Badge key={title} variant="outline">{title}</Badge>
-                                  ))}
-                              </div>
-                          </div>
-                      )}
+                  <Link href={`/channels/${channel.id}`} key={channel.id} className="h-full">
+                    <Card className="flex flex-col h-full transition-all hover:shadow-lg hover:border-primary/50">
+                      <CardHeader>
+                        <CardTitle className="line-clamp-2">{channel.name}</CardTitle>
+                        {channel.description && <CardDescription>{channel.description}</CardDescription>}
+                      </CardHeader>
+                      <CardContent className="flex-grow space-y-4">
+                        {channelTopics.length > 0 && (
+                            <div>
+                                <h4 className="text-sm font-semibold mb-2">Chủ đề</h4>
+                                <div className="flex flex-wrap gap-1">
+                                    {channelTopics.map(name => (
+                                        <Badge key={name} variant="secondary">{name}</Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                          {channelGoals.length > 0 && (
+                            <div>
+                                <h4 className="text-sm font-semibold mb-2">Mục tiêu</h4>
+                                <div className="flex flex-wrap gap-1">
+                                    {channelGoals.map(title => (
+                                        <Badge key={title} variant="outline">{title}</Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                        {channelTasks.length > 0 && (
                           <div>
                               <h4 className="text-sm font-semibold mb-2">Nhiệm vụ</h4>
@@ -126,65 +128,66 @@ function ChannelManager() {
                               </div>
                           </div>
                       )}
-                      {socialLinks.length > 0 && (
-                          <div>
-                              <h4 className="text-sm font-semibold mb-2">Kênh mạng xã hội</h4>
-                              <div className="flex items-center gap-4">
-                                  {socialLinks.map(([key, value]) => {
-                                      const Icon = socialIcons[key];
-                                      return (
-                                          <a key={key} href={value as string} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
-                                              <Icon className="h-6 w-6" />
-                                          </a>
-                                      )
-                                  })}
-                              </div>
-                          </div>
-                      )}
-                    </CardContent>
-                    <CardFooter className="flex justify-end">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Icons.ellipsis className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <AddOrEditTaskDialog mode="add" topicId={channel.topicIds[0]} channelId={channel.id}>
-                               <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full" disabled={channel.topicIds.length === 0}>
-                                <Icons.task className="mr-2 h-4 w-4" />
-                                Thêm nhiệm vụ
-                               </button>
-                            </AddOrEditTaskDialog>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={() => handleOpenDialog('edit', channel.id)}>
-                                <Icons.edit className="mr-2 h-4 w-4" />
-                                Chỉnh sửa
-                            </DropdownMenuItem>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive">
-                                  <Icons.delete className="mr-2 h-4 w-4" />
-                                  Xóa
-                                </button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Bạn có chắc chắn không?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Hành động này không thể được hoàn tác. Thao tác này sẽ xóa vĩnh viễn kênh.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Hủy</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => deleteChannel(channel.id)} className="bg-destructive hover:bg-destructive/90">Xóa</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                    </CardFooter>
-                  </Card>
+                        {socialLinks.length > 0 && (
+                            <div>
+                                <h4 className="text-sm font-semibold mb-2">Kênh mạng xã hội</h4>
+                                <div className="flex items-center gap-4">
+                                    {socialLinks.map(([key, value]) => {
+                                        const Icon = socialIcons[key];
+                                        return (
+                                            <a key={key} href={value as string} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                                                <Icon className="h-6 w-6" />
+                                            </a>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                      </CardContent>
+                      <CardFooter className="flex justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.preventDefault()}>
+                                <Icons.ellipsis className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.preventDefault()}>
+                              <AddOrEditTaskDialog mode="add" topicId={channel.topicIds[0]} channelId={channel.id}>
+                                 <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full" disabled={channel.topicIds.length === 0}>
+                                  <Icons.task className="mr-2 h-4 w-4" />
+                                  Thêm nhiệm vụ
+                                 </button>
+                              </AddOrEditTaskDialog>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onSelect={() => handleOpenDialog('edit', channel.id)}>
+                                  <Icons.edit className="mr-2 h-4 w-4" />
+                                  Chỉnh sửa
+                              </DropdownMenuItem>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive">
+                                    <Icons.delete className="mr-2 h-4 w-4" />
+                                    Xóa
+                                  </button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Bạn có chắc chắn không?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Hành động này không thể được hoàn tác. Thao tác này sẽ xóa vĩnh viễn kênh.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => deleteChannel(channel.id)} className="bg-destructive hover:bg-destructive/90">Xóa</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                      </CardFooter>
+                    </Card>
+                  </Link>
               )
             })}
           </div>
