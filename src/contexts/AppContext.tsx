@@ -5,7 +5,7 @@ import { createContext, useContext, useState, useMemo, useEffect, useCallback, u
 import { type Interest, type Topic, type Goal, type Task, type WikiPage, type SalesPage, type Channel } from '@/lib/data';
 import { toast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp, writeBatch, query, where, addDoc, setDoc, runTransaction, deleteDoc } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, writeBatch, query, where, addDoc, setDoc, runTransaction, deleteDoc, Timestamp } from 'firebase/firestore';
 import { 
   addDocumentNonBlocking, 
   deleteDocumentNonBlocking, 
@@ -220,8 +220,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addTask = async (taskData: Partial<Omit<Task, 'id'>>): Promise<string | undefined> => {
     if (!user) return;
     
+    // Ensure Date objects are converted to Timestamps before sending to Firestore
+    const dataWithTimestamps = { ...taskData };
+    if (dataWithTimestamps.startDate instanceof Date) {
+      dataWithTimestamps.startDate = Timestamp.fromDate(dataWithTimestamps.startDate);
+    }
+    if (dataWithTimestamps.endDate instanceof Date) {
+      dataWithTimestamps.endDate = Timestamp.fromDate(dataWithTimestamps.endDate);
+    }
+
     const newTask: Partial<Task> = {
-      ...taskData,
+      ...dataWithTimestamps,
       status: taskData.status || 'chưa bắt đầu',
       userId: user.uid,
       createdAt: serverTimestamp()
@@ -464,7 +473,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
     const { id, createdAt, recurrence, ...taskDataToCopy } = sourceTask;
     
-    // Ensure dates are actual Date objects before creating new task
     const sourceStartDate = getDateFromFirestore(sourceTask.startDate);
     const sourceEndDate = getDateFromFirestore(sourceTask.endDate);
   
@@ -473,11 +481,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       text: `Bản sao của ${sourceTask.text}`,
       status: 'chưa bắt đầu' as const,
       createdAt: serverTimestamp(),
-      recurrence: null, // Duplicated task is a single instance
+      recurrence: null, 
       userId: user.uid,
-      // Pass the Date objects directly
-      startDate: sourceStartDate, 
-      endDate: sourceEndDate,
+      startDate: sourceStartDate ? Timestamp.fromDate(sourceStartDate) : null,
+      endDate: sourceEndDate ? Timestamp.fromDate(sourceEndDate) : null,
     };
   
     addTask(newTaskData);
