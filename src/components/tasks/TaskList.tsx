@@ -41,11 +41,10 @@ const statusConfig: Record<TaskStatus, { color: string; label: string }> = {
 interface TaskListProps {
   goalId?: string;
   tasks?: Task[];
-  dialogTriggers?: React.MutableRefObject<Map<string, HTMLButtonElement | null>>;
 }
 
 
-export function TaskList({ goalId, tasks: customTasks, dialogTriggers }: TaskListProps) {
+export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
   const { tasks: allTasks, updateTask, deleteTask, isDataLoading, duplicateTask } = useAppContext();
 
   let tasksToRender: Task[];
@@ -108,9 +107,7 @@ export function TaskList({ goalId, tasks: customTasks, dialogTriggers }: TaskLis
               />
               <div className="flex-grow">
                 <AddOrEditTaskDialog taskId={task.id} mode="edit">
-                  <button className={cn("text-sm cursor-pointer text-left", task.status === 'hoàn thành' && 'line-through text-muted-foreground')}
-                    ref={el => dialogTriggers?.current.set(`task-${task.id}`, el)}
-                  >
+                  <button className={cn("text-sm cursor-pointer text-left", task.status === 'hoàn thành' && 'line-through text-muted-foreground')}>
                       {task.text}
                   </button>
                 </AddOrEditTaskDialog>

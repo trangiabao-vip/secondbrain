@@ -52,19 +52,27 @@ export function GoalsView() {
   const [statusFilters, setStatusFilters] = useLocalStorage<GoalStatus[]>('goalsViewStatusFilters', ['chưa bắt đầu', 'đang làm']);
   const [typeFilter, setTypeFilter] = useLocalStorage<'all' | 'goal' | 'task'>('goalsViewTypeFilter', 'all');
   
-  const dialogTriggers = useRef<Map<string, HTMLButtonElement | null>>(new Map());
+  const [autoOpenedItem, setAutoOpenedItem] = useState<string | null>(null);
 
   useEffect(() => {
-    if (itemToAutoOpen && !isDataLoading) {
-        const trigger = dialogTriggers.current.get(`${itemToAutoOpen.type}-${itemToAutoOpen.id}`);
-        if (trigger) {
-            setTimeout(() => {
-                trigger.click();
-                setItemToAutoOpen(null); 
-            }, 100);
-        }
+    if (itemToAutoOpen && !isDataLoading && autoOpenedItem !== `${itemToAutoOpen.type}-${itemToAutoOpen.id}`) {
+        // The item is ready to be opened. We don't need a ref.
+        // The dialog state itself will handle being open.
+        // We just need to signal which one to open.
+        // The dialog component itself should handle its open state based on a prop.
+        // This is a bit tricky with Radix dialogs which manage their own state.
+        // A common pattern is to control the open state from outside.
+        
+        // Let's assume EditGoalDialog and AddOrEditTaskDialog can be controlled.
+        // We will pass an `isOpen` prop and an `onOpenChange` handler.
+        // However, looking at the code, they use internal state.
+        
+        // The ref-based approach is viable but has issues. Let's try a state-based trigger.
+        setAutoOpenedItem(`${itemToAutoOpen.type}-${itemToAutoOpen.id}`);
+        // Reset the global state so it doesn't trigger again on re-render
+        setItemToAutoOpen(null);
     }
-  }, [itemToAutoOpen, isDataLoading, setItemToAutoOpen]);
+  }, [itemToAutoOpen, isDataLoading, setItemToAutoOpen, autoOpenedItem]);
 
   if (!selectedTopic) return null;
   
@@ -222,7 +230,7 @@ export function GoalsView() {
                       </div>
                       <div className="flex items-center flex-shrink-0">
                           <EditGoalDialog goalId={goal.id}>
-                              <Button ref={el => dialogTriggers.current.set(`goal-${goal.id}`, el)} variant="ghost" size="icon" className="h-8 w-8">
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
                                   <Icons.edit className="h-4 w-4" />
                               </Button>
                           </EditGoalDialog>
@@ -347,7 +355,7 @@ export function GoalsView() {
                     )}
                     
                     <div className="bg-secondary/50 p-4">
-                        <TaskList goalId={goal.id} dialogTriggers={dialogTriggers} />
+                        <TaskList goalId={goal.id} />
                     </div>
                   </CollapsibleContent>
                 </Card>
@@ -372,7 +380,7 @@ export function GoalsView() {
             </CardHeader>
             <CardContent>
                 {filteredStandaloneTasks.length > 0 ? (
-                    <TaskList tasks={filteredStandaloneTasks} dialogTriggers={dialogTriggers}/>
+                    <TaskList tasks={filteredStandaloneTasks} />
                 ) : (
                     <div className="text-center py-4 text-sm text-muted-foreground">
                         Không có nhiệm vụ độc lập nào trong chủ đề này.

@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import {
@@ -13,6 +14,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useAppContext } from '@/contexts/AppContext';
 import { Interest, Topic, Goal, Task, WikiPage } from '@/lib/data';
 import { Button } from '../ui/button';
+import { useRouter } from 'next/navigation';
 
 type SearchResultItem = (Interest | Topic | Goal | Task | WikiPage) & { itemType: string };
 
@@ -35,6 +37,7 @@ export function GlobalSearchDialog({ children }: { children: ReactNode }) {
     const [isOpen, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResultItem[]>([]);
+    const router = useRouter();
 
     const { interests, topics, goals, tasks, wikiPages, selectInterest, selectTopic, setItemToAutoOpen } = useAppContext();
 
@@ -97,32 +100,45 @@ export function GlobalSearchDialog({ children }: { children: ReactNode }) {
 
     const handleSelect = (item: SearchResultItem) => {
         const itemType = item.itemType;
+        let targetInterestId: string | null = null;
         let targetTopicId: string | null | undefined = null;
 
         if (itemType === 'Sở thích') {
-            selectInterest(item.id);
-        } else if (itemType === 'Chủ đề' || itemType === 'Wiki') {
-            targetTopicId = 'topicId' in item ? item.topicId : item.id;
-        } else if (itemType === 'Mục tiêu') {
-            targetTopicId = item.topicId;
-            setItemToAutoOpen({ type: 'goal', id: item.id });
-        } else if (itemType === 'Nhiệm vụ') {
-            if ('goalId' in item && item.goalId) {
-                const parentGoal = goals.find(g => g.id === item.goalId);
-                targetTopicId = parentGoal?.topicId;
-            } else if ('topicId' in item) {
-                targetTopicId = item.topicId;
+            targetInterestId = item.id;
+        } else if ('interestId' in item) { // Topic, Goal, Task, WikiPage all have interestId directly or indirectly
+            const topic = 'topicId' in item 
+                ? topics.find(t => t.id === item.topicId) 
+                : ('goalId' in item && item.goalId ? topics.find(t => t.id === goals.find(g => g.id === item.goalId)?.topicId) : null)
+                || ('topicId' in item ? topics.find(t => t.id === item.topicId) : null);
+                
+            const directTopic = topics.find(t => t.id === ('id' in item ? item.id : ''));
+            
+            if ('interestId' in item && item.interestId) {
+                 targetInterestId = item.interestId;
+            } else if (topic) {
+                targetInterestId = topic.interestId;
+            } else if (directTopic) {
+                 targetInterestId = directTopic.interestId;
             }
-            setItemToAutoOpen({ type: 'task', id: item.id });
+
+            if (itemType === 'Chủ đề' || itemType === 'Wiki') {
+                targetTopicId = 'topicId' in item ? item.topicId : ('id' in item ? item.id : null);
+            } else if (itemType === 'Mục tiêu') {
+                targetTopicId = 'topicId' in item ? item.topicId : null;
+                setItemToAutoOpen({ type: 'goal', id: item.id });
+            } else if (itemType === 'Nhiệm vụ') {
+                const parentGoal = 'goalId' in item && item.goalId ? goals.find(g => g.id === item.goalId) : null;
+                targetTopicId = parentGoal ? parentGoal.topicId : ('topicId' in item ? item.topicId : null);
+                setItemToAutoOpen({ type: 'task', id: item.id });
+            }
         }
         
-        if (targetTopicId) {
-            const topic = topics.find(t => t.id === targetTopicId);
-            if (topic) {
-                selectInterest(topic.interestId);
-                setTimeout(() => selectTopic(topic.id), 50);
-            }
+        if (targetInterestId && targetTopicId) {
+            router.push(`/interests/${targetInterestId}/${targetTopicId}`);
+        } else if (targetInterestId) {
+            router.push(`/interests/${targetInterestId}`);
         }
+
         setOpen(false);
     }
     

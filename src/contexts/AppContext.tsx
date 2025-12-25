@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { ReactNode } from 'react';
@@ -229,6 +228,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     
     const docRef = await addDocumentNonBlocking(collection(firestore, 'tasks'), newTask);
+    toast({ title: "Đã thêm nhiệm vụ", description: `"${newTask.text}" đã được thêm.` });
     return docRef?.id;
   };
 
