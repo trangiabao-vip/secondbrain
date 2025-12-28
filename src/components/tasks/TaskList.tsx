@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 import { Label } from "../ui/label";
 import { MarkdownRenderer } from "../ui/markdown-renderer";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useState } from "react";
 
 const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
@@ -46,6 +48,7 @@ interface TaskListProps {
 
 export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
   const { tasks: allTasks, updateTask, deleteTask, isDataLoading, duplicateTask } = useAppContext();
+  const [showCompleted, setShowCompleted] = useLocalStorage('tasksShowCompleted', false);
 
   let tasksToRender: Task[];
 
@@ -54,6 +57,9 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
   } else {
     tasksToRender = allTasks.filter(task => task.goalId === goalId);
   }
+
+  const filteredTasks = showCompleted ? tasksToRender : tasksToRender.filter(t => t.status !== 'hoàn thành');
+  const completedCount = tasksToRender.filter(t => t.status === 'hoàn thành').length;
 
 
   if (isDataLoading) {
@@ -91,13 +97,20 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
 
   return (
     <div className="space-y-2">
-      {goalId && <h4 className="text-sm font-semibold text-muted-foreground">Công việc</h4>}
+      <div className="flex justify-between items-center">
+        {goalId && <h4 className="text-sm font-semibold text-muted-foreground">Công việc</h4>}
+        {completedCount > 0 && (
+          <Button variant="link" size="sm" className="text-xs h-auto p-0" onClick={() => setShowCompleted(!showCompleted)}>
+            {showCompleted ? 'Ẩn' : 'Hiện'} {completedCount} nhiệm vụ đã hoàn thành
+          </Button>
+        )}
+      </div>
       <div className="space-y-1">
-        {tasksToRender.map(task => {
+        {filteredTasks.map(task => {
           const startDate = getDateFromFirestore(task.startDate);
           const currentStatus = statusConfig[task.status];
           return (
-            <div key={task.id} className="flex items-start gap-3 p-2 rounded-md hover:bg-background/50 group">
+            <div key={task.id} className={cn("flex items-start gap-3 p-2 rounded-md hover:bg-background/50 group", task.status === 'hoàn thành' && 'opacity-60')}>
               <Checkbox
                 id={`task-check-${task.id}`}
                 checked={task.status === 'hoàn thành'}
