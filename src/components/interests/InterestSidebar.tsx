@@ -10,7 +10,6 @@ import {
   SidebarSeparator,
   SidebarInput,
 } from "@/components/ui/sidebar";
-import { useAppContext } from "@/contexts/AppContext";
 import { Icons } from "@/components/icons";
 import { AddInterestDialog } from "./AddInterestDialog";
 import { Button } from "@/components/ui/button";
@@ -18,16 +17,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { EditInterestDialog } from "./EditInterestDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useSearch } from "../search/GlobalSearchDialog";
 import { useFirebase } from "@/firebase";
+import { useDataContext } from "@/contexts/DataContext";
+import { useUIContext } from "@/contexts/UIContext";
+import { useAppContext } from "@/contexts/AppContext";
 
 export function InterestSidebar() {
-  const { interests, selectedInterestId, selectInterest, deleteInterest, isDataLoading } = useAppContext();
+  const { interests, isDataLoading } = useDataContext();
+  const { deleteInterest } = useAppContext();
+  const { interestId, selectInterest, pathname } = useUIContext();
   const { user } = useFirebase();
 
   const { setOpen: setSearchOpen } = useSearch();
-  const pathname = usePathname();
 
   const isActive = (id: string) => {
     return pathname.startsWith(`/interests/${id}`);

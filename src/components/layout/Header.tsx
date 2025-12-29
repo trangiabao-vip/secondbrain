@@ -3,6 +3,7 @@
 import React from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAppContext } from "@/contexts/AppContext";
+import { useUIContext } from "@/contexts/UIContext";
 import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useFirebase } from "@/firebase";
@@ -19,13 +20,12 @@ import { Avatar, AvatarFallback } from "../ui/avatar";
 import { AddTopicDialog } from "../topics/AddTopicDialog";
 import { AddGoalDialog } from "../goals/AddGoalDialog";
 import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
-import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 export function Header() {
-  const { selectedInterest, topicBreadcrumbs, selectInterest, selectTopic } = useAppContext();
+  const { selectedInterest, topicBreadcrumbs } = useAppContext();
+  const { pathname } = useUIContext();
   const { auth, user } = useFirebase();
-  const pathname = usePathname();
 
   const handleLogout = () => {
     signOut(auth);

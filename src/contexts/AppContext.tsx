@@ -1,11 +1,11 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { createContext, useContext, useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { createContext, useContext, useMemo, useCallback } from 'react';
 import { type Interest, type Topic, type Goal, type Task, type WikiPage, type SalesPage, type Channel } from '@/lib/data';
 import { toast } from '@/hooks/use-toast';
-import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp, writeBatch, query, where, addDoc, setDoc, runTransaction, deleteDoc, Timestamp } from 'firebase/firestore';
+import { useFirebase } from '@/firebase';
+import { collection, doc, serverTimestamp, writeBatch, addDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { 
   addDocumentNonBlocking, 
   deleteDocumentNonBlocking, 
@@ -15,29 +15,14 @@ import {
 import { signOut } from 'firebase/auth';
 import { ToastAction } from '@/components/ui/toast';
 import { addMinutes, differenceInMinutes, parseISO } from 'date-fns';
-import { usePathname, useRouter, useParams } from 'next/navigation';
+import { useDataContext, type DataContextType } from './DataContext';
+import { useUIContext, type UIContextType } from './UIContext';
 
-interface ItemToOpen {
-  type: 'goal' | 'task';
-  id: string;
-}
-
-interface AppContextType {
-  interests: Interest[];
-  topics: Topic[];
-  goals: Goal[];
-  tasks: Task[];
-  wikiPages: WikiPage[];
-  salesPages: SalesPage[];
-  channels: Channel[];
-  selectedInterestId: string | null;
-  selectedTopicId: string | null;
+// Combine the types from all contexts plus the new derived values and actions
+interface AppContextType extends DataContextType, UIContextType {
   topicBreadcrumbs: Topic[];
-  isDataLoading: boolean;
-  itemToAutoOpen: ItemToOpen | null;
-  setItemToAutoOpen: (item: ItemToOpen | null) => void;
-  selectInterest: (id: string | null) => void;
-  selectTopic: (id: string | null) => void;
+  selectedInterest: Interest | null;
+  selectedTopic: Topic | null;
   addInterest: (name: string) => void;
   updateInterest: (id: string, name: string) => void;
   addTopic: (name: string, imageId: string, description?: string, interestId?: string, parentId?: string | null) => void;
@@ -61,8 +46,6 @@ interface AppContextType {
   addChannel: (channelData: Partial<Omit<Channel, 'id'>>) => Promise<string | undefined>;
   updateChannel: (channelId: string, updatedData: Partial<Omit<Channel, 'id'>>) => void;
   deleteChannel: (channelId: string) => void;
-  selectedInterest: Interest | null;
-  selectedTopic: Topic | null;
   getInterestById: (id: string) => Interest | undefined;
   getGoalById: (id: string) => Goal | undefined;
   getTaskById: (id: string) => Task | undefined;
@@ -86,77 +69,40 @@ const getDateFromFirestore = (date: any): Date | null => {
 };
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const { firestore, user, isUserLoading, auth } = useFirebase();
-  const router = useRouter();
-  const params = useParams();
-  
-  const interestId = (params.interestId as string) || null;
-  const topicId = (params.topicId as string) || null;
-  const [itemToAutoOpen, setItemToAutoOpen] = useState<ItemToOpen | null>(null);
+  const dataContext = useDataContext();
+  const uiContext = useUIContext();
+  const { firestore, user, auth } = useFirebase();
 
-  const interestsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'interests'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const topicsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'topics'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const goalsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'goals'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const tasksQuery = useMemoFirebase(() => user ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const wikiPagesQuery = useMemoFirebase(() => user ? query(collection(firestore, 'wikiPages'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const salesPagesQuery = useMemoFirebase(() => user ? query(collection(firestore, 'salesPages'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const channelsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'channels'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const { topics, goals, tasks, wikiPages, salesPages, channels } = dataContext;
 
-  const { data: interestsData, isLoading: interestsLoading } = useCollection<Interest>(interestsQuery);
-  const { data: topicsData, isLoading: topicsLoading } = useCollection<Topic>(topicsQuery);
-  const { data: goalsData, isLoading: goalsLoading } = useCollection<Goal>(goalsQuery);
-  const { data: tasksData, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
-  const { data: wikiPagesData, isLoading: wikiPagesLoading } = useCollection<WikiPage>(wikiPagesQuery);
-  const { data: salesPagesData, isLoading: salesPagesLoading } = useCollection<SalesPage>(salesPagesQuery);
-  const { data: channelsData, isLoading: channelsLoading } = useCollection<Channel>(channelsQuery);
-  
-  const interests = interestsData || [];
-  const topics = topicsData || [];
-  const goals = goalsData || [];
-  const tasks = tasksData || [];
-  const wikiPages = wikiPagesData || [];
-  const salesPages = salesPagesData || [];
-  const channels = channelsData || [];
+  const createUndoableDelete = (
+    itemType: string,
+    itemId: string,
+    itemName: string | undefined,
+    deleteFn: () => Promise<any>
+  ) => {
+    if (!user) return;
 
-  const [optimisticallyDeleted, setOptimisticallyDeleted] = useState<string[]>([]);
-  const isDataLoading = useMemo(() => {
-    return isUserLoading || interestsLoading || topicsLoading || goalsLoading || tasksLoading || wikiPagesLoading || salesPagesLoading || channelsLoading;
-  }, [isUserLoading, interestsLoading, topicsLoading, goalsLoading, tasksLoading, wikiPagesLoading, salesPagesLoading, channelsLoading]);
+    dataContext.setOptimisticallyDeleted(prev => [...prev, itemId]);
 
+    const deleteTimeout = setTimeout(() => {
+        deleteFn().catch(error => {
+            console.error(`Error permanently deleting ${itemType}:`, error);
+            dataContext.setOptimisticallyDeleted(prev => prev.filter(id => id !== itemId));
+            toast({ variant: 'destructive', title: `Lỗi xóa ${itemType}`, description: `Không thể xóa vĩnh viễn "${itemName}".`});
+        });
+    }, 5000); 
 
-  const filteredInterests = useMemo(() => interests.filter(i => !optimisticallyDeleted.includes(i.id)), [interests, optimisticallyDeleted]);
-  const filteredTopics = useMemo(() => topics.filter(t => !optimisticallyDeleted.includes(t.id)), [topics, optimisticallyDeleted]);
-  const filteredGoals = useMemo(() => goals.filter(g => !optimisticallyDeleted.includes(g.id)), [goals, optimisticallyDeleted]);
-  const filteredTasks = useMemo(() => tasks.filter(t => !optimisticallyDeleted.includes(t.id)), [tasks, optimisticallyDeleted]);
-  const filteredWikiPages = useMemo(() => wikiPages.filter(wp => !optimisticallyDeleted.includes(wp.id)), [wikiPages, optimisticallyDeleted]);
-  const filteredSalesPages = useMemo(() => salesPages.filter(p => !optimisticallyDeleted.includes(p.id)), [salesPages, optimisticallyDeleted]);
-  const filteredChannels = useMemo(() => channels.filter(c => !optimisticallyDeleted.includes(c.id)), [channels, optimisticallyDeleted]);
+    const handleUndo = () => {
+        clearTimeout(deleteTimeout);
+        dataContext.setOptimisticallyDeleted(prev => prev.filter(id => id !== itemId));
+    };
 
-
-  const selectInterest = (id: string | null) => {
-    if (id === null) {
-      router.push('/dashboard');
-    } else {
-      router.push(`/interests/${id}`);
-    }
-  };
-
-  const selectTopic = (id: string | null) => {
-    if (id === null) {
-        const topic = topics.find(t => t.id === topicId);
-        if(topic) {
-            router.push(`/interests/${topic.interestId}`);
-        } else if(interestId) {
-            router.push(`/interests/${interestId}`);
-        } else {
-            router.push('/dashboard');
-        }
-    } else {
-        const topic = topics.find(t => t.id === id);
-        if (topic) {
-            router.push(`/interests/${topic.interestId}/${id}`);
-        }
-    }
+    toast({
+        title: `Đã xóa ${itemType}`,
+        description: `"${itemName}" đã bị xóa.`,
+        action: <ToastAction altText="Hoàn tác" onClick={handleUndo}>Hoàn tác</ToastAction>,
+    });
   };
 
   const addInterest = (name: string) => {
@@ -171,8 +117,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Sở thích đã được cập nhật", description: `Sở thích đã được đổi tên thành "${name}".` });
   }
 
-  const addTopic = (name: string, imageId: string, description?: string, interestIdToAdd?: string, parentId?: string | null) => {
-    const finalInterestId = interestIdToAdd || interestId;
+  const addTopic = (name: string, imageId: string, description?: string, interestId?: string, parentId?: string | null) => {
+    const finalInterestId = interestId || uiContext.interestId;
     if (!finalInterestId || !user) return;
     const newTopic: Partial<Topic> = { 
         name, 
@@ -197,10 +143,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   
   const addGoal = (goalData: Partial<Omit<Goal, 'id'>>) => {
-    if (!topicId || !user) return;
+    if (!uiContext.topicId || !user) return;
     const newGoal: Omit<Goal, 'id'> = {
       title: goalData.title || 'Mục tiêu không tên',
-      topicId: topicId,
+      topicId: uiContext.topicId,
       status: 'chưa bắt đầu',
       userId: user.uid,
       createdAt: serverTimestamp(),
@@ -220,7 +166,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addTask = async (taskData: Partial<Omit<Task, 'id'>>): Promise<string | undefined> => {
     if (!user) return;
     
-    // Ensure Date objects are converted to Timestamps before sending to Firestore
     const dataWithTimestamps = { ...taskData };
     if (dataWithTimestamps.startDate instanceof Date) {
       dataWithTimestamps.startDate = Timestamp.fromDate(dataWithTimestamps.startDate);
@@ -251,47 +196,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
       const fullDataForInstance = {
         ...originalTask,
-        ...updatedData, // This now correctly includes the modified startDate
-        recurrence: null, // This instance is now a standalone exception
+        ...updatedData,
+        recurrence: null,
         userId: user.uid,
       };
       
-      // Use setDoc to create a new, separate document for this exception.
       setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullDataForInstance, {});
     } else {
-      // It's a regular task, just update it.
       updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
     }
-  };
-
-  const createUndoableDelete = (
-    itemType: string,
-    itemId: string,
-    itemName: string | undefined,
-    deleteFn: () => Promise<any>
-  ) => {
-    if (!user) return;
-
-    setOptimisticallyDeleted(prev => [...prev, itemId]);
-
-    const deleteTimeout = setTimeout(() => {
-        deleteFn().catch(error => {
-            console.error(`Error permanently deleting ${itemType}:`, error);
-            setOptimisticallyDeleted(prev => prev.filter(id => id !== itemId));
-            toast({ variant: 'destructive', title: `Lỗi xóa ${itemType}`, description: `Không thể xóa vĩnh viễn "${itemName}".`});
-        });
-    }, 5000); 
-
-    const handleUndo = () => {
-        clearTimeout(deleteTimeout);
-        setOptimisticallyDeleted(prev => prev.filter(id => id !== itemId));
-    };
-
-    toast({
-        title: `Đã xóa ${itemType}`,
-        description: `"${itemName}" đã bị xóa.`,
-        action: <ToastAction altText="Hoàn tác" onClick={handleUndo}>Hoàn tác</ToastAction>,
-    });
   };
 
   const deleteInterest = async (id: string) => {
@@ -310,8 +223,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         batch.delete(doc(firestore, 'interests', id));
         
         await batch.commit();
-         if (interestId === id) {
-            selectInterest(null);
+         if (uiContext.interestId === id) {
+            uiContext.selectInterest(null);
         }
     });
   };
@@ -341,8 +254,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         allTopicsToDelete.forEach(topicId => batch.delete(doc(firestore, 'topics', topicId)));
 
         await batch.commit();
-        if (topicId === id) {
-            selectTopic(null);
+        if (uiContext.topicId === id) {
+            uiContext.selectTopic(null);
         }
     });
   };
@@ -492,11 +405,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   
   const addWikiPage = (pageData: Partial<Omit<WikiPage, 'id'>>) => {
-    if (!topicId || !user) return;
+    if (!uiContext.topicId || !user) return;
     const newPage: Omit<WikiPage, 'id'> = {
       title: pageData.title || 'Trang không có tiêu đề',
       content: pageData.content || '',
-      topicId: topicId,
+      topicId: uiContext.topicId,
       userId: user.uid,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -586,30 +499,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const selectedInterest = useMemo(() => filteredInterests.find((i) => i.id === interestId) ?? null, [filteredInterests, interestId]);
-  const selectedTopic = useMemo(() => filteredTopics.find((t) => t.id === topicId) ?? null, [filteredTopics, topicId]);
+  const getInterestById = (id: string) => dataContext.interests.find(i => i.id === id);
+  const getGoalById = (id: string) => dataContext.goals.find(g => g.id === id);
+  const getTaskById = (id: string) => dataContext.tasks.find(t => t.id === id);
+  const getTasksByGoalId = (goalId: string) => dataContext.tasks.filter(t => t.goalId === goalId);
+  const getTopicById = (id: string) => dataContext.topics.find(t => t.id === id);
+  const getWikiPageById = (id: string) => dataContext.wikiPages.find(p => p.id === id);
+  const getSalesPageById = (id: string) => dataContext.salesPages.find(p => p.id === id);
+  const getChannelById = (id: string) => dataContext.channels.find(c => c.id === id);
 
-  const getInterestById = (id: string) => interests.find(i => i.id === id);
-  const getGoalById = (id: string) => goals.find(g => g.id === id);
-  const getTaskById = (id: string) => tasks.find(t => t.id === id);
-  const getTasksByGoalId = (goalId: string) => filteredTasks.filter(t => t.goalId === goalId);
-  const getTopicById = (id: string) => topics.find(t => t.id === id);
-  const getWikiPageById = (id: string) => wikiPages.find(p => p.id === id);
-  const getSalesPageById = (id: string) => salesPages.find(p => p.id === id);
-  const getChannelById = (id: string) => channels.find(c => c.id === id);
-  
+  const selectedInterest = useMemo(() => dataContext.interests.find((i) => i.id === uiContext.interestId) ?? null, [dataContext.interests, uiContext.interestId]);
+  const selectedTopic = useMemo(() => dataContext.topics.find((t) => t.id === uiContext.topicId) ?? null, [dataContext.topics, uiContext.topicId]);
+
   const getTopicBreadcrumbs = useCallback((topicId: string | null): Topic[] => {
     if (!topicId) return [];
     const breadcrumbs: Topic[] = [];
-    let currentTopic = filteredTopics.find(t => t.id === topicId);
+    let currentTopic = dataContext.topics.find(t => t.id === topicId);
     while (currentTopic) {
         breadcrumbs.unshift(currentTopic);
-        currentTopic = filteredTopics.find(t => t.id === currentTopic!.parentId);
+        currentTopic = dataContext.topics.find(t => t.id === currentTopic!.parentId);
     }
     return breadcrumbs;
-  }, [filteredTopics]);
+  }, [dataContext.topics]);
 
-  const topicBreadcrumbs = useMemo(() => getTopicBreadcrumbs(topicId), [topicId, getTopicBreadcrumbs]);
+  const topicBreadcrumbs = useMemo(() => getTopicBreadcrumbs(uiContext.topicId), [uiContext.topicId, getTopicBreadcrumbs]);
 
   const logout = () => {
     if(auth) {
@@ -618,21 +531,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const value = {
-    interests: filteredInterests,
-    topics: filteredTopics,
-    goals: filteredGoals,
-    tasks: filteredTasks,
-    wikiPages: filteredWikiPages,
-    salesPages: filteredSalesPages,
-    channels: filteredChannels,
-    isDataLoading,
-    selectedInterestId: interestId,
-    selectedTopicId: topicId,
-    itemToAutoOpen,
-    setItemToAutoOpen,
+    ...dataContext,
+    ...uiContext,
     topicBreadcrumbs,
-    selectInterest,
-    selectTopic,
+    selectedInterest,
+    selectedTopic,
     addInterest,
     updateInterest,
     addTopic,
@@ -656,8 +559,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addChannel,
     updateChannel,
     deleteChannel,
-    selectedInterest,
-    selectedTopic,
     getInterestById,
     getGoalById,
     getTaskById: findTaskInstance,
