@@ -56,20 +56,7 @@ export function GoalsView() {
 
   useEffect(() => {
     if (itemToAutoOpen && !isDataLoading && autoOpenedItem !== `${itemToAutoOpen.type}-${itemToAutoOpen.id}`) {
-        // The item is ready to be opened. We don't need a ref.
-        // The dialog state itself will handle being open.
-        // We just need to signal which one to open.
-        // The dialog component itself should handle its open state based on a prop.
-        // This is a bit tricky with Radix dialogs which manage their own state.
-        // A common pattern is to control the open state from outside.
-        
-        // Let's assume EditGoalDialog and AddOrEditTaskDialog can be controlled.
-        // We will pass an `isOpen` prop and an `onOpenChange` handler.
-        // However, looking at the code, they use internal state.
-        
-        // The ref-based approach is viable but has issues. Let's try a state-based trigger.
         setAutoOpenedItem(`${itemToAutoOpen.type}-${itemToAutoOpen.id}`);
-        // Reset the global state so it doesn't trigger again on re-render
         setItemToAutoOpen(null);
     }
   }, [itemToAutoOpen, isDataLoading, setItemToAutoOpen, autoOpenedItem]);
