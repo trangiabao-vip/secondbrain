@@ -48,7 +48,7 @@ interface TaskListProps {
 
 export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
   const { tasks: allTasks, updateTask, deleteTask, isDataLoading, duplicateTask } = useAppContext();
-  const [showCompleted, setShowCompleted] = useLocalStorage('tasksShowCompleted', false);
+  const [showCompleted, setShowCompleted] = useLocalStorage(`tasksShowCompleted-${goalId || 'standalone'}`, false);
 
   let tasksToRender: Task[];
 
@@ -90,9 +90,7 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
   }
 
   if (tasksToRender.length === 0 && !goalId) {
-    return (
-      <p className="text-sm text-muted-foreground text-center py-4">Không có nhiệm vụ độc lập nào trong chủ đề này.</p>
-    )
+    return null;
   }
 
   return (
@@ -120,7 +118,9 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
               />
               <div className="flex-grow">
                 <AddOrEditTaskDialog taskId={task.id} mode="edit">
-                  <button className={cn("text-sm cursor-pointer text-left", task.status === 'hoàn thành' && 'line-through text-muted-foreground')}>
+                  <button 
+                    id={`trigger-task-${task.id}`}
+                    className={cn("text-sm cursor-pointer text-left", task.status === 'hoàn thành' && 'line-through text-muted-foreground')}>
                       {task.text}
                   </button>
                 </AddOrEditTaskDialog>
