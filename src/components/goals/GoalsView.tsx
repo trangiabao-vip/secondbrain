@@ -53,11 +53,23 @@ export function GoalsView() {
   const [typeFilter, setTypeFilter] = useLocalStorage<'all' | 'goal' | 'task'>('goalsViewTypeFilter', 'all');
   
   const [autoOpenedItem, setAutoOpenedItem] = useState<string | null>(null);
+  const editGoalTriggerRef = useRef<HTMLButtonElement>(null);
+  const editTaskTriggerRef = useRef<HTMLButtonElement>(null);
+
 
   useEffect(() => {
     if (itemToAutoOpen && !isDataLoading && autoOpenedItem !== `${itemToAutoOpen.type}-${itemToAutoOpen.id}`) {
         setAutoOpenedItem(`${itemToAutoOpen.type}-${itemToAutoOpen.id}`);
-        setItemToAutoOpen(null);
+
+        // Use a timeout to allow the dialog trigger to be rendered
+        setTimeout(() => {
+            if (itemToAutoOpen.type === 'goal' && editGoalTriggerRef.current) {
+                editGoalTriggerRef.current.click();
+            } else if (itemToAutoOpen.type === 'task' && editTaskTriggerRef.current) {
+                editTaskTriggerRef.current.click();
+            }
+            setItemToAutoOpen(null);
+        }, 100);
     }
   }, [itemToAutoOpen, isDataLoading, setItemToAutoOpen, autoOpenedItem]);
 
@@ -71,16 +83,22 @@ export function GoalsView() {
     );
   };
 
-  const filteredGoals = goals.filter(goal => {
-    if (goal.topicId !== selectedTopic?.id) return false;
+  const topicGoals = goals.filter(goal => goal.topicId === selectedTopic.id);
+  const topicTasks = tasks.filter(task => {
+    if (task.topicId === selectedTopic.id) return true;
+    const parentGoal = goals.find(g => g.id === task.goalId);
+    return parentGoal?.topicId === selectedTopic.id;
+  });
+
+  const filteredGoals = topicGoals.filter(goal => {
     if (typeFilter === 'task') return false; 
     if (statusFilters.length === 0) return true;
     return statusFilters.includes(goal.status);
   });
   
-  const filteredStandaloneTasks = tasks.filter(task => {
-    if (task.goalId || task.topicId !== selectedTopic?.id) {
-      return false;
+  const filteredStandaloneTasks = topicTasks.filter(task => {
+    if (task.goalId) {
+        return false;
     }
     if (typeFilter === 'goal') {
       return false;
@@ -90,7 +108,6 @@ export function GoalsView() {
     }
     return true;
   });
-
 
   if (isDataLoading) {
     return (
@@ -217,7 +234,12 @@ export function GoalsView() {
                       </div>
                       <div className="flex items-center flex-shrink-0">
                           <EditGoalDialog goalId={goal.id}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8"
+                                  ref={itemToAutoOpen?.type === 'goal' && itemToAutoOpen.id === goal.id ? editGoalTriggerRef : null}
+                              >
                                   <Icons.edit className="h-4 w-4" />
                               </Button>
                           </EditGoalDialog>
@@ -351,6 +373,13 @@ export function GoalsView() {
           })}
         </div>
       )}
+      
+       {itemToAutoOpen?.type === 'task' && (
+          <AddOrEditTaskDialog mode="edit" taskId={itemToAutoOpen.id}>
+              <button ref={editTaskTriggerRef} className="hidden" />
+          </AddOrEditTaskDialog>
+      )}
+
 
       {(typeFilter === 'all' || typeFilter === 'task') && (
         <Card>
@@ -410,3 +439,4 @@ export function GoalsView() {
     </div>
   );
 }
+
