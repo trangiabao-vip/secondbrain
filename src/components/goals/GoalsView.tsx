@@ -54,7 +54,6 @@ export function GoalsView() {
   
   useEffect(() => {
     if (itemToAutoOpen && !isDataLoading) {
-        // Use a timeout to allow the dialog trigger to be rendered
         setTimeout(() => {
             const trigger = document.getElementById(`trigger-${itemToAutoOpen.type}-${itemToAutoOpen.id}`);
             if (trigger) {
@@ -76,6 +75,10 @@ export function GoalsView() {
   };
 
   const topicGoals = goals.filter(goal => goal.topicId === selectedTopic.id);
+
+  // This is the correct logic.
+  // 1. Get all tasks related to the goals of the current topic.
+  // 2. Get all tasks directly related to the current topic.
   const topicTasks = tasks.filter(task => {
     const isTaskOfTopicGoal = task.goalId ? topicGoals.some(g => g.id === task.goalId) : false;
     const isStandaloneTaskOfTopic = task.topicId === selectedTopic.id;
@@ -88,6 +91,7 @@ export function GoalsView() {
     return statusFilters.includes(goal.status);
   });
   
+  // Now, filter the standalone tasks from the correctly-scoped `topicTasks`
   const filteredStandaloneTasks = topicTasks.filter(task => {
     if (task.goalId) return false; // Not a standalone task
     if (typeFilter === 'goal') return false;
