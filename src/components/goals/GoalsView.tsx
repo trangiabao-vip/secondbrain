@@ -1,5 +1,6 @@
 
 
+
 'use client';
 import { useState, useEffect, useRef } from "react";
 import { useAppContext } from "@/contexts/AppContext";
@@ -75,10 +76,6 @@ export function GoalsView() {
   };
 
   const topicGoals = goals.filter(goal => goal.topicId === selectedTopic.id);
-
-  // This is the correct logic.
-  // 1. Get all tasks related to the goals of the current topic.
-  // 2. Get all tasks directly related to the current topic.
   const topicTasks = tasks.filter(task => {
     const isTaskOfTopicGoal = task.goalId ? topicGoals.some(g => g.id === task.goalId) : false;
     const isStandaloneTaskOfTopic = task.topicId === selectedTopic.id;
@@ -91,9 +88,8 @@ export function GoalsView() {
     return statusFilters.includes(goal.status);
   });
   
-  // Now, filter the standalone tasks from the correctly-scoped `topicTasks`
   const filteredStandaloneTasks = topicTasks.filter(task => {
-    if (task.goalId) return false; // Not a standalone task
+    if (task.goalId) return false;
     if (typeFilter === 'goal') return false;
     if (statusFilters.length > 0 && !statusFilters.includes(task.status)) return false;
     return true;
