@@ -10,6 +10,7 @@ import { EditGoalDialog } from "../goals/EditGoalDialog";
 import { EditTaskDialog } from "../tasks/EditTaskDialog";
 import { Goal, Task, GoalStatus, RecurrenceRule } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 const hours = Array.from({ length: 24 }, (_, i) => i);
 
@@ -287,153 +288,155 @@ export function GlobalScheduleView() {
   const timeIndicatorTop = (getHours(currentTime) + getMinutes(currentTime) / 60) * 64;
 
   return (
-    <div className="flex gap-6 h-full">
-      <div className="w-64 hidden @5xl/main:block">
-        <div className="p-1">
-          <Calendar
-            locale={vi}
-            mode="single"
-            selected={currentDate}
-            onSelect={(date) => date && setCurrentDate(date)}
-            className="w-full"
-          />
+    <div className="flex flex-col h-full">
+      <header className="flex items-center justify-between pb-4">
+        <div className="flex items-center gap-4">
+          <Popover>
+            <PopoverTrigger asChild>
+              <h2 className="text-xl font-bold cursor-pointer hover:text-primary transition-colors">
+                Tháng {format(startOfWeek(currentDate, { locale: vi, weekStartsOn: 0 }), 'M, yyyy', { locale: vi })}
+              </h2>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+               <Calendar
+                locale={vi}
+                mode="single"
+                selected={currentDate}
+                onSelect={(date) => date && setCurrentDate(date)}
+                className="w-full"
+              />
+            </PopoverContent>
+          </Popover>
         </div>
-      </div>
-      <div className="flex-1 flex flex-col">
-        <header className="flex items-center justify-between pb-4">
-          <h2 className="text-xl font-bold">
-            Tháng {format(startOfWeek(currentDate, { locale: vi, weekStartsOn: 0 }), 'M, yyyy', { locale: vi })}
-          </h2>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={goToPreviousWeek} className="h-8 w-8">
-              <Icons.left className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={goToToday}>Hôm nay</Button>
-            <Button variant="outline" size="icon" onClick={goToNextWeek} className="h-8 w-8">
-              <Icons.right className="h-4 w-4" />
-            </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={goToPreviousWeek} className="h-8 w-8">
+            <Icons.left className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={goToToday}>Hôm nay</Button>
+          <Button variant="outline" size="icon" onClick={goToNextWeek} className="h-8 w-8">
+            <Icons.right className="h-4 w-4" />
+          </Button>
+        </div>
+      </header>
+
+      <div className="flex-1 overflow-auto">
+        <div className="grid grid-cols-[auto,1fr] min-w-[1000px]">
+          {/* Time column */}
+          <div className="w-16 text-xs text-center text-muted-foreground sticky left-0 bg-background z-20">
+            <div className="h-10 border-b"></div>
+            <div className="h-28 flex items-center justify-center border-b">Cả ngày</div>
+            {hours.map(hour => (
+              <div key={hour} className="h-16 text-right pr-2 relative">
+                <span className="relative -top-2">
+                  {format(setMinutes(setHours(new Date(), hour), 0), 'HH:00')}
+                </span>
+              </div>
+            ))}
           </div>
-        </header>
 
-        <div className="flex-1 overflow-auto">
-          <div className="grid grid-cols-[auto,1fr] min-w-[1000px]">
-            {/* Time column */}
-            <div className="w-16 text-xs text-center text-muted-foreground sticky left-0 bg-background z-20">
-              <div className="h-10 border-b"></div>
-              <div className="h-28 flex items-center justify-center border-b">Cả ngày</div>
-              {hours.map(hour => (
-                <div key={hour} className="h-16 text-right pr-2 relative">
-                  <span className="relative -top-2">
-                    {format(setMinutes(setHours(new Date(), hour), 0), 'HH:00')}
-                  </span>
-                </div>
-              ))}
-            </div>
+          {/* Day columns */}
+          <div className="grid grid-cols-7">
+            {week.map(day => {
+              const dayItems = getScheduledItemsForDay(day);
+              const layout = calculateLayout(dayItems);
+              const isToday = isSameDay(day, new Date());
+              return (
+                <div key={day.toISOString()} className="border-l relative">
+                  <div className={`h-10 border-b text-center py-1 sticky top-0 bg-background z-10 ${isToday ? 'text-primary' : ''}`}>
+                    <p className="text-xs">{format(day, 'eee', { locale: vi })}</p>
+                    <p className="font-semibold text-lg">{format(day, 'd')}</p>
+                  </div>
+                  {/* All day section */}
+                  <div className="h-28 border-b p-1 space-y-1 overflow-y-auto">
+                    {getItemsForAllday(day).map(item => {
+                      const originalId = item.id.includes('-recur-') ? item.id.split('-recur-')[0] : item.id;
+                      const content = (
+                         <div className={cn(
+                          "text-xs rounded-sm px-1.5 py-0.5 whitespace-nowrap border cursor-pointer hover:bg-opacity-80 flex items-center gap-1.5",
+                           item.type === 'goal'
+                            ? 'bg-blue-500/20 text-blue-900 border-blue-500/50 dark:text-blue-200'
+                            : 'bg-secondary/80 text-secondary-foreground border-secondary-foreground/50'
+                        )}>
+                           {item.type === 'goal' ? <Icons.goal className="h-3 w-3 flex-shrink-0" /> : <Icons.task className="h-3 w-3 flex-shrink-0" />}
+                          <span className="truncate">{(item as Goal).title || (item as Task).text}</span>
+                        </div>
+                      );
 
-            {/* Day columns */}
-            <div className="grid grid-cols-7">
-              {week.map(day => {
-                const dayItems = getScheduledItemsForDay(day);
-                const layout = calculateLayout(dayItems);
-                const isToday = isSameDay(day, new Date());
-                return (
-                  <div key={day.toISOString()} className="border-l relative">
-                    <div className={`h-10 border-b text-center py-1 sticky top-0 bg-background z-10 ${isToday ? 'text-primary' : ''}`}>
-                      <p className="text-xs">{format(day, 'eee', { locale: vi })}</p>
-                      <p className="font-semibold text-lg">{format(day, 'd')}</p>
-                    </div>
-                    {/* All day section */}
-                    <div className="h-28 border-b p-1 space-y-1 overflow-y-auto">
-                      {getItemsForAllday(day).map(item => {
+                      if (item.type === 'goal') {
+                        return (
+                          <EditGoalDialog key={item.id} goalId={originalId}>
+                            {content}
+                          </EditGoalDialog>
+                        );
+                      } else {
+                        return (
+                          <EditTaskDialog key={item.id} taskId={item.id}>
+                            {content}
+                          </EditTaskDialog>
+                        );
+                      }
+                    })}
+                  </div>
+
+                  {/* Hourly section */}
+                  <div className="relative">
+                    {hours.map(hour => (
+                      <div key={hour} className="h-16 border-b relative"></div>
+                    ))}
+                     {isToday && (
+                        <div className="absolute w-full z-20" style={{ top: `${timeIndicatorTop}px` }}>
+                            <div className="relative">
+                                <div className="h-0.5 bg-red-500"></div>
+                                <div className="absolute -left-1 -top-1 w-2 h-2 rounded-full bg-red-500"></div>
+                            </div>
+                        </div>
+                    )}
+                    {layout.map(item => {
                         const originalId = item.id.includes('-recur-') ? item.id.split('-recur-')[0] : item.id;
                         const content = (
-                           <div className={cn(
-                            "text-xs rounded-sm px-1.5 py-0.5 whitespace-nowrap border cursor-pointer hover:bg-opacity-80 flex items-center gap-1.5",
-                             item.type === 'goal'
-                              ? 'bg-blue-500/20 text-blue-900 border-blue-500/50 dark:text-blue-200'
-                              : 'bg-secondary/80 text-secondary-foreground border-secondary-foreground/50'
-                          )}>
-                             {item.type === 'goal' ? <Icons.goal className="h-3 w-3 flex-shrink-0" /> : <Icons.task className="h-3 w-3 flex-shrink-0" />}
-                            <span className="truncate">{(item as Goal).title || (item as Task).text}</span>
-                          </div>
+                            <div
+                                className={cn(
+                                    "absolute rounded-lg p-2 shadow-sm z-10 border cursor-pointer hover:bg-opacity-90 overflow-hidden text-white",
+                                    statusColors[item.status]
+                                )}
+                                style={{
+                                    top: `${item.top}px`,
+                                    height: `${Math.max(item.height, 24)}px`,
+                                    left: `${item.left}%`,
+                                    width: `${item.width}%`,
+                                }}
+                            >
+                                <p className="text-xs font-bold truncate flex items-center gap-1.5">
+                                  {item.type === 'goal' ? <Icons.goal className="h-3 w-3"/> : <Icons.task className="h-3 w-3"/>}
+                                  {item.type === 'goal' ? (item as Goal).title : (item as Task).text}
+                                </p>
+                                <p className={cn(
+                                  "text-[10px] opacity-80"
+                                )}>
+                                  {item.startDate && format(item.startDate, 'HH:mm')}
+                                  {item.endDate && ` - ${format(item.endDate, 'HH:mm')}`}
+                                </p>
+                            </div>
                         );
 
                         if (item.type === 'goal') {
                           return (
-                            <EditGoalDialog key={item.id} goalId={originalId}>
+                            <EditGoalDialog goalId={originalId} key={item.id}>
                               {content}
                             </EditGoalDialog>
                           );
                         } else {
                           return (
-                            <EditTaskDialog key={item.id} taskId={item.id}>
+                            <EditTaskDialog taskId={item.id} key={item.id}>
                               {content}
                             </EditTaskDialog>
                           );
                         }
-                      })}
-                    </div>
-
-                    {/* Hourly section */}
-                    <div className="relative">
-                      {hours.map(hour => (
-                        <div key={hour} className="h-16 border-b relative"></div>
-                      ))}
-                       {isToday && (
-                          <div className="absolute w-full z-20" style={{ top: `${timeIndicatorTop}px` }}>
-                              <div className="relative">
-                                  <div className="h-0.5 bg-red-500"></div>
-                                  <div className="absolute -left-1 -top-1 w-2 h-2 rounded-full bg-red-500"></div>
-                              </div>
-                          </div>
-                      )}
-                      {layout.map(item => {
-                          const originalId = item.id.includes('-recur-') ? item.id.split('-recur-')[0] : item.id;
-                          const content = (
-                              <div
-                                  className={cn(
-                                      "absolute rounded-lg p-2 shadow-sm z-10 border cursor-pointer hover:bg-opacity-90 overflow-hidden text-white",
-                                      statusColors[item.status]
-                                  )}
-                                  style={{
-                                      top: `${item.top}px`,
-                                      height: `${Math.max(item.height, 24)}px`,
-                                      left: `${item.left}%`,
-                                      width: `${item.width}%`,
-                                  }}
-                              >
-                                  <p className="text-xs font-bold truncate flex items-center gap-1.5">
-                                    {item.type === 'goal' ? <Icons.goal className="h-3 w-3"/> : <Icons.task className="h-3 w-3"/>}
-                                    {item.type === 'goal' ? (item as Goal).title : (item as Task).text}
-                                  </p>
-                                  <p className={cn(
-                                    "text-[10px] opacity-80"
-                                  )}>
-                                    {item.startDate && format(item.startDate, 'HH:mm')}
-                                    {item.endDate && ` - ${format(item.endDate, 'HH:mm')}`}
-                                  </p>
-                              </div>
-                          );
-
-                          if (item.type === 'goal') {
-                            return (
-                              <EditGoalDialog goalId={originalId} key={item.id}>
-                                {content}
-                              </EditGoalDialog>
-                            );
-                          } else {
-                            return (
-                              <EditTaskDialog taskId={item.id} key={item.id}>
-                                {content}
-                              </EditTaskDialog>
-                            );
-                          }
-                      })}
-                    </div>
+                    })}
                   </div>
-                )
-              })}
-            </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>
