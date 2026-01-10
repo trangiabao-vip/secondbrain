@@ -530,7 +530,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const value: AppContextType = useMemo(() => ({
+  const value: AppContextType = {
     ...dataContext,
     ...uiContext,
     topicBreadcrumbs,
@@ -568,7 +568,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getSalesPageById,
     getChannelById,
     logout,
-  }), [dataContext, uiContext, topicBreadcrumbs, selectedInterest, selectedTopic, findTaskInstance]);
+  };
 
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
