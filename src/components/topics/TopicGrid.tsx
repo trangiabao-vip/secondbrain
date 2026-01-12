@@ -13,7 +13,6 @@ import type { Topic } from '@/lib/data';
 export function TopicGrid() {
   const { topics, selectedInterest, selectedTopicId, isDataLoading, handleDragEnd } = useAppContext();
   
-  // Filter topics and sort them by the 'order' property
   const topicsToDisplay = topics
     .filter(topic => {
       if (selectedTopicId) {
@@ -76,9 +75,8 @@ export function TopicGrid() {
                       <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}
-                        {...provided.dragHandleProps}
                       >
-                        <TopicCard topic={topic} />
+                        <TopicCard topic={topic} dragHandleProps={provided.dragHandleProps} />
                       </div>
                     )}
                   </Draggable>

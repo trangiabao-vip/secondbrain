@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { format, parseISO } from "date-fns";
 import { vi } from "date-fns/locale";
 import { EditTopicDialog } from "./EditTopicDialog";
+import type { DraggableProvidedDragHandleProps } from "react-beautiful-dnd";
 
 const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
@@ -23,9 +24,10 @@ const getDateFromFirestore = (date: any): Date | null => {
 
 interface TopicCardProps {
   topic: Topic;
+  dragHandleProps?: DraggableProvidedDragHandleProps | null;
 }
 
-export function TopicCard({ topic }: TopicCardProps) {
+export function TopicCard({ topic, dragHandleProps }: TopicCardProps) {
   const { selectTopic, deleteTopic, goals, tasks } = useAppContext();
   const placeholder = PlaceHolderImages.find(p => p.id === topic.imageId);
 
@@ -35,7 +37,7 @@ export function TopicCard({ topic }: TopicCardProps) {
   const createdAt = getDateFromFirestore(topic.createdAt);
 
   return (
-    <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
+    <Card {...dragHandleProps} className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
        <CardHeader className="p-0 relative">
         {placeholder && (
             <Image
