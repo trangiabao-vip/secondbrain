@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ReactNode } from 'react';
@@ -17,6 +18,7 @@ import { ToastAction } from '@/components/ui/toast';
 import { addMinutes, differenceInMinutes, parseISO } from 'date-fns';
 import { useDataContext, type DataContextType } from './DataContext';
 import { useUIContext, type UIContextType } from './UIContext';
+import { type DropResult } from 'react-beautiful-dnd';
 
 // Combine the types from all contexts plus the new derived values and actions
 interface AppContextType extends DataContextType, UIContextType {
@@ -54,6 +56,7 @@ interface AppContextType extends DataContextType, UIContextType {
   getWikiPageById: (id: string) => WikiPage | undefined;
   getSalesPageById: (id: string) => SalesPage | undefined;
   getChannelById: (id: string) => Channel | undefined;
+  handleDragEnd: (result: DropResult) => void;
   logout: () => void;
 }
 
@@ -120,13 +123,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addTopic = (name: string, imageId: string, description?: string, interestId?: string, parentId?: string | null) => {
     const finalInterestId = interestId || uiContext.interestId;
     if (!finalInterestId || !user) return;
-    const newTopic: Partial<Topic> = { 
+    
+    // Get the highest order number for the current level and add 1
+    const siblingTopics = dataContext.topics.filter(t => t.interestId === finalInterestId && t.parentId === (parentId || null));
+    const maxOrder = siblingTopics.reduce((max, t) => Math.max(max, t.order || 0), 0);
+
+    const newTopic: Partial<Omit<Topic, 'id'>> = { 
         name, 
         imageId, 
         interestId: finalInterestId, 
         userId: user.uid, 
         createdAt: serverTimestamp(),
         parentId: parentId || null,
+        order: maxOrder + 1,
     };
     if (description) newTopic.description = description;
     addDocumentNonBlocking(collection(firestore, 'topics'), newTopic);
@@ -499,6 +508,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) {
+      return;
+    }
+
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
+
+    const relevantTopics = topics.filter(topic => {
+      if (uiContext.topicId) {
+        return topic.parentId === uiContext.topicId;
+      }
+      if (uiContext.interestId) {
+        return topic.interestId === uiContext.interestId && !topic.parentId;
+      }
+      return false;
+    }).sort((a, b) => a.order - b.order);
+
+    const newTopics = Array.from(relevantTopics);
+    const [reorderedItem] = newTopics.splice(source.index, 1);
+    newTopics.splice(destination.index, 0, reorderedItem);
+
+    // Update the order in Firestore
+    const batch = writeBatch(firestore);
+    newTopics.forEach((topic, index) => {
+      const docRef = doc(firestore, "topics", topic.id);
+      batch.update(docRef, { order: index });
+    });
+
+    batch.commit().catch(e => {
+        console.error("Failed to reorder topics", e);
+        toast({ variant: "destructive", title: "Lỗi", description: "Không thể cập nhật thứ tự chủ đề."});
+    });
+  };
+
   const getInterestById = (id: string) => dataContext.interests.find(i => i.id === id);
   const getGoalById = (id: string) => dataContext.goals.find(g => g.id === id);
   const getTaskById = (id: string) => dataContext.tasks.find(t => t.id === id);
@@ -567,6 +617,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getWikiPageById,
     getSalesPageById,
     getChannelById,
+    handleDragEnd,
     logout,
   };
 

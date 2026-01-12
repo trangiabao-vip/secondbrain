@@ -24,7 +24,18 @@ export function AddTopicDialog({ children, interestId, parentId }: { children: R
 
   const finalInterestId = interestId || selectedTopic?.interestId || selectedInterest?.id;
   const finalParentId = parentId !== undefined ? parentId : selectedTopic?.id;
-  const finalInterest = interestId ? { id: interestId, name: 'hiện tại' } : (selectedTopic || selectedInterest);
+  
+  const getContextName = () => {
+    if (finalParentId) {
+        const parentTopic = selectedTopic; // Assuming selectedTopic is the parent when finalParentId is set
+        return `chủ đề "${parentTopic?.name}"`;
+    }
+    if (finalInterestId) {
+        const interest = selectedInterest;
+        return `sở thích "${interest?.name}"`;
+    }
+    return 'mục hiện tại';
+  }
 
   const handleAddTopic = () => {
     if (topicName.trim() && finalInterestId) {
@@ -43,7 +54,7 @@ export function AddTopicDialog({ children, interestId, parentId }: { children: R
         <DialogHeader>
           <DialogTitle>Thêm chủ đề mới</DialogTitle>
           <DialogDescription>
-            Thêm một chủ đề mới vào {finalParentId ? 'chủ đề' : 'sở thích'} của bạn: "{finalInterest?.name}"
+            Thêm một chủ đề mới vào {getContextName()}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">

@@ -1,6 +1,7 @@
 
 'use client';
 import React from 'react';
+import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 import { useAppContext } from "@/contexts/AppContext";
 import { TopicCard } from "./TopicCard";
 import { AddTopicDialog } from "./AddTopicDialog";
@@ -10,22 +11,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Topic } from '@/lib/data';
 
 export function TopicGrid() {
-  const { topics, selectedInterest, selectedTopicId, isDataLoading } = useAppContext();
+  const { topics, selectedInterest, selectedTopicId, isDataLoading, handleDragEnd } = useAppContext();
   
-  // Filter topics: show topics for the selected interest,
-  // and distinguish between top-level topics and sub-topics.
-  const topicsToDisplay = topics.filter(topic => {
-    if (selectedTopicId) {
-      // If a topic is selected, show its sub-topics
-      return topic.parentId === selectedTopicId;
-    }
-    if (selectedInterest) {
-      // If an interest is selected (and no topic), show top-level topics
-      return topic.interestId === selectedInterest.id && !topic.parentId;
-    }
-    // If no interest is selected, show nothing.
-    return false;
-  });
+  // Filter topics and sort them by the 'order' property
+  const topicsToDisplay = topics
+    .filter(topic => {
+      if (selectedTopicId) {
+        return topic.parentId === selectedTopicId;
+      }
+      if (selectedInterest) {
+        return topic.interestId === selectedInterest.id && !topic.parentId;
+      }
+      return false;
+    })
+    .sort((a, b) => a.order - b.order);
 
   const currentContextName = selectedTopicId 
     ? topics.find(t => t.id === selectedTopicId)?.name 
@@ -63,11 +62,32 @@ export function TopicGrid() {
         </div>
       )}
       {topicsToDisplay.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {topicsToDisplay.map((topic) => (
-            <TopicCard key={topic.id} topic={topic} />
-          ))}
-        </div>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="topicsDroppable" direction="horizontal">
+            {(provided) => (
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              >
+                {topicsToDisplay.map((topic, index) => (
+                  <Draggable key={topic.id} draggableId={topic.id} index={index}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                      >
+                        <TopicCard topic={topic} />
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       ) : (
         !selectedTopicId && (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-card p-12 text-center">

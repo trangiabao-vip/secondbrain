@@ -69,6 +69,10 @@
           "type": "string",
           "description": "ID for the placeholder image."
         },
+        "order": {
+          "type": "number",
+          "description": "The display order of the topic within its level."
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp indicating when the topic was created.",
@@ -79,7 +83,7 @@
           "description": "The ID of the user who owns this topic."
         }
       },
-      "required": ["name", "interestId", "imageId", "createdAt", "userId"]
+      "required": ["name", "interestId", "imageId", "order", "createdAt", "userId"]
     },
     "Goal": {
       "title": "Goal",
@@ -492,5 +496,3 @@
     }
   }
 }
-
-    

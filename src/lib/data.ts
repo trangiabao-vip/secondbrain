@@ -52,6 +52,7 @@ export interface Topic {
   interestId: string;
   parentId?: string | null; // ID of the parent topic
   imageId: string;
+  order: number;
   createdAt: any; // Can be string or Firebase Timestamp
   userId: string;
 }
@@ -170,5 +171,3 @@ export const initialData: DataType = {
   salesPages: [],
   channels: [],
 };
-
-    
