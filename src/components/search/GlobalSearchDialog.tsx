@@ -39,7 +39,7 @@ export function GlobalSearchDialog({ children }: { children: ReactNode }) {
     const [results, setResults] = useState<SearchResultItem[]>([]);
     const router = useRouter();
 
-    const { interests, topics, goals, tasks, wikiPages, selectInterest, selectTopic, setItemToAutoOpen } = useAppContext();
+    const { interests, topics, goals, tasks, wikiPages, setItemToAutoOpen } = useAppContext();
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -105,31 +105,41 @@ export function GlobalSearchDialog({ children }: { children: ReactNode }) {
 
         if (itemType === 'Sở thích') {
             targetInterestId = item.id;
-        } else if ('interestId' in item) { // Topic, Goal, Task, WikiPage all have interestId directly or indirectly
-            const topic = 'topicId' in item 
-                ? topics.find(t => t.id === item.topicId) 
-                : ('goalId' in item && item.goalId ? topics.find(t => t.id === goals.find(g => g.id === item.goalId)?.topicId) : null)
-                || ('topicId' in item ? topics.find(t => t.id === item.topicId) : null);
-                
-            const directTopic = topics.find(t => t.id === ('id' in item ? item.id : ''));
-            
-            if ('interestId' in item && item.interestId) {
-                 targetInterestId = item.interestId;
-            } else if (topic) {
-                targetInterestId = topic.interestId;
-            } else if (directTopic) {
-                 targetInterestId = directTopic.interestId;
+        } else if (itemType === 'Chủ đề') {
+            const topic = item as Topic;
+            targetInterestId = topic.interestId;
+            targetTopicId = topic.id;
+        } else if (itemType === 'Mục tiêu') {
+            const goal = item as Goal;
+            const parentTopic = topics.find(t => t.id === goal.topicId);
+            if (parentTopic) {
+                targetInterestId = parentTopic.interestId;
+                targetTopicId = parentTopic.id;
+                setItemToAutoOpen({ type: 'goal', id: goal.id });
             }
-
-            if (itemType === 'Chủ đề' || itemType === 'Wiki') {
-                targetTopicId = 'topicId' in item ? item.topicId : ('id' in item ? item.id : null);
-            } else if (itemType === 'Mục tiêu') {
-                targetTopicId = 'topicId' in item ? item.topicId : null;
-                setItemToAutoOpen({ type: 'goal', id: item.id });
-            } else if (itemType === 'Nhiệm vụ') {
-                const parentGoal = 'goalId' in item && item.goalId ? goals.find(g => g.id === item.goalId) : null;
-                targetTopicId = parentGoal ? parentGoal.topicId : ('topicId' in item ? item.topicId : null);
-                setItemToAutoOpen({ type: 'task', id: item.id });
+        } else if (itemType === 'Nhiệm vụ') {
+            const task = item as Task;
+            let parentTopic: Topic | undefined;
+            if (task.goalId) {
+                const parentGoal = goals.find(g => g.id === task.goalId);
+                if (parentGoal) {
+                    parentTopic = topics.find(t => t.id === parentGoal.topicId);
+                }
+            } else if (task.topicId) {
+                parentTopic = topics.find(t => t.id === task.topicId);
+            }
+            if (parentTopic) {
+                targetInterestId = parentTopic.interestId;
+                targetTopicId = parentTopic.id;
+                setItemToAutoOpen({ type: 'task', id: task.id });
+            }
+        } else if (itemType === 'Wiki') {
+            const wikiPage = item as WikiPage;
+            const parentTopic = topics.find(t => t.id === wikiPage.topicId);
+            if (parentTopic) {
+                targetInterestId = parentTopic.interestId;
+                targetTopicId = parentTopic.id;
+                // Could open wiki dialog here in the future
             }
         }
         
