@@ -2,6 +2,7 @@
 
 
 
+
 'use client';
 import { useState, useEffect, useRef } from "react";
 import { useAppContext } from "@/contexts/AppContext";
@@ -56,15 +57,48 @@ export function GoalsView() {
   
   useEffect(() => {
     if (itemToAutoOpen && !isDataLoading) {
-        setTimeout(() => {
-            const trigger = document.getElementById(`trigger-${itemToAutoOpen.type}-${itemToAutoOpen.id}`);
-            if (trigger) {
-                trigger.click();
+        // Use a timeout to ensure the DOM is ready after navigation and potential re-renders.
+        const primaryTimeout = setTimeout(() => {
+            const { type, id, goalId } = itemToAutoOpen;
+
+            const openItem = (itemType: 'goal' | 'task', itemId: string) => {
+                const trigger = document.getElementById(`trigger-${itemType}-${itemId}`);
+                if (trigger) {
+                    trigger.click();
+                    return true;
+                }
+                return false;
+            };
+
+            // If it's a task inside a goal, we need to open the goal's collapsible first.
+            if (type === 'task' && goalId) {
+                const goalCollapsibleTrigger = document.getElementById(`collapsible-trigger-goal-${goalId}`);
+                if (goalCollapsibleTrigger) {
+                    const isClosed = goalCollapsibleTrigger.getAttribute('data-state') === 'closed';
+                    if (isClosed) {
+                        goalCollapsibleTrigger.click();
+                        // Wait for the collapsible animation to finish before trying to open the task.
+                        const secondaryTimeout = setTimeout(() => {
+                            openItem(type, id);
+                        }, 300); // 300ms should be safe for the 200ms animation.
+                    } else {
+                        // If the collapsible is already open, just open the task.
+                        openItem(type, id);
+                    }
+                }
+            } else {
+                // If it's a goal or a standalone task, open it directly.
+                openItem(type, id);
             }
+
+            // Clean up the auto-open state to prevent it from re-triggering.
             setItemToAutoOpen(null);
-        }, 100);
+
+        }, 200); // 200ms initial delay after page load.
+
+        return () => clearTimeout(primaryTimeout);
     }
-  }, [itemToAutoOpen, isDataLoading, setItemToAutoOpen]);
+}, [itemToAutoOpen, isDataLoading, setItemToAutoOpen]);
 
   if (!selectedTopic) return null;
   
@@ -214,7 +248,7 @@ export function GoalsView() {
                     <div className="flex justify-between items-start gap-2">
                       <div className="flex items-center gap-2 flex-1">
                         <CollapsibleTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" id={`collapsible-trigger-goal-${goal.id}`}>
                             <Icons.down className="h-4 w-4 transition-transform [&[data-state=open]]:-rotate-90" />
                           </Button>
                         </CollapsibleTrigger>

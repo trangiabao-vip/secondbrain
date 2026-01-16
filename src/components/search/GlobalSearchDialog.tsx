@@ -1,5 +1,6 @@
 
 
+
 'use client';
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import {
@@ -131,7 +132,7 @@ export function GlobalSearchDialog({ children }: { children: ReactNode }) {
             if (parentTopic) {
                 targetInterestId = parentTopic.interestId;
                 targetTopicId = parentTopic.id;
-                setItemToAutoOpen({ type: 'task', id: task.id });
+                setItemToAutoOpen({ type: 'task', id: task.id, goalId: task.goalId });
             }
         } else if (itemType === 'Wiki') {
             const wikiPage = item as WikiPage;

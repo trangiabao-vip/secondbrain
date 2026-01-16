@@ -6,6 +6,7 @@ import { usePathname, useRouter, useParams } from 'next/navigation';
 interface ItemToOpen {
   type: 'goal' | 'task';
   id: string;
+  goalId?: string | null;
 }
 
 export interface UIContextType {
