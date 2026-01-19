@@ -124,7 +124,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const finalInterestId = interestId || uiContext.interestId;
     if (!finalInterestId || !user) return;
     
-    // Get the highest order number for the current level and add 1
     const siblingTopics = dataContext.topics.filter(t => t.interestId === finalInterestId && t.parentId === (parentId || null));
     const maxOrder = siblingTopics.reduce((max, t) => Math.max(max, t.order || 0), 0);
 
@@ -156,7 +155,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const topicGoals = goals.filter(g => g.topicId === uiContext.topicId);
     const maxOrder = topicGoals.reduce((max, g) => Math.max(max, g.order || 0), 0);
 
-    const newGoal: Omit<Goal, 'id' | 'order'> & {order:number} = {
+    const newGoal: Partial<Omit<Goal, 'id'>> = {
       title: goalData.title || 'Mục tiêu không tên',
       topicId: uiContext.topicId,
       status: 'chưa bắt đầu',
@@ -519,7 +518,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const handleDragEnd = (result: DropResult) => {
-    const { destination, source } = result;
+    const { destination, source, type } = result;
 
     if (!destination) {
       return;
@@ -531,8 +530,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ) {
       return;
     }
+    
+    const reorderItems = (items: (Topic | Goal | Task)[]) => {
+      const reordered = Array.from(items);
+      const [moved] = reordered.splice(source.index, 1);
+      reordered.splice(destination.index, 0, moved);
 
-    // Reorder Topics
+      const batch = writeBatch(firestore);
+      reordered.forEach((item, index) => {
+        let collectionName = '';
+        if ('interestId' in item) collectionName = 'topics';
+        else if ('topicId' in item && !('goalId' in item)) collectionName = 'goals';
+        else if ('text' in item) collectionName = 'tasks';
+        
+        if (collectionName) {
+            const docRef = doc(firestore, collectionName, item.id);
+            batch.update(docRef, { order: index });
+        }
+      });
+      return batch.commit();
+    }
+
     if (source.droppableId.startsWith('topicsDroppable')) {
       const relevantTopics = topics.filter(topic => {
         if (uiContext.topicId) {
@@ -543,68 +561,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         return false;
       }).sort((a, b) => a.order - b.order);
-
-      const reordered = Array.from(relevantTopics);
-      const [reorderedItem] = reordered.splice(source.index, 1);
-      reordered.splice(destination.index, 0, reorderedItem);
-
-      const batch = writeBatch(firestore);
-      reordered.forEach((topic, index) => {
-        const docRef = doc(firestore, "topics", topic.id);
-        batch.update(docRef, { order: index });
-      });
-      batch.commit().catch(e => {
-          console.error("Failed to reorder topics", e);
-          toast({ variant: "destructive", title: "Lỗi", description: "Không thể cập nhật thứ tự chủ đề."});
-      });
+      reorderItems(relevantTopics).catch(e => console.error("Failed to reorder topics", e));
       return;
     }
     
-    // Reorder Goals
     if (source.droppableId.startsWith('goalsDroppable')) {
       const topicId = source.droppableId.replace('goalsDroppable-', '');
       const items = goals.filter(g => g.topicId === topicId).sort((a, b) => a.order - b.order);
-      
-      const reordered = Array.from(items);
-      const [moved] = reordered.splice(source.index, 1);
-      reordered.splice(destination.index, 0, moved);
-
-      const batch = writeBatch(firestore);
-      reordered.forEach((goal, index) => {
-          const docRef = doc(firestore, "goals", goal.id);
-          batch.update(docRef, { order: index });
-      });
-      batch.commit().catch(e => {
-          console.error("Failed to reorder goals", e);
-          toast({ variant: "destructive", title: "Lỗi", description: "Không thể cập nhật thứ tự mục tiêu."});
-      });
-      return;
-    }
-
-    // Reorder Tasks
-    if (source.droppableId.startsWith('tasksDroppable-')) {
-      const contextId = source.droppableId.replace('tasksDroppable-', ''); // goalId or 'standalone'
-      
-      let items: Task[];
-      if (contextId === 'standalone') {
-          items = tasks.filter(t => t.topicId === uiContext.topicId && !t.goalId).sort((a,b) => a.order - b.order);
-      } else {
-          items = tasks.filter(t => t.goalId === contextId).sort((a,b) => a.order - b.order);
-      }
-      
-      const reordered = Array.from(items);
-      const [moved] = reordered.splice(source.index, 1);
-      reordered.splice(destination.index, 0, moved);
-
-      const batch = writeBatch(firestore);
-      reordered.forEach((task, index) => {
-          const docRef = doc(firestore, "tasks", task.id);
-          batch.update(docRef, { order: index });
-      });
-      batch.commit().catch(e => {
-          console.error("Failed to reorder tasks", e);
-          toast({ variant: "destructive", title: "Lỗi", description: "Không thể cập nhật thứ tự nhiệm vụ."});
-      });
+      reorderItems(items).catch(e => console.error("Failed to reorder goals", e));
       return;
     }
   };
@@ -692,5 +656,3 @@ export function useAppContext() {
   }
   return context;
 }
-
-    

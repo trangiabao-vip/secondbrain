@@ -18,7 +18,6 @@ import { MarkdownRenderer } from "../ui/markdown-renderer";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { useState } from "react";
-import { Droppable, Draggable } from 'react-beautiful-dnd';
 
 const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
@@ -97,8 +96,6 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
     return null;
   }
   
-  const droppableId = goalId ? `tasksDroppable-${goalId}` : 'tasksDroppable-standalone';
-
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
@@ -109,146 +106,134 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
           </Button>
         )}
       </div>
-      <Droppable droppableId={droppableId}>
-        {(provided) => (
-          <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1">
-            {filteredTasks.map((task, index) => {
-              const startDate = getDateFromFirestore(task.startDate);
-              const currentStatus = statusConfig[task.status];
-              return (
-                <Draggable key={task.id} draggableId={task.id} index={index}>
-                  {(provided) => (
-                    <div ref={provided.innerRef} {...provided.draggableProps} className={cn("flex items-start gap-3 p-2 rounded-md hover:bg-background/50 group", task.status === 'hoàn thành' && 'opacity-60')}>
-                      <span {...provided.dragHandleProps} className="cursor-grab pt-1 text-muted-foreground hover:text-foreground">
-                        <Icons.drag className="h-5 w-5" />
-                      </span>
-                      <Checkbox
-                        id={`task-check-${task.id}`}
-                        checked={task.status === 'hoàn thành'}
-                        onCheckedChange={(checked) => handleStatusChange(task, checked ? 'hoàn thành' : 'chưa bắt đầu')}
-                        className="mt-1"
-                        aria-label={`Mark task ${task.text} as complete`}
-                      />
-                      <div className="flex-grow">
-                        <AddOrEditTaskDialog taskId={task.id} mode="edit">
-                          <button 
-                            id={`trigger-task-${task.id}`}
-                            className={cn("text-sm cursor-pointer text-left", task.status === 'hoàn thành' && 'line-through text-muted-foreground')}>
-                              {task.text}
-                          </button>
-                        </AddOrEditTaskDialog>
+      <div className="space-y-1">
+        {filteredTasks.map((task, index) => {
+          const startDate = getDateFromFirestore(task.startDate);
+          const currentStatus = statusConfig[task.status];
+          return (
+            <div key={task.id} className={cn("flex items-start gap-3 p-2 rounded-md hover:bg-background/50 group", task.status === 'hoàn thành' && 'opacity-60')}>
+              <Checkbox
+                id={`task-check-${task.id}`}
+                checked={task.status === 'hoàn thành'}
+                onCheckedChange={(checked) => handleStatusChange(task, checked ? 'hoàn thành' : 'chưa bắt đầu')}
+                className="mt-1"
+                aria-label={`Mark task ${task.text} as complete`}
+              />
+              <div className="flex-grow">
+                <AddOrEditTaskDialog taskId={task.id} mode="edit">
+                  <button 
+                    id={`trigger-task-${task.id}`}
+                    className={cn("text-sm cursor-pointer text-left", task.status === 'hoàn thành' && 'line-through text-muted-foreground')}>
+                      {task.text}
+                  </button>
+                </AddOrEditTaskDialog>
 
-                        <div className="flex items-center gap-2 flex-wrap mt-1">
-                           <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                    <Badge variant="outline" className="cursor-pointer font-normal text-xs">
-                                        <div className={cn("w-1.5 h-1.5 rounded-full mr-1.5", currentStatus.color)}></div>
-                                        {currentStatus.label}
-                                    </Badge>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                    {Object.entries(statusConfig).map(([statusKey, { label }]) => (
-                                        <DropdownMenuItem key={statusKey} onSelect={() => handleStatusChange(task, statusKey as TaskStatus)}>
-                                        {label}
-                                        </DropdownMenuItem>
-                                    ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TooltipTrigger>
-                              <TooltipContent><p>Trạng thái</p></TooltipContent>
-                            </Tooltip>
-                           </TooltipProvider>
+                <div className="flex items-center gap-2 flex-wrap mt-1">
+                    <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Badge variant="outline" className="cursor-pointer font-normal text-xs">
+                                <div className={cn("w-1.5 h-1.5 rounded-full mr-1.5", currentStatus.color)}></div>
+                                {currentStatus.label}
+                            </Badge>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                            {Object.entries(statusConfig).map(([statusKey, { label }]) => (
+                                <DropdownMenuItem key={statusKey} onSelect={() => handleStatusChange(task, statusKey as TaskStatus)}>
+                                {label}
+                                </DropdownMenuItem>
+                            ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Trạng thái</p></TooltipContent>
+                    </Tooltip>
+                    </TooltipProvider>
 
 
-                          {task.difficulty && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Badge variant="outline" className={cn("font-normal text-xs", difficultyColors[task.difficulty])}>{task.difficulty}</Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Độ khó</p></TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                          )}
-                          
-                          {startDate && (
-                             <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                        <Icons.calendar className="h-3 w-3" />
-                                        {format(startDate, "d MMM, HH:mm", { locale: vi })}
-                                        </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Thời gian</p></TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                          )}
+                    {task.difficulty && (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Badge variant="outline" className={cn("font-normal text-xs", difficultyColors[task.difficulty])}>{task.difficulty}</Badge>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Độ khó</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    )}
+                    
+                    {startDate && (
+                        <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Icons.calendar className="h-3 w-3" />
+                                {format(startDate, "d MMM, HH:mm", { locale: vi })}
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Thời gian</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    )}
 
-                          {task.recurrence && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <Icons.recurrence className="h-3 w-3" />
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Nhiệm vụ lặp lại</p></TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                        </div>
-                        {task.notes && <MarkdownRenderer className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.notes}</MarkdownRenderer>}
-                        
-                        {task.customProperties && Object.keys(task.customProperties).length > 0 && (
-                          <div className="flex items-center gap-x-4 gap-y-2 flex-wrap mt-2">
-                            {Object.entries(task.customProperties).map(([key, value]) => {
-                               const lowerValue = String(value).toLowerCase();
-                               if (lowerValue === 'true' || lowerValue === 'false') {
-                                 return (
-                                   <div key={key} className="flex items-center gap-2">
-                                     <Checkbox checked={lowerValue === 'true'} disabled id={`task-prop-${task.id}-${key}`} />
-                                     <Label htmlFor={`task-prop-${task.id}-${key}`} className="text-xs font-medium text-muted-foreground">
-                                       {key}
-                                     </Label>
-                                   </div>
-                                 );
-                               }
-                               return (
-                                 <Badge key={key} variant="outline" className="font-normal text-xs">
-                                   <span className="font-semibold mr-1">{key}:</span>
-                                   <span>{String(value)}</span>
-                                 </Badge>
-                               );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <AddOrEditTaskDialog taskId={task.id} mode="edit">
-                              <Button variant="ghost" size="icon" className="h-7 w-7">
-                                <Icons.edit className="h-4 w-4 text-muted-foreground" />
-                              </Button>
-                          </AddOrEditTaskDialog>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); duplicateTask(task.id);}}>
-                            <Icons.copy className="h-4 w-4 text-muted-foreground" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); deleteTask(task.id);}}>
-                            <Icons.delete className="h-4 w-4 text-destructive" />
-                          </Button>
-                      </div>
+                    {task.recurrence && (
+                    <TooltipProvider>
+                        <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Icons.recurrence className="h-3 w-3" />
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Nhiệm vụ lặp lại</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    )}
+                </div>
+                {task.notes && <MarkdownRenderer className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.notes}</MarkdownRenderer>}
+                
+                {task.customProperties && Object.keys(task.customProperties).length > 0 && (
+                    <div className="flex items-center gap-x-4 gap-y-2 flex-wrap mt-2">
+                    {Object.entries(task.customProperties).map(([key, value]) => {
+                        const lowerValue = String(value).toLowerCase();
+                        if (lowerValue === 'true' || lowerValue === 'false') {
+                            return (
+                            <div key={key} className="flex items-center gap-2">
+                                <Checkbox checked={lowerValue === 'true'} disabled id={`task-prop-${task.id}-${key}`} />
+                                <Label htmlFor={`task-prop-${task.id}-${key}`} className="text-xs font-medium text-muted-foreground">
+                                {key}
+                                </Label>
+                            </div>
+                            );
+                        }
+                        return (
+                            <Badge key={key} variant="outline" className="font-normal text-xs">
+                            <span className="font-semibold mr-1">{key}:</span>
+                            <span>{String(value)}</span>
+                            </Badge>
+                        );
+                    })}
                     </div>
-                  )}
-                </Draggable>
-              )})}
-              {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
+                )}
+                </div>
+                
+                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <AddOrEditTaskDialog taskId={task.id} mode="edit">
+                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <Icons.edit className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                    </AddOrEditTaskDialog>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); duplicateTask(task.id);}}>
+                    <Icons.copy className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); deleteTask(task.id);}}>
+                    <Icons.delete className="h-4 w-4 text-destructive" />
+                    </Button>
+                </div>
+            </div>
+          )})}
+      </div>
       {goalId && <AddTaskForm goalId={goalId} />}
     </div>
   );

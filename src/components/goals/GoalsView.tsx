@@ -70,28 +70,23 @@ export function GoalsView() {
     
     let timeoutId: NodeJS.Timeout | null = null;
 
-    // If it's a task inside a goal, we need to open the goal's collapsible first.
     if (type === 'task' && goalId) {
         const goalCollapsibleTrigger = document.getElementById(`collapsible-trigger-goal-${goalId}`);
         if (goalCollapsibleTrigger) {
             const isClosed = goalCollapsibleTrigger.getAttribute('data-state') === 'closed';
             if (isClosed) {
                 goalCollapsibleTrigger.click();
-                // Wait for the collapsible animation to finish before trying to open the task.
                 timeoutId = setTimeout(() => {
                     openItem(type, id);
                 }, 250); 
             } else {
-                // If the collapsible is already open, just open the task.
                 openItem(type, id);
             }
         }
     } else {
-        // If it's a goal or a standalone task, open it directly.
         openItem(type, id);
     }
 
-    // Clean up the auto-open state to prevent it from re-triggering.
     setItemToAutoOpen(null);
     
     return () => {
@@ -410,32 +405,32 @@ export function GoalsView() {
             )}
           </Droppable>
         )}
-        
-        {(typeFilter === 'all' || typeFilter === 'task') && (
-          <Card>
-              <CardHeader>
-                  <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-base">Nhiệm vụ độc lập</h4>
-                      <AddOrEditTaskDialog mode="add" topicId={selectedTopic.id}>
-                          <Button variant="outline" size="sm">
-                          <Icons.add className="mr-2 h-4 w-4" />
-                          Thêm nhiệm vụ
-                          </Button>
-                      </AddOrEditTaskDialog>
-                  </div>
-              </CardHeader>
-              <CardContent>
-                  {filteredStandaloneTasks.length > 0 ? (
-                      <TaskList tasks={filteredStandaloneTasks} />
-                  ) : (
-                      <div className="text-center py-4 text-sm text-muted-foreground">
-                          Không có nhiệm vụ độc lập nào trong chủ đề này.
-                      </div>
-                  )}
-              </CardContent>
-          </Card>
-        )}
       </DragDropContext>
+      
+      {(typeFilter === 'all' || typeFilter === 'task') && (
+        <Card>
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-base">Nhiệm vụ độc lập</h4>
+                    <AddOrEditTaskDialog mode="add" topicId={selectedTopic.id}>
+                        <Button variant="outline" size="sm">
+                        <Icons.add className="mr-2 h-4 w-4" />
+                        Thêm nhiệm vụ
+                        </Button>
+                    </AddOrEditTaskDialog>
+                </div>
+            </CardHeader>
+            <CardContent>
+                {filteredStandaloneTasks.length > 0 ? (
+                    <TaskList tasks={filteredStandaloneTasks} />
+                ) : (
+                    <div className="text-center py-4 text-sm text-muted-foreground">
+                        Không có nhiệm vụ độc lập nào trong chủ đề này.
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+      )}
       
       {filteredGoals.length === 0 && filteredStandaloneTasks.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-card p-12 text-center">
