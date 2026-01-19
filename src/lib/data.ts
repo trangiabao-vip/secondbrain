@@ -173,5 +173,3 @@ export const initialData: DataType = {
   salesPages: [],
   channels: [],
 };
-
-    

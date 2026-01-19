@@ -253,5 +253,3 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
     </div>
   );
 }
-
-    

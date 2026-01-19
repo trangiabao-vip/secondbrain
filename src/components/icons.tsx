@@ -142,5 +142,3 @@ export const Icons = {
     </svg>
   )
 };
-
-    

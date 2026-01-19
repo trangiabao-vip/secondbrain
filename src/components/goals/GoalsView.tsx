@@ -77,8 +77,7 @@ export function GoalsView() {
             const isClosed = goalCollapsibleTrigger.getAttribute('data-state') === 'closed';
             if (isClosed) {
                 goalCollapsibleTrigger.click();
-                // Wait for the collapsible animation (200ms) to finish before trying to open the task.
-                // 250ms should be a safe buffer.
+                // Wait for the collapsible animation to finish before trying to open the task.
                 timeoutId = setTimeout(() => {
                     openItem(type, id);
                 }, 250); 
@@ -471,5 +470,3 @@ export function GoalsView() {
     </div>
   );
 }
-
-    
