@@ -12,6 +12,7 @@ import {
   Edit,
   Film,
   Gamepad2,
+  GripVertical,
   Home,
   LayoutGrid,
   Lightbulb,
@@ -77,6 +78,7 @@ export const Icons = {
   recurrence: Repeat,
   channel: Radio,
   youtube: Youtube,
+  drag: GripVertical,
   whoIsTheSpy: ({ className }: { className?: string }) => (
     <svg 
       className={className}
@@ -140,3 +142,5 @@ export const Icons = {
     </svg>
   )
 };
+
+    

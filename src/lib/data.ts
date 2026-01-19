@@ -27,6 +27,7 @@ export interface Task {
   endDate?: any; // Can be string or Firebase Timestamp
   recurrence?: RecurrenceRule;
   customProperties?: { [key: string]: string };
+  order: number;
   createdAt: any; // Can be string or Firebase Timestamp
   userId: string;
 }
@@ -40,6 +41,7 @@ export interface Goal {
   priority?: GoalPriority;
   startDate?: any; // Can be string or Firebase Timestamp
   endDate?: any; // Can be string or Firebase Timestamp
+  order: number;
   customProperties?: { [key: string]: string };
   createdAt: any; // Can be string or Firebase Timestamp
   userId: string;
@@ -171,3 +173,5 @@ export const initialData: DataType = {
   salesPages: [],
   channels: [],
 };
+
+    

@@ -153,7 +153,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const addGoal = (goalData: Partial<Omit<Goal, 'id'>>) => {
     if (!uiContext.topicId || !user) return;
-    const newGoal: Omit<Goal, 'id'> = {
+    const topicGoals = goals.filter(g => g.topicId === uiContext.topicId);
+    const maxOrder = topicGoals.reduce((max, g) => Math.max(max, g.order || 0), 0);
+
+    const newGoal: Omit<Goal, 'id' | 'order'> & {order:number} = {
       title: goalData.title || 'Mục tiêu không tên',
       topicId: uiContext.topicId,
       status: 'chưa bắt đầu',
@@ -161,7 +164,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createdAt: serverTimestamp(),
       startDate: goalData.startDate || null,
       endDate: goalData.endDate || null,
-      ...goalData
+      order: maxOrder + 1,
+      ...goalData,
     };
     addDocumentNonBlocking(collection(firestore, 'goals'), newGoal);
     toast({ title: "Đã thêm mục tiêu", description: `"${newGoal.title}" đã được thêm.` });
@@ -183,11 +187,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dataWithTimestamps.endDate = Timestamp.fromDate(dataWithTimestamps.endDate);
     }
 
+    const siblingTasks = taskData.goalId 
+      ? tasks.filter(t => t.goalId === taskData.goalId)
+      : tasks.filter(t => t.topicId === (taskData.topicId || uiContext.topicId) && !t.goalId);
+    const maxOrder = siblingTasks.reduce((max, t) => Math.max(max, t.order || 0), -1);
+
     const newTask: Partial<Task> = {
       ...dataWithTimestamps,
       status: taskData.status || 'chưa bắt đầu',
       userId: user.uid,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      order: maxOrder + 1,
     };
     
     const docRef = await addDocumentNonBlocking(collection(firestore, 'tasks'), newTask);
@@ -509,7 +519,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const handleDragEnd = (result: DropResult) => {
-    const { destination, source, draggableId } = result;
+    const { destination, source } = result;
 
     if (!destination) {
       return;
@@ -522,31 +532,81 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const relevantTopics = topics.filter(topic => {
-      if (uiContext.topicId) {
-        return topic.parentId === uiContext.topicId;
+    // Reorder Topics
+    if (source.droppableId.startsWith('topicsDroppable')) {
+      const relevantTopics = topics.filter(topic => {
+        if (uiContext.topicId) {
+          return topic.parentId === uiContext.topicId;
+        }
+        if (uiContext.interestId) {
+          return topic.interestId === uiContext.interestId && !topic.parentId;
+        }
+        return false;
+      }).sort((a, b) => a.order - b.order);
+
+      const reordered = Array.from(relevantTopics);
+      const [reorderedItem] = reordered.splice(source.index, 1);
+      reordered.splice(destination.index, 0, reorderedItem);
+
+      const batch = writeBatch(firestore);
+      reordered.forEach((topic, index) => {
+        const docRef = doc(firestore, "topics", topic.id);
+        batch.update(docRef, { order: index });
+      });
+      batch.commit().catch(e => {
+          console.error("Failed to reorder topics", e);
+          toast({ variant: "destructive", title: "Lỗi", description: "Không thể cập nhật thứ tự chủ đề."});
+      });
+      return;
+    }
+    
+    // Reorder Goals
+    if (source.droppableId.startsWith('goalsDroppable')) {
+      const topicId = source.droppableId.replace('goalsDroppable-', '');
+      const items = goals.filter(g => g.topicId === topicId).sort((a, b) => a.order - b.order);
+      
+      const reordered = Array.from(items);
+      const [moved] = reordered.splice(source.index, 1);
+      reordered.splice(destination.index, 0, moved);
+
+      const batch = writeBatch(firestore);
+      reordered.forEach((goal, index) => {
+          const docRef = doc(firestore, "goals", goal.id);
+          batch.update(docRef, { order: index });
+      });
+      batch.commit().catch(e => {
+          console.error("Failed to reorder goals", e);
+          toast({ variant: "destructive", title: "Lỗi", description: "Không thể cập nhật thứ tự mục tiêu."});
+      });
+      return;
+    }
+
+    // Reorder Tasks
+    if (source.droppableId.startsWith('tasksDroppable-')) {
+      const contextId = source.droppableId.replace('tasksDroppable-', ''); // goalId or 'standalone'
+      
+      let items: Task[];
+      if (contextId === 'standalone') {
+          items = tasks.filter(t => t.topicId === uiContext.topicId && !t.goalId).sort((a,b) => a.order - b.order);
+      } else {
+          items = tasks.filter(t => t.goalId === contextId).sort((a,b) => a.order - b.order);
       }
-      if (uiContext.interestId) {
-        return topic.interestId === uiContext.interestId && !topic.parentId;
-      }
-      return false;
-    }).sort((a, b) => a.order - b.order);
+      
+      const reordered = Array.from(items);
+      const [moved] = reordered.splice(source.index, 1);
+      reordered.splice(destination.index, 0, moved);
 
-    const newTopics = Array.from(relevantTopics);
-    const [reorderedItem] = newTopics.splice(source.index, 1);
-    newTopics.splice(destination.index, 0, reorderedItem);
-
-    // Update the order in Firestore
-    const batch = writeBatch(firestore);
-    newTopics.forEach((topic, index) => {
-      const docRef = doc(firestore, "topics", topic.id);
-      batch.update(docRef, { order: index });
-    });
-
-    batch.commit().catch(e => {
-        console.error("Failed to reorder topics", e);
-        toast({ variant: "destructive", title: "Lỗi", description: "Không thể cập nhật thứ tự chủ đề."});
-    });
+      const batch = writeBatch(firestore);
+      reordered.forEach((task, index) => {
+          const docRef = doc(firestore, "tasks", task.id);
+          batch.update(docRef, { order: index });
+      });
+      batch.commit().catch(e => {
+          console.error("Failed to reorder tasks", e);
+          toast({ variant: "destructive", title: "Lỗi", description: "Không thể cập nhật thứ tự nhiệm vụ."});
+      });
+      return;
+    }
   };
 
   const getInterestById = (id: string) => dataContext.interests.find(i => i.id === id);
@@ -580,7 +640,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const value: AppContextType = {
+  const value: AppContextType = useMemo(() => ({
     ...dataContext,
     ...uiContext,
     topicBreadcrumbs,
@@ -619,7 +679,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getChannelById,
     handleDragEnd,
     logout,
-  };
+  }), [dataContext, uiContext, topicBreadcrumbs, selectedInterest, selectedTopic]);
 
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
@@ -632,3 +692,5 @@ export function useAppContext() {
   }
   return context;
 }
+
+    

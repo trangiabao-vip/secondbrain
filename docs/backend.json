@@ -122,6 +122,10 @@
           "description": "The priority of the goal.",
           "enum": ["Thấp", "Vừa", "Cao"]
         },
+        "order": {
+          "type": "number",
+          "description": "The display order of the goal."
+        },
         "customProperties": {
           "type": "object",
           "description": "User-defined custom properties for the goal.",
@@ -139,7 +143,7 @@
           "description": "The ID of the user who owns this goal."
         }
       },
-      "required": ["title", "topicId", "status", "createdAt", "userId"]
+      "required": ["title", "topicId", "status", "order", "createdAt", "userId"]
     },
     "Task": {
       "title": "Task",
@@ -182,6 +186,10 @@
             "description": "The difficulty of the task.",
             "enum": ["Dễ", "Vừa", "Khó"]
         },
+        "order": {
+          "type": "number",
+          "description": "The display order of the task."
+        },
         "recurrence": {
           "type": "object",
           "description": "Rules for recurring tasks.",
@@ -223,7 +231,7 @@
           "description": "The ID of the user who owns this task."
         }
       },
-      "required": ["text", "status", "createdAt", "userId"]
+      "required": ["text", "status", "order", "createdAt", "userId"]
     },
     "WikiPage": {
       "title": "Wiki Page",
@@ -496,3 +504,5 @@
     }
   }
 }
+
+    
