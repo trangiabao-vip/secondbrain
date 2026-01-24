@@ -155,7 +155,7 @@ const generateRecurrenceDates = (rule: RecurrenceRule, startDate: Date | undefin
 };
 
 function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChannelId, mode, closeDialog, initialStartDate }: { taskId?: string, initialGoalId?: string, initialTopicId?: string, initialChannelId?: string, mode: 'add' | 'edit', closeDialog: () => void, initialStartDate?: Date }) {
-  const { getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic, duplicateTask, getGoalById, updateChannel, getChannelById } = useAppContext();
+  const { getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic, duplicateTask, getGoalById, updateChannel, getChannelById, getTopicById } = useAppContext();
   
   const [taskText, setTaskText] = useState('');
   const [notes, setNotes] = useState('');
@@ -174,7 +174,14 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
     daysOfWeek: [],
   });
 
-  const topicGoals = goals.filter(g => g.topicId === (initialTopicId || selectedTopic?.id));
+  const topicForThisTask = useMemo(() => {
+    return initialTopicId ? getTopicById(initialTopicId) : selectedTopic;
+  }, [initialTopicId, selectedTopic, getTopicById]);
+
+  const topicGoals = useMemo(() => {
+    return goals.filter(g => g.topicId === topicForThisTask?.id);
+  }, [goals, topicForThisTask]);
+
   const isRecurringInstance = taskId?.includes('-recur-');
   const originalTaskId = isRecurringInstance ? taskId.split('-recur-')[0] : taskId;
 
@@ -303,12 +310,9 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         if (parentGoal) {
           taskData.topicId = parentGoal.topicId;
         }
-      } else if (initialTopicId) {
-        // If it's a standalone task, use the initialTopicId passed in
-        taskData.topicId = initialTopicId;
-      } else if (selectedTopic) {
-        // As a fallback, use the globally selected topic
-        taskData.topicId = selectedTopic.id;
+      } else if (topicForThisTask) {
+        // If it's a standalone task, use the determined topic
+        taskData.topicId = topicForThisTask.id;
       }
 
       if (mode === 'edit' && taskId) {
@@ -374,7 +378,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
       <DialogHeader>
         <DialogTitle>{mode === 'edit' ? 'Chỉnh sửa nhiệm vụ' : 'Thêm nhiệm vụ mới'}</DialogTitle>
         <DialogDescription>
-          {mode === 'edit' ? 'Cập nhật chi tiết nhiệm vụ của bạn.' : 'Thêm một nhiệm vụ mới vào một trong các mục tiêu của bạn.'}
+          {topicForThisTask ? `Trong chủ đề: "${topicForThisTask.name}"` : 'Thêm một nhiệm vụ mới vào một trong các mục tiêu của bạn.'}
         </DialogDescription>
       </DialogHeader>
       <div className="space-y-4 py-2 max-h-[80vh] overflow-y-auto pr-4">

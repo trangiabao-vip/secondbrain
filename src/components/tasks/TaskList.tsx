@@ -48,7 +48,7 @@ interface TaskListProps {
 
 
 export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
-  const { tasks: allTasks, updateTask, deleteTask, isDataLoading, duplicateTask } = useAppContext();
+  const { tasks: allTasks, updateTask, deleteTask, isDataLoading, duplicateTask, goals, topics } = useAppContext();
   const [showCompleted, setShowCompleted] = useLocalStorage(`tasksShowCompleted-${goalId || 'standalone'}`, false);
 
   let tasksToRender: Task[];
@@ -110,6 +110,11 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
         {filteredTasks.map((task, index) => {
           const startDate = getDateFromFirestore(task.startDate);
           const currentStatus = statusConfig[task.status];
+          const parentGoal = task.goalId ? goals.find(g => g.id === task.goalId) : null;
+          const parentTopic = parentGoal 
+              ? topics.find(t => t.id === parentGoal.topicId) 
+              : (task.topicId ? topics.find(t => t.id === task.topicId) : null);
+
           return (
             <div key={task.id} className={cn("flex items-start gap-3 p-2 rounded-md hover:bg-background/50 group", task.status === 'hoàn thành' && 'opacity-60')}>
               <Checkbox
@@ -128,7 +133,26 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
                   </button>
                 </AddOrEditTaskDialog>
 
-                <div className="flex items-center gap-2 flex-wrap mt-1">
+                {(parentTopic || parentGoal) && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1.5 pl-px">
+                    {parentTopic && (
+                      <div className="flex items-center gap-1.5">
+                        <Icons.topic className="h-3 w-3" />
+                        <span>{parentTopic.name}</span>
+                      </div>
+                    )}
+                    {parentGoal && (
+                      <div className="flex items-center gap-1.5">
+                        {parentTopic && <Icons.right className="h-3 w-3" />}
+                        <Icons.goal className="h-3 w-3" />
+                        <span>{parentGoal.title}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+
+                <div className="flex items-center gap-2 flex-wrap mt-2">
                     <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
