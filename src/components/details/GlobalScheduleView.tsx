@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
@@ -213,12 +214,12 @@ export function GlobalScheduleView() {
     const rangeEnd = endOfDay(addDays(rangeStart, 6));
 
     const goalItems: ScheduledItem[] = goals
-        .filter(g => g.startDate && g.status !== 'huỷ')
+        .filter(g => g.startDate)
         .map(g => ({ ...g, type: 'goal' as const, startDate: getDateFromFirestore(g.startDate)!, endDate: getDateFromFirestore(g.endDate) || addMinutes(getDateFromFirestore(g.startDate)!, 30) }))
         .filter((item): item is ScheduledItem => !!item.startDate);
 
     const baseTasks: ScheduledItem[] = tasks
-        .filter(t => t.startDate && !t.recurrence && t.status !== 'huỷ')
+        .filter(t => t.startDate && !t.recurrence)
         .map(t => ({ ...t, type: 'task' as const, startDate: getDateFromFirestore(t.startDate)!, endDate: getDateFromFirestore(t.endDate) || addMinutes(getDateFromFirestore(t.startDate)!, 30) }))
         .filter((item): item is ScheduledItem => !!item.startDate);
 
@@ -227,7 +228,7 @@ export function GlobalScheduleView() {
         .flatMap(t => generateRecurrencesInRange(t, rangeStart, rangeEnd))
         .map(t => ({ ...t, type: 'task' as const, startDate: getDateFromFirestore(t.startDate)!, endDate: getDateFromFirestore(t.endDate)!, status: t.status || 'chưa bắt đầu' }))
         .filter((item): item is ScheduledItem => !!item.startDate)
-        .filter(item => !tasks.some(existingTask => existingTask.id === item.id) && item.status !== 'huỷ');
+        .filter(item => !tasks.some(existingTask => existingTask.id === item.id));
         
     return [...goalItems, ...baseTasks, ...recurringTaskInstances];
   }, [goals, tasks, currentDate]);
@@ -284,7 +285,6 @@ export function GlobalScheduleView() {
     'đang làm': 'bg-blue-500/80 border-blue-700 hover:bg-blue-500',
     'hoàn thành': 'bg-green-500/80 border-green-700 hover:bg-green-500',
     'thất bại': 'bg-red-500/80 border-red-700 hover:bg-red-500',
-    'huỷ': 'bg-orange-500/80 border-orange-700 hover:bg-orange-500',
   }
 
   const timeIndicatorTop = (getHours(currentTime) + getMinutes(currentTime) / 60) * 64;
@@ -431,7 +431,7 @@ export function GlobalScheduleView() {
                             <div
                                 className={cn(
                                     "absolute rounded-lg p-2 shadow-sm z-10 border cursor-pointer hover:bg-opacity-90 overflow-hidden text-white",
-                                    statusColors[item.status]
+                                    statusColors[item.status as GoalStatus]
                                 )}
                                 style={{
                                     top: `${item.top}px`,
@@ -477,3 +477,5 @@ export function GlobalScheduleView() {
     </div>
   );
 }
+
+    

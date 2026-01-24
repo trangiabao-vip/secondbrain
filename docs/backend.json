@@ -115,7 +115,7 @@
         "status": {
           "type": "string",
           "description": "The current status of the goal.",
-          "enum": ["chưa bắt đầu", "đang làm", "hoàn thành", "thất bại", "huỷ"]
+          "enum": ["chưa bắt đầu", "đang làm", "hoàn thành", "thất bại"]
         },
         "priority": {
           "type": "string",
@@ -179,7 +179,7 @@
         "status": {
           "type": "string",
           "description": "The current status of the task.",
-          "enum": ["chưa bắt đầu", "đang làm", "hoàn thành", "thất bại", "huỷ"]
+          "enum": ["chưa bắt đầu", "đang làm", "hoàn thành", "thất bại"]
         },
         "difficulty": {
             "type": "string",

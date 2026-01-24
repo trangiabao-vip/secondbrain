@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useEffect, useRef } from "react";
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
@@ -38,7 +39,6 @@ const statusOptions: Record<GoalStatus, string> = {
     'đang làm': 'Đang làm',
     'hoàn thành': 'Hoàn thành',
     'thất bại': 'Thất bại',
-    'huỷ': 'Huỷ',
 };
 
 const typeOptions = {
@@ -154,7 +154,6 @@ export function GoalsView() {
     'đang làm': 'bg-blue-500 border-blue-400 text-blue-100',
     'hoàn thành': 'bg-green-500 border-green-400 text-green-100',
     'thất bại': 'bg-red-500 border-red-400 text-red-100',
-    'huỷ': 'bg-orange-500 border-orange-400 text-orange-100',
   }
 
   const priorityConfig: Record<GoalPriority, { color: string; icon: keyof typeof Icons, label: string }> = {
@@ -290,7 +289,6 @@ export function GoalsView() {
                                                       <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'đang làm' })}>Đang làm</DropdownMenuItem>
                                                       <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'hoàn thành' })}>Hoàn thành</DropdownMenuItem>
                                                       <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'thất bại' })}>Thất bại</DropdownMenuItem>
-                                                       <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'huỷ' })}>Huỷ</DropdownMenuItem>
                                                   </DropdownMenuSubContent>
                                               </DropdownMenuPortal>
                                           </DropdownMenuSub>
@@ -465,3 +463,5 @@ export function GoalsView() {
     </div>
   );
 }
+
+    

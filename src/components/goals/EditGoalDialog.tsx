@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, type ReactNode, useEffect, useRef } from 'react';
 import {
@@ -289,7 +290,6 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                   <SelectItem value="đang làm">Đang làm</SelectItem>
                   <SelectItem value="hoàn thành">Hoàn thành</SelectItem>
                   <SelectItem value="thất bại">Thất bại</SelectItem>
-                  <SelectItem value="huỷ">Huỷ</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -345,3 +345,5 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
     </Dialog>
   );
 }
+
+    

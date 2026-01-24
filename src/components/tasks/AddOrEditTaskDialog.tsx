@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, type ReactNode, useEffect, useMemo } from 'react';
 import {
@@ -331,16 +332,9 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
     }
   };
 
-  const handleDeleteSeries = () => {
+  const handleDeleteTask = () => {
     if (originalTaskId) {
       deleteTask(originalTaskId);
-      closeDialog();
-    }
-  }
-
-  const handleCancelInstance = () => {
-    if (isRecurringInstance && taskId) {
-       updateTask(taskId, { status: 'huỷ' });
       closeDialog();
     }
   }
@@ -438,7 +432,6 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                   <SelectItem value="đang làm">Đang làm</SelectItem>
                   <SelectItem value="hoàn thành">Hoàn thành</SelectItem>
                   <SelectItem value="thất bại">Thất bại</SelectItem>
-                  <SelectItem value="huỷ">Huỷ</SelectItem>
                   </SelectContent>
               </Select>
               </div>
@@ -625,33 +618,12 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
           </div>
       </div>
       <DialogFooter className="sm:justify-between pt-2">
-          {mode === 'edit' ? (
+          {mode === 'edit' && taskId ? (
               <div className='flex gap-2'>
-                  {isRecurringInstance ? (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="destructive">
-                          <Icons.delete className="mr-2 h-4 w-4" />
-                          Xóa...
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={handleCancelInstance}>
-                          <Icons.close className="mr-2 h-4 w-4" />
-                          Hủy bỏ nhiệm vụ này
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleDeleteSeries} className="text-destructive">
-                          <Icons.delete className="mr-2 h-4 w-4" />
-                          Xóa toàn bộ chuỗi
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  ) : (
-                    <Button variant="destructive" onClick={handleDeleteSeries}>
+                  <Button variant="destructive" onClick={handleDeleteTask}>
                       <Icons.delete className="mr-2 h-4 w-4" />
                       Xóa
-                    </Button>
-                  )}
+                  </Button>
                   <Button variant="secondary" onClick={handleDuplicateTask}>
                     <Icons.copy className="mr-2 h-4 w-4" />
                     Nhân bản
@@ -683,3 +655,5 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, topicId: in
     </Dialog>
   );
 }
+
+    
