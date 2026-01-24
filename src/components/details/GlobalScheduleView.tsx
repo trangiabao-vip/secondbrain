@@ -7,10 +7,12 @@ import { vi } from 'date-fns/locale';
 import { Icons } from "../icons";
 import { Button } from "../ui/button";
 import { EditGoalDialog } from "../goals/EditGoalDialog";
-import { EditTaskDialog } from "../tasks/EditTaskDialog";
+import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
 import { Goal, Task, GoalStatus, RecurrenceRule } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AddGoalDialog } from "../goals/AddGoalDialog";
+import { Separator } from "../ui/separator";
 
 const hours = Array.from({ length: 24 }, (_, i) => i);
 
@@ -291,22 +293,25 @@ export function GlobalScheduleView() {
     <div className="flex flex-col h-full">
       <header className="flex items-center justify-between pb-4">
         <div className="flex items-center gap-4">
-          <Popover>
-            <PopoverTrigger asChild>
-              <h2 className="text-xl font-bold cursor-pointer hover:text-primary transition-colors">
-                Tháng {format(startOfWeek(currentDate, { locale: vi, weekStartsOn: 0 }), 'M, yyyy', { locale: vi })}
-              </h2>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-               <Calendar
-                locale={vi}
-                mode="single"
-                selected={currentDate}
-                onSelect={(date) => date && setCurrentDate(date)}
-                className="w-full"
-              />
-            </PopoverContent>
-          </Popover>
+            <h2 className="text-xl font-bold">
+                Tháng {format(currentDate, 'M, yyyy', { locale: vi })}
+            </h2>
+             <Popover>
+                <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                        <Icons.calendar className="h-4 w-4" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                <Calendar
+                    locale={vi}
+                    mode="single"
+                    selected={currentDate}
+                    onSelect={(date) => date && setCurrentDate(date)}
+                    className="w-full"
+                />
+                </PopoverContent>
+            </Popover>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={goToPreviousWeek} className="h-8 w-8">
@@ -370,9 +375,9 @@ export function GlobalScheduleView() {
                         );
                       } else {
                         return (
-                          <EditTaskDialog key={item.id} taskId={item.id}>
+                          <AddOrEditTaskDialog key={item.id} mode="edit" taskId={item.id}>
                             {content}
-                          </EditTaskDialog>
+                          </AddOrEditTaskDialog>
                         );
                       }
                     })}
@@ -380,11 +385,40 @@ export function GlobalScheduleView() {
 
                   {/* Hourly section */}
                   <div className="relative">
-                    {hours.map(hour => (
-                      <div key={hour} className="h-16 border-b relative"></div>
-                    ))}
+                    {hours.map(hour => {
+                        const slotDate = setMinutes(setHours(day, hour), 0);
+                        return (
+                        <Popover key={hour}>
+                            <PopoverTrigger asChild>
+                            <div className="h-16 border-b relative group cursor-pointer">
+                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-primary/10 transition-opacity flex items-center justify-center">
+                                    <Icons.add className="h-6 w-6 text-primary/70" />
+                                </div>
+                            </div>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-2" align="start">
+                            <div className="flex flex-col gap-1">
+                                <p className="text-sm font-medium text-muted-foreground px-2 py-1">Tạo lúc {format(slotDate, 'HH:mm')}</p>
+                                <Separator />
+                                <AddOrEditTaskDialog mode="add" startDate={slotDate}>
+                                <Button variant="ghost" className="w-full justify-start">
+                                    <Icons.task className="mr-2 h-4 w-4" />
+                                    Nhiệm vụ mới
+                                </Button>
+                                </AddOrEditTaskDialog>
+                                <AddGoalDialog startDate={slotDate}>
+                                <Button variant="ghost" className="w-full justify-start">
+                                    <Icons.goal className="mr-2 h-4 w-4" />
+                                    Mục tiêu mới
+                                </Button>
+                                </AddGoalDialog>
+                            </div>
+                            </PopoverContent>
+                        </Popover>
+                        );
+                    })}
                      {isToday && (
-                        <div className="absolute w-full z-20" style={{ top: `${timeIndicatorTop}px` }}>
+                        <div className="absolute w-full z-20 pointer-events-none" style={{ top: `${timeIndicatorTop}px` }}>
                             <div className="relative">
                                 <div className="h-0.5 bg-red-500"></div>
                                 <div className="absolute -left-1 -top-1 w-2 h-2 rounded-full bg-red-500"></div>
@@ -427,9 +461,9 @@ export function GlobalScheduleView() {
                           );
                         } else {
                           return (
-                            <EditTaskDialog taskId={item.id} key={item.id}>
+                            <AddOrEditTaskDialog taskId={item.id} mode="edit" key={item.id}>
                               {content}
-                            </EditTaskDialog>
+                            </AddOrEditTaskDialog>
                           );
                         }
                     })}

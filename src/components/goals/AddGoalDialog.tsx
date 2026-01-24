@@ -1,5 +1,5 @@
 'use client';
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactNode, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from '@/contexts/AppContext';
 import { Icons } from '../icons';
-import { format, setHours, setMinutes } from "date-fns";
+import { format, setHours, setMinutes, addMinutes } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -51,7 +51,7 @@ function EditableMarkdown({ value, onChange, placeholder }: { value: string, onC
     );
 }
 
-export function AddGoalDialog({ children }: { children: ReactNode }) {
+export function AddGoalDialog({ children, startDate: initialStartDate }: { children: ReactNode, startDate?: Date }) {
   const { addGoal, selectedTopic } = useAppContext();
   const [goalTitle, setGoalTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -63,17 +63,26 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  const resetState = () => {
-    setGoalTitle('');
-    setDescription('');
-    setPriority('Vừa');
-    setStartDate(undefined);
-    setEndDate(undefined);
-    setStartTime('09:00');
-    setEndTime('10:00');
-    setCustomProperties([]);
-    setIsOpen(false);
-  }
+  useEffect(() => {
+    if (isOpen) {
+      if (initialStartDate) {
+        setStartDate(initialStartDate);
+        setStartTime(format(initialStartDate, "HH:mm"));
+        setEndDate(initialStartDate);
+        setEndTime(format(addMinutes(initialStartDate, 60), "HH:mm"));
+      }
+    } else {
+      // Reset state when closing
+      setGoalTitle('');
+      setDescription('');
+      setPriority('Vừa');
+      setStartDate(undefined);
+      setStartTime('09:00');
+      setEndDate(undefined);
+      setEndTime('10:00');
+      setCustomProperties([]);
+    }
+  }, [isOpen, initialStartDate]);
 
   const combineDateTime = (date: Date, time: string): Date => {
     try {
@@ -117,7 +126,7 @@ export function AddGoalDialog({ children }: { children: ReactNode }) {
         endDate: finalEndDate,
         customProperties: customPropsObject
       });
-      resetState();
+      setIsOpen(false);
     }
   };
 

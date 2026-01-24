@@ -25,6 +25,8 @@ import { AddOrEditTaskDialog } from './AddOrEditTaskDialog';
 
 export function EditTaskDialog({ taskId, children }: { taskId: string, children: ReactNode }) {
   return (
-    <AddOrEditTaskDialog mode="edit" taskId={taskId} children={children} />
+    <AddOrEditTaskDialog mode="edit" taskId={taskId}>
+      {children}
+    </AddOrEditTaskDialog>
   )
 }

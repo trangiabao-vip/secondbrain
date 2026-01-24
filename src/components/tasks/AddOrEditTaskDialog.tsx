@@ -18,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from '@/contexts/AppContext';
 import { Icons } from '../icons';
-import { format, setHours, setMinutes, parseISO, addDays, addWeeks, addMonths, isBefore, getDay } from "date-fns";
+import { format, setHours, setMinutes, parseISO, addDays, addWeeks, addMonths, isBefore, getDay, addMinutes } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { TaskStatus, TaskDifficulty, type Task, type RecurrenceRule, RecurrenceFrequency } from '@/lib/data';
@@ -35,6 +35,7 @@ interface AddOrEditTaskDialogProps {
   goalId?: string;
   topicId?: string;
   channelId?: string;
+  startDate?: Date;
   children: ReactNode;
   mode: 'add' | 'edit';
 }
@@ -153,7 +154,7 @@ const generateRecurrenceDates = (rule: RecurrenceRule, startDate: Date | undefin
     return occurrences;
 };
 
-function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChannelId, mode, closeDialog }: { taskId?: string, initialGoalId?: string, initialTopicId?: string, initialChannelId?: string, mode: 'add' | 'edit', closeDialog: () => void }) {
+function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChannelId, mode, closeDialog, initialStartDate }: { taskId?: string, initialGoalId?: string, initialTopicId?: string, initialChannelId?: string, mode: 'add' | 'edit', closeDialog: () => void, initialStartDate?: Date }) {
   const { getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic, duplicateTask, getGoalById, updateChannel, getChannelById } = useAppContext();
   
   const [taskText, setTaskText] = useState('');
@@ -239,8 +240,15 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
       }
     } else {
       setSelectedGoalId(initialGoalId);
+      if (initialStartDate) {
+        setStartDate(initialStartDate);
+        setStartTime(format(initialStartDate, "HH:mm"));
+        const defaultEndDate = addMinutes(initialStartDate, 30);
+        setEndDate(defaultEndDate);
+        setEndTime(format(defaultEndDate, "HH:mm"));
+      }
     }
-  }, [taskId, mode, getTaskById, initialGoalId, isRecurringInstance, originalTaskId]);
+  }, [taskId, mode, getTaskById, initialGoalId, isRecurringInstance, originalTaskId, initialStartDate]);
 
   const combineDateTime = (date: Date, time: string) => {
     try {
@@ -659,14 +667,14 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
   );
 }
 
-export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, topicId: initialTopicId, channelId: initialChannelId, children, mode }: AddOrEditTaskDialogProps) {
+export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, topicId: initialTopicId, channelId: initialChannelId, children, mode, startDate: initialStartDate }: AddOrEditTaskDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-xl">
-        {isOpen && <TaskDialogContent taskId={taskId} initialGoalId={initialGoalId} initialTopicId={initialTopicId} initialChannelId={initialChannelId} mode={mode} closeDialog={() => setIsOpen(false)} />}
+        {isOpen && <TaskDialogContent taskId={taskId} initialGoalId={initialGoalId} initialTopicId={initialTopicId} initialChannelId={initialChannelId} mode={mode} closeDialog={() => setIsOpen(false)} initialStartDate={initialStartDate} />}
       </DialogContent>
     </Dialog>
   );
