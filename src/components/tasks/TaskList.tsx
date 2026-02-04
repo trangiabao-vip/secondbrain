@@ -19,6 +19,7 @@ import { MarkdownRenderer } from "../ui/markdown-renderer";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { useState } from "react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 
 const getDateFromFirestore = (date: any): Date | null => {
     if (!date) return null;
@@ -114,6 +115,7 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
           const parentTopic = parentGoal 
               ? topics.find(t => t.id === parentGoal.topicId) 
               : (task.topicId ? topics.find(t => t.id === task.topicId) : null);
+          const isRecurringInstance = task.id.includes('-recur-');
 
           return (
             <div key={task.id} className={cn("flex items-start gap-3 p-2 rounded-md hover:bg-background/50 group", task.status === 'hoàn thành' && 'opacity-60')}>
@@ -251,9 +253,34 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); duplicateTask(task.id);}}>
                     <Icons.copy className="h-4 w-4 text-muted-foreground" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); deleteTask(task.id);}}>
-                    <Icons.delete className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
+                                <Icons.delete className="h-4 w-4 text-destructive" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Bạn có chắc chắn không?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    {isRecurringInstance
+                                        ? `Hành động này sẽ xóa toàn bộ chuỗi nhiệm vụ lặp lại "${task.text}".`
+                                        : `Hành động này sẽ xóa nhiệm vụ "${task.text}".`}
+                                    <br/><br/>
+                                    Bạn có thể hoàn tác hành động này trong vài giây sau khi xóa.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                <AlertDialogAction
+                                    className="bg-destructive hover:bg-destructive/90"
+                                    onClick={() => deleteTask(task.id)}
+                                >
+                                    Xóa
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </div>
           )})}
@@ -262,5 +289,3 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
     </div>
   );
 }
-
-    

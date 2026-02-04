@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
@@ -96,7 +97,7 @@ export function WikiView() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Bạn có chắc chắn không?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Hành động này không thể được hoàn tác. Thao tác này sẽ xóa vĩnh viễn trang wiki.
+                                    Hành động này sẽ xóa vĩnh viễn trang wiki. Bạn có thể hoàn tác hành động này trong vài giây.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

@@ -103,7 +103,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     toast({
         title: `Đã xóa ${itemType}`,
-        description: `"${itemName}" đã bị xóa.`,
+        description: `"${itemName}" đã được xóa.`,
         action: <ToastAction altText="Hoàn tác" onClick={handleUndo}>Hoàn tác</ToastAction>,
     });
   };
@@ -289,13 +289,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const deleteTask = (id: string) => {
-    const task = getTaskById(id);
-    createUndoableDelete('nhiệm vụ', id, task?.text, async () => {
-        await deleteDoc(doc(firestore, 'tasks', id));
-    });
-  };
-
   const findTaskInstance = useCallback((id: string): Task | null => {
     const directMatch = tasks.find(t => t.id === id);
     if (directMatch) {
@@ -347,6 +340,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       recurrence: null, 
     };
   }, [tasks]);
+
+  const deleteTask = (id: string) => {
+    const isRecurringInstance = id.includes('-recur-');
+    const originalTaskId = isRecurringInstance ? id.split('-recur-')[0] : id;
+    
+    // We need the task for its text, for the toast.
+    // findTaskInstance can get the details even for a recurring instance.
+    const task = findTaskInstance(id); 
+
+    // We pass the originalTaskId to createUndoableDelete so that the source document is removed from the `tasks` array,
+    // which will prevent any of its recurring instances from being generated.
+    createUndoableDelete('nhiệm vụ', originalTaskId, task?.text, async () => {
+        await deleteDoc(doc(firestore, 'tasks', originalTaskId));
+    });
+  };
 
   const duplicateGoal = async (goalId: string) => {
     if (!user) return;
