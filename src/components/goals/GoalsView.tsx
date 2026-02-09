@@ -38,7 +38,6 @@ const statusOptions: Record<GoalStatus, string> = {
     'chưa bắt đầu': 'Chưa bắt đầu',
     'đang làm': 'Đang làm',
     'hoàn thành': 'Hoàn thành',
-    'thất bại': 'Thất bại',
 };
 
 const typeOptions = {
@@ -107,11 +106,6 @@ export function GoalsView() {
   };
 
   const topicGoals = goals.filter(goal => goal.topicId === selectedTopic.id);
-  const topicTasks = tasks.filter(task => {
-    const isTaskOfTopicGoal = task.goalId ? topicGoals.some(g => g.id === task.goalId) : false;
-    const isStandaloneTaskOfTopic = task.topicId === selectedTopic.id;
-    return isTaskOfTopicGoal || isStandaloneTaskOfTopic;
-  });
 
   const filteredGoals = topicGoals.filter(goal => {
     if (typeFilter === 'task') return false; 
@@ -119,10 +113,17 @@ export function GoalsView() {
     return statusFilters.includes(goal.status);
   }).sort((a,b) => a.order - b.order);
   
-  const filteredStandaloneTasks = topicTasks.filter(task => {
+  const filteredStandaloneTasks = tasks.filter(task => {
+    // Must be a standalone task (no goalId)
     if (task.goalId) return false;
+    
+    // And it must belong to the selected topic
+    if (task.topicId !== selectedTopic.id) return false;
+    
+    // And it must match the UI filters
     if (typeFilter === 'goal') return false;
     if (statusFilters.length > 0 && !statusFilters.includes(task.status)) return false;
+    
     return true;
   });
 
@@ -288,7 +289,6 @@ export function GoalsView() {
                                                       <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'chưa bắt đầu' })}>Chưa bắt đầu</DropdownMenuItem>
                                                       <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'đang làm' })}>Đang làm</DropdownMenuItem>
                                                       <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'hoàn thành' })}>Hoàn thành</DropdownMenuItem>
-                                                      <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'thất bại' })}>Thất bại</DropdownMenuItem>
                                                   </DropdownMenuSubContent>
                                               </DropdownMenuPortal>
                                           </DropdownMenuSub>
@@ -463,5 +463,3 @@ export function GoalsView() {
     </div>
   );
 }
-
-    
