@@ -49,7 +49,7 @@ interface TaskListProps {
 
 
 export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
-  const { tasks: allTasks, updateTask, deleteTask, isDataLoading, duplicateTask, goals, topics } = useAppContext();
+  const { tasks: allTasks, updateTask, deleteTask, isDataLoading, duplicateTask, goals, topics, interests } = useAppContext();
   const [showCompleted, setShowCompleted] = useLocalStorage(`tasksShowCompleted-${goalId || 'standalone'}`, false);
 
   let tasksToRender: Task[];
@@ -115,6 +115,7 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
           const parentTopic = parentGoal 
               ? topics.find(t => t.id === parentGoal.topicId) 
               : (task.topicId ? topics.find(t => t.id === task.topicId) : null);
+          const parentInterest = parentTopic ? interests.find(i => i.id === parentTopic.interestId) : null;
           const isRecurringInstance = task.id.includes('-recur-');
 
           return (
@@ -135,10 +136,17 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
                   </button>
                 </AddOrEditTaskDialog>
 
-                {(parentTopic || parentGoal) && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1.5 pl-px">
+                {(parentInterest || parentTopic || parentGoal) && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1.5 pl-px flex-wrap">
+                    {parentInterest && (
+                      <div className="flex items-center gap-1.5">
+                        <Icons.interest className="h-3 w-3" />
+                        <span>{parentInterest.name}</span>
+                      </div>
+                    )}
                     {parentTopic && (
                       <div className="flex items-center gap-1.5">
+                        {parentInterest && <Icons.right className="h-3 w-3" />}
                         <Icons.topic className="h-3 w-3" />
                         <span>{parentTopic.name}</span>
                       </div>
