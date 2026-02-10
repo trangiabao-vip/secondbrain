@@ -56,6 +56,7 @@ interface AppContextType extends DataContextType, UIContextType {
   getWikiPageById: (id: string) => WikiPage | undefined;
   getSalesPageById: (id: string) => SalesPage | undefined;
   getChannelById: (id: string) => Channel | undefined;
+  getTopicBreadcrumbs: (topicId: string | null) => Topic[];
   handleDragEnd: (result: DropResult) => void;
   logout: () => void;
 }
@@ -90,9 +91,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const deleteTimeout = setTimeout(() => {
         deleteFn().catch(error => {
-            console.error(`Error permanently deleting ${itemType}:`, error);
+            console.error(`Error permanently deleting ${'itemType'}:`, error);
             dataContext.setOptimisticallyDeleted(prev => prev.filter(id => id !== itemId));
-            toast({ variant: 'destructive', title: `Lỗi xóa ${itemType}`, description: `Không thể xóa vĩnh viễn "${itemName}".`});
+            toast({ variant: 'destructive', title: `Lỗi xóa ${'itemType'}`, description: `Không thể xóa vĩnh viễn "${itemName}".`});
         });
     }, 5000); 
 
@@ -649,9 +650,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getWikiPageById,
     getSalesPageById,
     getChannelById,
+    getTopicBreadcrumbs,
     handleDragEnd,
     logout,
-  }), [dataContext, uiContext, topicBreadcrumbs, selectedInterest, selectedTopic]);
+  }), [dataContext, uiContext, topicBreadcrumbs, selectedInterest, selectedTopic, getTopicBreadcrumbs, findTaskInstance]);
 
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
