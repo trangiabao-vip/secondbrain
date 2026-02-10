@@ -341,7 +341,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         }
       } else {
         taskData.topicId = selectedTopicIdForTask;
-        taskData.goalId = undefined;
+        taskData.goalId = null;
       }
 
       if (mode === 'edit' && taskId) {
@@ -482,6 +482,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                   <SelectItem value="chưa bắt đầu">Chưa bắt đầu</SelectItem>
                   <SelectItem value="đang làm">Đang làm</SelectItem>
                   <SelectItem value="hoàn thành">Hoàn thành</SelectItem>
+                  <SelectItem value="thất bại">Thất bại</SelectItem>
                   </SelectContent>
               </Select>
               </div>

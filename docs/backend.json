@@ -159,11 +159,11 @@
           "description": "Additional notes or a detailed description for the task."
         },
         "goalId": {
-          "type": "string",
+          "type": ["string", "null"],
           "description": "The ID of the parent goal. Optional."
         },
         "topicId": {
-          "type": "string",
+          "type": ["string", "null"],
           "description": "The ID of the parent topic if not associated with a goal. Optional."
         },
         "startDate": {
@@ -504,5 +504,3 @@
     }
   }
 }
-
-    
