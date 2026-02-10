@@ -21,7 +21,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { Icons } from '../icons';
 import { format, setHours, setMinutes, parseISO, addDays, addWeeks, addMonths, isBefore, getDay, addMinutes } from "date-fns";
 import { vi } from 'date-fns/locale';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '../ui/select';
 import { TaskStatus, TaskDifficulty, type Task, type RecurrenceRule, RecurrenceFrequency } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
@@ -156,7 +156,11 @@ const generateRecurrenceDates = (rule: RecurrenceRule, startDate: Date | undefin
 };
 
 function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChannelId, mode, closeDialog, initialStartDate }: { taskId?: string, initialGoalId?: string, initialTopicId?: string, initialChannelId?: string, mode: 'add' | 'edit', closeDialog: () => void, initialStartDate?: Date }) {
-  const { getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic, duplicateTask, getGoalById, updateChannel, getChannelById, getTopicById } = useAppContext();
+  const { 
+      getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic, 
+      duplicateTask, getGoalById, updateChannel, getChannelById, getTopicById,
+      interests, topics, getTopicBreadcrumbs 
+    } = useAppContext();
   
   const [taskText, setTaskText] = useState('');
   const [notes, setNotes] = useState('');
@@ -167,6 +171,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
   const [endTime, setEndTime] = useState('10:00');
   const [status, setStatus] = useState<TaskStatus>('chưa bắt đầu');
   const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(initialGoalId);
+  const [selectedTopicIdForTask, setSelectedTopicIdForTask] = useState<string | undefined>();
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule>({
@@ -175,13 +180,22 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
     daysOfWeek: [],
   });
 
-  const topicForThisTask = useMemo(() => {
-    return initialTopicId ? getTopicById(initialTopicId) : selectedTopic;
-  }, [initialTopicId, selectedTopic, getTopicById]);
+  const topicOptions = useMemo(() => {
+    return topics.map(topic => {
+        const breadcrumbs = getTopicBreadcrumbs(topic.id);
+        const name = breadcrumbs.map(b => b.name).join(' / ');
+        return {
+            id: topic.id,
+            name: name,
+            interestId: topic.interestId
+        }
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  }, [topics, getTopicBreadcrumbs]);
 
-  const topicGoals = useMemo(() => {
-    return goals.filter(g => g.topicId === topicForThisTask?.id);
-  }, [goals, topicForThisTask]);
+  const availableGoals = useMemo(() => {
+    if (!selectedTopicIdForTask) return [];
+    return goals.filter(g => g.topicId === selectedTopicIdForTask);
+  }, [goals, selectedTopicIdForTask]);
 
   const isRecurringInstance = taskId?.includes('-recur-');
   const originalTaskId = isRecurringInstance ? taskId.split('-recur-')[0] : taskId;
@@ -193,6 +207,15 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         setTaskText(task.text);
         setNotes(task.notes || '');
         setDifficulty(task.difficulty || 'Vừa');
+        
+        let parentTopicId: string | undefined;
+        if (task.goalId) {
+            const parentGoal = getGoalById(task.goalId);
+            parentTopicId = parentGoal?.topicId;
+        } else if (task.topicId) {
+            parentTopicId = task.topicId;
+        }
+        setSelectedTopicIdForTask(parentTopicId);
         
         let currentStatus = task.status;
         let sDate;
@@ -246,8 +269,15 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
           setRecurrenceRule({ frequency: 'weekly', interval: 1, daysOfWeek: [] });
         }
       }
-    } else {
+    } else { // ADD mode
       setSelectedGoalId(initialGoalId);
+      if(initialGoalId) {
+        const parentGoal = getGoalById(initialGoalId);
+        setSelectedTopicIdForTask(parentGoal?.topicId);
+      } else {
+        setSelectedTopicIdForTask(initialTopicId || selectedTopic?.id);
+      }
+
       if (initialStartDate) {
         setStartDate(initialStartDate);
         setStartTime(format(initialStartDate, "HH:mm"));
@@ -256,7 +286,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         setEndTime(format(defaultEndDate, "HH:mm"));
       }
     }
-  }, [taskId, mode, getTaskById, initialGoalId, isRecurringInstance, originalTaskId, initialStartDate]);
+  }, [taskId, mode, getTaskById, initialGoalId, isRecurringInstance, originalTaskId, initialStartDate, getGoalById, initialTopicId, selectedTopic]);
 
   const combineDateTime = (date: Date, time: string) => {
     try {
@@ -299,21 +329,19 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         status: status,
         startDate: finalStartDate,
         endDate: finalEndDate,
-        goalId: selectedGoalId === 'none' || selectedGoalId === undefined ? null : selectedGoalId,
         recurrence: isRecurring && !isRecurringInstance ? recurrenceRule : null,
         customProperties: customPropsObject,
       };
       
-      // Explicitly handle topicId
-      if (taskData.goalId) {
-        // If there's a goal, derive topicId from the goal
-        const parentGoal = getGoalById(taskData.goalId);
-        if (parentGoal) {
+      if (selectedGoalId && selectedGoalId !== 'none') {
+        const parentGoal = getGoalById(selectedGoalId);
+        if(parentGoal) {
           taskData.topicId = parentGoal.topicId;
+          taskData.goalId = selectedGoalId;
         }
-      } else if (topicForThisTask) {
-        // If it's a standalone task, use the determined topic
-        taskData.topicId = topicForThisTask.id;
+      } else {
+        taskData.topicId = selectedTopicIdForTask;
+        taskData.goalId = undefined;
       }
 
       if (mode === 'edit' && taskId) {
@@ -367,12 +395,17 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
     { id: 'SA', label: 'T7' },
   ] as const;
 
+  const handleTopicChange = (topicId: string) => {
+    setSelectedTopicIdForTask(topicId);
+    setSelectedGoalId(undefined); // Reset goal when topic changes
+  };
+
   return (
     <>
       <DialogHeader>
         <DialogTitle>{mode === 'edit' ? 'Chỉnh sửa nhiệm vụ' : 'Thêm nhiệm vụ mới'}</DialogTitle>
         <DialogDescription>
-          {topicForThisTask ? `Trong chủ đề: "${topicForThisTask.name}"` : 'Thêm một nhiệm vụ mới vào một trong các mục tiêu của bạn.'}
+            Thêm hoặc chỉnh sửa chi tiết nhiệm vụ và chỉ định nó vào một chủ đề và mục tiêu.
         </DialogDescription>
       </DialogHeader>
       <div className="space-y-4 py-2 max-h-[80vh] overflow-y-auto pr-4">
@@ -394,14 +427,32 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
             />
           </div>
            <div className="space-y-2">
-            <Label htmlFor="task-goal">Mục tiêu (Tùy chọn)</Label>
-            <Select value={selectedGoalId || 'none'} onValueChange={setSelectedGoalId}>
-              <SelectTrigger id="task-goal">
-                <SelectValue placeholder="Chọn một mục tiêu (hoặc để trống)" />
+            <Label htmlFor="task-topic">Chủ đề</Label>
+            <Select value={selectedTopicIdForTask || ''} onValueChange={handleTopicChange}>
+              <SelectTrigger id="task-topic">
+                <SelectValue placeholder="Chọn một chủ đề" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Không có mục tiêu</SelectItem>
-                {topicGoals.map(goal => (
+                {interests.map(interest => (
+                    <SelectGroup key={interest.id}>
+                        <SelectLabel>{interest.name}</SelectLabel>
+                        {topicOptions.filter(t => t.interestId === interest.id).map(topic => (
+                             <SelectItem key={topic.id} value={topic.id}>{topic.name}</SelectItem>
+                        ))}
+                    </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="task-goal">Mục tiêu (Tùy chọn)</Label>
+            <Select value={selectedGoalId || 'none'} onValueChange={setSelectedGoalId} disabled={!selectedTopicIdForTask}>
+              <SelectTrigger id="task-goal">
+                <SelectValue placeholder="Chọn một mục tiêu" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Không có mục tiêu (nhiệm vụ độc lập)</SelectItem>
+                {availableGoals.map(goal => (
                   <SelectItem key={goal.id} value={goal.id}>{goal.title}</SelectItem>
                 ))}
               </SelectContent>
@@ -431,7 +482,6 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                   <SelectItem value="chưa bắt đầu">Chưa bắt đầu</SelectItem>
                   <SelectItem value="đang làm">Đang làm</SelectItem>
                   <SelectItem value="hoàn thành">Hoàn thành</SelectItem>
-                  <SelectItem value="thất bại">Thất bại</SelectItem>
                   </SelectContent>
               </Select>
               </div>
@@ -656,4 +706,3 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, topicId: in
   );
 }
 
-    
