@@ -1,5 +1,3 @@
-
-
 'use client';
 import { useState, type ReactNode, useEffect, useMemo } from 'react';
 import {
@@ -29,6 +27,16 @@ import { MarkdownRenderer } from '../ui/markdown-renderer';
 import { Switch } from '../ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { cn } from '@/lib/utils';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 
 
 interface AddOrEditTaskDialogProps {
@@ -170,7 +178,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [endTime, setEndTime] = useState('10:00');
   const [status, setStatus] = useState<TaskStatus>('chưa bắt đầu');
-  const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(initialGoalId);
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(initialGoalId || null);
   const [selectedTopicIdForTask, setSelectedTopicIdForTask] = useState<string | undefined>();
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isRecurring, setIsRecurring] = useState(false);
@@ -179,6 +187,9 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
     interval: 1,
     daysOfWeek: [],
   });
+
+  const [topicPopoverOpen, setTopicPopoverOpen] = useState(false);
+  const [goalPopoverOpen, setGoalPopoverOpen] = useState(false);
 
   const topicOptions = useMemo(() => {
     return topics.map(topic => {
@@ -234,7 +245,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         }
 
         setStatus(currentStatus);
-        setSelectedGoalId(task.goalId || undefined);
+        setSelectedGoalId(task.goalId || null);
         setStartDate(sDate);
         if (sDate) setStartTime(format(sDate, "HH:mm"));
         else setStartTime('09:00');
@@ -270,7 +281,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         }
       }
     } else { // ADD mode
-      setSelectedGoalId(initialGoalId);
+      setSelectedGoalId(initialGoalId || null);
       if(initialGoalId) {
         const parentGoal = getGoalById(initialGoalId);
         setSelectedTopicIdForTask(parentGoal?.topicId);
@@ -333,7 +344,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         customProperties: customPropsObject,
       };
       
-      if (selectedGoalId && selectedGoalId !== 'none') {
+      if (selectedGoalId) {
         const parentGoal = getGoalById(selectedGoalId);
         if(parentGoal) {
           taskData.topicId = parentGoal.topicId;
@@ -397,7 +408,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
 
   const handleTopicChange = (topicId: string) => {
     setSelectedTopicIdForTask(topicId);
-    setSelectedGoalId(undefined); // Reset goal when topic changes
+    setSelectedGoalId(null); // Reset goal when topic changes
   };
 
   return (
@@ -428,35 +439,121 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
           </div>
            <div className="space-y-2">
             <Label htmlFor="task-topic">Chủ đề</Label>
-            <Select value={selectedTopicIdForTask || ''} onValueChange={handleTopicChange}>
-              <SelectTrigger id="task-topic">
-                <SelectValue placeholder="Chọn một chủ đề" />
-              </SelectTrigger>
-              <SelectContent>
-                {interests.map(interest => (
-                    <SelectGroup key={interest.id}>
-                        <SelectLabel>{interest.name}</SelectLabel>
-                        {topicOptions.filter(t => t.interestId === interest.id).map(topic => (
-                             <SelectItem key={topic.id} value={topic.id}>{topic.name}</SelectItem>
-                        ))}
-                    </SelectGroup>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={topicPopoverOpen} onOpenChange={setTopicPopoverOpen}>
+                <PopoverTrigger asChild>
+                    <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={topicPopoverOpen}
+                        className="w-full justify-between"
+                    >
+                        <span className="truncate">
+                          {selectedTopicIdForTask
+                              ? topicOptions.find(topic => topic.id === selectedTopicIdForTask)?.name
+                              : "Chọn một chủ đề..."}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                        <CommandInput placeholder="Tìm chủ đề..." />
+                        <CommandList>
+                            <CommandEmpty>Không tìm thấy chủ đề.</CommandEmpty>
+                            {interests.map(interest => {
+                                const interestTopics = topicOptions.filter(t => t.interestId === interest.id);
+                                if (interestTopics.length === 0) return null;
+                                return (
+                                    <CommandGroup key={interest.id} heading={interest.name}>
+                                        {interestTopics.map(topic => (
+                                            <CommandItem
+                                                key={topic.id}
+                                                value={topic.name}
+                                                onSelect={() => {
+                                                    handleTopicChange(topic.id);
+                                                    setTopicPopoverOpen(false);
+                                                }}
+                                            >
+                                                <Check
+                                                    className={cn(
+                                                        "mr-2 h-4 w-4",
+                                                        selectedTopicIdForTask === topic.id ? "opacity-100" : "opacity-0"
+                                                    )}
+                                                />
+                                                {topic.name}
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                );
+                            })}
+                        </CommandList>
+                    </Command>
+                </PopoverContent>
+            </Popover>
           </div>
           <div className="space-y-2">
             <Label htmlFor="task-goal">Mục tiêu (Tùy chọn)</Label>
-            <Select value={selectedGoalId || 'none'} onValueChange={setSelectedGoalId} disabled={!selectedTopicIdForTask}>
-              <SelectTrigger id="task-goal">
-                <SelectValue placeholder="Chọn một mục tiêu" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Không có mục tiêu (nhiệm vụ độc lập)</SelectItem>
-                {availableGoals.map(goal => (
-                  <SelectItem key={goal.id} value={goal.id}>{goal.title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={goalPopoverOpen} onOpenChange={setGoalPopoverOpen}>
+                <PopoverTrigger asChild>
+                    <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={goalPopoverOpen}
+                        className="w-full justify-between"
+                        disabled={!selectedTopicIdForTask}
+                    >
+                        <span className="truncate">
+                          {selectedGoalId
+                            ? availableGoals.find(goal => goal.id === selectedGoalId)?.title
+                            : "Chọn một mục tiêu..."}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                        <CommandInput placeholder="Tìm mục tiêu..." />
+                        <CommandList>
+                            <CommandEmpty>Không có mục tiêu nào.</CommandEmpty>
+                            <CommandItem
+                                value="Không có mục tiêu (nhiệm vụ độc lập)"
+                                onSelect={() => {
+                                    setSelectedGoalId(null);
+                                    setGoalPopoverOpen(false);
+                                }}
+                            >
+                                <Check
+                                    className={cn(
+                                        "mr-2 h-4 w-4",
+                                        !selectedGoalId ? "opacity-100" : "opacity-0"
+                                    )}
+                                />
+                                Không có mục tiêu (nhiệm vụ độc lập)
+                            </CommandItem>
+                            <CommandGroup>
+                            {availableGoals.map(goal => (
+                                <CommandItem
+                                    key={goal.id}
+                                    value={goal.title}
+                                    onSelect={() => {
+                                        setSelectedGoalId(goal.id);
+                                        setGoalPopoverOpen(false);
+                                    }}
+                                >
+                                    <Check
+                                        className={cn(
+                                            "mr-2 h-4 w-4",
+                                            selectedGoalId === goal.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                    />
+                                    {goal.title}
+                                </CommandItem>
+                            ))}
+                            </CommandGroup>
+                        </CommandList>
+                    </Command>
+                </PopoverContent>
+            </Popover>
           </div>
           <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -706,4 +803,3 @@ export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, topicId: in
     </Dialog>
   );
 }
-
