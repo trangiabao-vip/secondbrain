@@ -49,7 +49,7 @@ interface TaskListProps {
 
 
 export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
-  const { tasks: allTasks, updateTask, deleteTask, isDataLoading, duplicateTask, goals, topics, interests } = useAppContext();
+  const { tasks: allTasks, updateTask, deleteTask, isDataLoading, duplicateTask, goals, topics, interests, getTopicBreadcrumbs } = useAppContext();
   const [showCompleted, setShowCompleted] = useLocalStorage(`tasksShowCompleted-${goalId || 'standalone'}`, false);
 
   let tasksToRender: Task[];
@@ -111,11 +111,16 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
         {filteredTasks.map((task, index) => {
           const startDate = getDateFromFirestore(task.startDate);
           const currentStatus = statusConfig[task.status];
+          
           const parentGoal = task.goalId ? goals.find(g => g.id === task.goalId) : null;
-          const parentTopic = parentGoal 
+          const directParentTopic = parentGoal 
               ? topics.find(t => t.id === parentGoal.topicId) 
               : (task.topicId ? topics.find(t => t.id === task.topicId) : null);
-          const parentInterest = parentTopic ? interests.find(i => i.id === parentTopic.interestId) : null;
+          
+          const topicBreadcrumbList = directParentTopic ? getTopicBreadcrumbs(directParentTopic.id) : [];
+          const topicPath = topicBreadcrumbList.map(t => t.name).join(' / ');
+          const parentInterest = topicBreadcrumbList.length > 0 ? interests.find(i => i.id === topicBreadcrumbList[0].interestId) : null;
+
           const isRecurringInstance = task.id.includes('-recur-');
 
           return (
@@ -136,7 +141,7 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
                   </button>
                 </AddOrEditTaskDialog>
 
-                {(parentInterest || parentTopic || parentGoal) && (
+                {(parentInterest || topicPath || parentGoal) && (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1.5 pl-px flex-wrap">
                     {parentInterest && (
                       <div className="flex items-center gap-1.5">
@@ -144,23 +149,22 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
                         <span>{parentInterest.name}</span>
                       </div>
                     )}
-                    {parentTopic && (
+                    {topicPath && (
                       <div className="flex items-center gap-1.5">
                         {parentInterest && <Icons.right className="h-3 w-3" />}
                         <Icons.topic className="h-3 w-3" />
-                        <span>{parentTopic.name}</span>
+                        <span>{topicPath}</span>
                       </div>
                     )}
                     {parentGoal && (
                       <div className="flex items-center gap-1.5">
-                        {parentTopic && <Icons.right className="h-3 w-3" />}
+                        {topicPath && <Icons.right className="h-3 w-3" />}
                         <Icons.goal className="h-3 w-3" />
                         <span>{parentGoal.title}</span>
                       </div>
                     )}
                   </div>
                 )}
-
 
                 <div className="flex items-center gap-2 flex-wrap mt-2">
                     <TooltipProvider>
