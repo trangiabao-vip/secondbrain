@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, type ReactNode, useEffect, useMemo } from 'react';
 import {
@@ -460,32 +461,26 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                         <CommandInput placeholder="Tìm chủ đề..." />
                         <CommandList>
                             <CommandEmpty>Không tìm thấy chủ đề.</CommandEmpty>
-                            {interests.map(interest => {
-                                const interestTopics = topicOptions.filter(t => t.interestId === interest.id);
-                                if (interestTopics.length === 0) return null;
-                                return (
-                                    <CommandGroup key={interest.id} heading={interest.name}>
-                                        {interestTopics.map(topic => (
-                                            <CommandItem
-                                                key={topic.id}
-                                                value={topic.name}
-                                                onSelect={() => {
-                                                    handleTopicChange(topic.id);
-                                                    setTopicPopoverOpen(false);
-                                                }}
-                                            >
-                                                <Check
-                                                    className={cn(
-                                                        "mr-2 h-4 w-4",
-                                                        selectedTopicIdForTask === topic.id ? "opacity-100" : "opacity-0"
-                                                    )}
-                                                />
-                                                {topic.name}
-                                            </CommandItem>
-                                        ))}
-                                    </CommandGroup>
-                                );
-                            })}
+                            <CommandGroup>
+                              {topicOptions.map(topic => (
+                                  <CommandItem
+                                      key={topic.id}
+                                      value={topic.name}
+                                      onSelect={() => {
+                                          handleTopicChange(topic.id);
+                                          setTopicPopoverOpen(false);
+                                      }}
+                                  >
+                                      <Check
+                                          className={cn(
+                                              "mr-2 h-4 w-4",
+                                              selectedTopicIdForTask === topic.id ? "opacity-100" : "opacity-0"
+                                          )}
+                                      />
+                                      <span className="truncate">{topic.name}</span>
+                                  </CommandItem>
+                              ))}
+                            </CommandGroup>
                         </CommandList>
                     </Command>
                 </PopoverContent>
@@ -530,7 +525,6 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                                 />
                                 Không có mục tiêu (nhiệm vụ độc lập)
                             </CommandItem>
-                            <CommandGroup>
                             {availableGoals.map(goal => (
                                 <CommandItem
                                     key={goal.id}
@@ -549,7 +543,6 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                                     {goal.title}
                                 </CommandItem>
                             ))}
-                            </CommandGroup>
                         </CommandList>
                     </Command>
                 </PopoverContent>
@@ -579,7 +572,6 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                   <SelectItem value="chưa bắt đầu">Chưa bắt đầu</SelectItem>
                   <SelectItem value="đang làm">Đang làm</SelectItem>
                   <SelectItem value="hoàn thành">Hoàn thành</SelectItem>
-                  <SelectItem value="thất bại">Thất bại</SelectItem>
                   </SelectContent>
               </Select>
               </div>
