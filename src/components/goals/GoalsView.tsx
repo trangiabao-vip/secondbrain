@@ -38,6 +38,7 @@ const statusOptions: Record<GoalStatus, string> = {
     'chưa bắt đầu': 'Chưa bắt đầu',
     'đang làm': 'Đang làm',
     'hoàn thành': 'Hoàn thành',
+    'thất bại': 'Thất bại',
 };
 
 const typeOptions = {
@@ -289,6 +290,7 @@ export function GoalsView() {
                                                       <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'chưa bắt đầu' })}>Chưa bắt đầu</DropdownMenuItem>
                                                       <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'đang làm' })}>Đang làm</DropdownMenuItem>
                                                       <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'hoàn thành' })}>Hoàn thành</DropdownMenuItem>
+                                                      <DropdownMenuItem onClick={() => updateGoal(goal.id, { status: 'thất bại' })}>Thất bại</DropdownMenuItem>
                                                   </DropdownMenuSubContent>
                                               </DropdownMenuPortal>
                                           </DropdownMenuSub>
