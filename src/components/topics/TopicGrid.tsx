@@ -108,3 +108,5 @@ export function TopicGrid() {
     </div>
   );
 }
+
+export default TopicGrid;

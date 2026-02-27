@@ -478,4 +478,4 @@ export function GlobalScheduleView() {
   );
 }
 
-    
+export default GlobalScheduleView;

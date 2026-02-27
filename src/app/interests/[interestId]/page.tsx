@@ -1,12 +1,40 @@
 'use client';
 
-import { TopicGrid } from "@/components/topics/TopicGrid";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { useAppContext } from "@/contexts/AppContext";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import React, { Suspense } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const TopicGrid = React.lazy(() => 
+  import('@/components/topics/TopicGrid').then(module => ({ default: module.TopicGrid }))
+);
+
+const TopicGridSkeleton = () => (
+    <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+        </div>
+      </div>
+);
+
 
 export default function InterestPage() {
-    const { interests } = useAppContext();
+    const { interests, isDataLoading } = useAppContext();
+
+    if (isDataLoading) {
+        return (
+            <AuthGuard>
+                <TopicGridSkeleton />
+            </AuthGuard>
+        );
+    }
 
     if (interests.length === 0) {
         return (
@@ -18,7 +46,9 @@ export default function InterestPage() {
     
     return (
         <AuthGuard>
-            <TopicGrid />
+            <Suspense fallback={<TopicGridSkeleton />}>
+                <TopicGrid />
+            </Suspense>
         </AuthGuard>
     );
 }

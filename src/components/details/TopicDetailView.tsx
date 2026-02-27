@@ -56,3 +56,5 @@ export function TopicDetailView() {
     </div>
   );
 }
+
+export default TopicDetailView;
