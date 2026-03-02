@@ -1,9 +1,9 @@
 
 'use client';
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { useAppContext } from "@/contexts/AppContext";
-import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, parseISO, getMinutes, differenceInMinutes, startOfDay, endOfDay, areIntervalsOverlapping, max, min, isBefore, getDay, addWeeks, addMonths, addMinutes } from "date-fns";
+import { format, isSameDay, startOfWeek, addDays, eachDayOfInterval, getHours, setHours, setMinutes, parseISO, getMinutes, differenceInMinutes, startOfDay, endOfDay, areIntervalsOverlapping, max, min, isBefore, getDay, addWeeks, addMonths, addMinutes, set } from "date-fns";
 import { vi } from 'date-fns/locale';
 import { Icons } from "../icons";
 import { Button } from "../ui/button";
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AddGoalDialog } from "../goals/AddGoalDialog";
 import { Separator } from "../ui/separator";
+import { motion, type PanInfo } from "framer-motion";
 
 const hours = Array.from({ length: 24 }, (_, i) => i);
 
@@ -193,9 +194,10 @@ const calculateLayout = (items: ScheduledItem[]): PositionedItem[] => {
 
 
 export function GlobalScheduleView() {
-  const { goals, tasks } = useAppContext();
+  const { goals, tasks, updateTask, updateGoal } = useAppContext();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentTime, setCurrentTime] = useState(new Date());
+  const weekDaysContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -203,6 +205,42 @@ export function GlobalScheduleView() {
     }, 60000); // Update every minute
     return () => clearInterval(timer);
   }, []);
+
+  const handleEventDrop = (info: PanInfo, item: PositionedItem) => {
+    // A small threshold to distinguish a click from a drag.
+    if (Math.abs(info.offset.y) < 5) {
+        return;
+    }
+
+    const newTop = item.top + info.offset.y;
+    // Snap to nearest 15-minute interval
+    const totalMinutes = Math.round((newTop / 64) * 60 / 15) * 15;
+    const newHours = Math.floor(totalMinutes / 60);
+    const newMinutes = totalMinutes % 60;
+    
+    // Create new start date, preserving the original day
+    const newStartDate = set(item.startDate, {
+        hours: newHours,
+        minutes: newMinutes,
+        seconds: 0,
+        milliseconds: 0
+    });
+
+    // Preserve event duration
+    const durationInMinutes = differenceInMinutes(item.endDate, item.startDate);
+    const newEndDate = addMinutes(newStartDate, durationInMinutes);
+
+    const updatedData = {
+        startDate: newStartDate,
+        endDate: newEndDate,
+    };
+
+    if (item.type === 'goal') {
+        updateGoal(item.id, updatedData);
+    } else {
+        updateTask(item.id, updatedData);
+    }
+  };
 
   const week = useMemo(() => {
     const start = startOfWeek(currentDate, { weekStartsOn: 0 }); // Sunday as start of the week
@@ -340,7 +378,7 @@ export function GlobalScheduleView() {
           </div>
 
           {/* Day columns */}
-          <div className="grid grid-cols-7">
+          <div className="grid grid-cols-7" ref={weekDaysContainerRef}>
             {week.map(day => {
               const dayItems = getScheduledItemsForDay(day);
               const layout = calculateLayout(dayItems);
@@ -428,9 +466,14 @@ export function GlobalScheduleView() {
                     {layout.map(item => {
                         const originalId = item.id.includes('-recur-') ? item.id.split('-recur-')[0] : item.id;
                         const content = (
-                            <div
+                            <motion.div
+                                drag="y"
+                                onDragEnd={(e, info) => handleEventDrop(info, item)}
+                                dragConstraints={weekDaysContainerRef}
+                                dragMomentum={false}
+                                whileDrag={{ scale: 1.05, zIndex: 50, cursor: 'grabbing' }}
                                 className={cn(
-                                    "absolute rounded-lg p-2 shadow-sm z-10 border cursor-pointer hover:bg-opacity-90 overflow-hidden text-white",
+                                    "absolute rounded-lg p-2 shadow-sm z-10 border cursor-grab hover:bg-opacity-90 overflow-hidden text-white",
                                     statusColors[item.status as GoalStatus]
                                 )}
                                 style={{
@@ -450,7 +493,7 @@ export function GlobalScheduleView() {
                                   {item.startDate && format(item.startDate, 'HH:mm')}
                                   {item.endDate && ` - ${format(item.endDate, 'HH:mm')}`}
                                 </p>
-                            </div>
+                            </motion.div>
                         );
 
                         if (item.type === 'goal') {
