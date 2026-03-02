@@ -198,6 +198,7 @@ export function GlobalScheduleView() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentTime, setCurrentTime] = useState(new Date());
   const weekDaysContainerRef = useRef<HTMLDivElement>(null);
+  const justDraggedRef = useRef(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -207,6 +208,9 @@ export function GlobalScheduleView() {
   }, []);
 
   const handleEventDrop = (info: PanInfo, item: PositionedItem) => {
+    justDraggedRef.current = true;
+    setTimeout(() => { justDraggedRef.current = false; }, 100);
+
     // A small threshold to distinguish a click from a drag.
     if (Math.abs(info.offset.y) < 5) {
         return;
@@ -481,6 +485,12 @@ export function GlobalScheduleView() {
                                     height: `${Math.max(item.height, 24)}px`,
                                     left: `${item.left}%`,
                                     width: `${item.width}%`,
+                                }}
+                                onClick={(e) => {
+                                    if (justDraggedRef.current) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                    }
                                 }}
                             >
                                 <p className="text-xs font-bold truncate flex items-center gap-1.5">
