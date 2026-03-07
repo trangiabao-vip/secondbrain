@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
-import { useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -48,7 +48,7 @@ interface LocationInfo {
 type PermissionStatus = 'granted' | 'denied' | 'prompt' | 'unsupported';
 
 function ProfileView() {
-  const { user, firestore, isUserLoading } = useUser();
+  const { user, firestore, isUserLoading } = useFirebase();
   const [deviceInfo, setDeviceInfo] = useState<Partial<DeviceInfo>>({});
   const [hardwareInfo, setHardwareInfo] = useState<HardwareInfo>({});
   const [isHardwareInfoLoading, setIsHardwareInfoLoading] = useState(true);
@@ -72,7 +72,7 @@ function ProfileView() {
   const [nfcPermission, setNfcPermission] = useState<PermissionStatus | null>(null);
 
   const profilesQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return collection(firestore, 'users', user.uid, 'deviceProfiles');
   }, [firestore, user]);
 
