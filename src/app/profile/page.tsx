@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Camera, Mic, Wifi, WifiOff, Globe, Monitor, Bot, Languages, Cookie, Clipboard } from 'lucide-react';
+import { Bell, Camera, Mic, Wifi, WifiOff, Globe, Monitor, Bot, Languages, Cookie, Clipboard, Cpu, MemoryStick, Battery, BatteryCharging, Signal, Info } from 'lucide-react';
 
 interface DeviceInfo {
   userAgent: string;
@@ -15,6 +15,17 @@ interface DeviceInfo {
   language: string;
   isOnline: boolean;
   cookiesEnabled: boolean;
+}
+
+interface HardwareInfo {
+  cpuCores?: number;
+  memory?: number;
+  platform?: string;
+  connectionType?: string;
+  battery?: {
+    level: number;
+    charging: boolean;
+  };
 }
 
 interface LocationInfo {
@@ -28,6 +39,8 @@ type PermissionStatus = 'granted' | 'denied' | 'prompt';
 function ProfileView() {
   const { user, isUserLoading } = useUser();
   const [deviceInfo, setDeviceInfo] = useState<Partial<DeviceInfo>>({});
+  const [hardwareInfo, setHardwareInfo] = useState<HardwareInfo>({});
+  const [isHardwareInfoLoading, setIsHardwareInfoLoading] = useState(true);
   const [location, setLocation] = useState<LocationInfo | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isLocationLoading, setIsLocationLoading] = useState(false);
@@ -38,6 +51,7 @@ function ProfileView() {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && navigator) {
+      // Basic info
       setDeviceInfo({
         userAgent: navigator.userAgent,
         screen: `${window.screen.width}x${window.screen.height}`,
@@ -50,13 +64,45 @@ function ProfileView() {
       window.addEventListener('online', updateOnlineStatus);
       window.addEventListener('offline', updateOnlineStatus);
       
-      // Check initial notification permission status
+      // Permissions
       if ('permissions' in navigator) {
           navigator.permissions.query({ name: 'notifications' }).then(status => {
               setNotificationPermission(status.state);
               status.onchange = () => setNotificationPermission(status.state);
           });
       }
+
+      // Advanced Hardware & Network Info
+      const getAdvancedInfo = async () => {
+        setIsHardwareInfoLoading(true);
+        const info: HardwareInfo = {};
+        try {
+          if ('hardwareConcurrency' in navigator) info.cpuCores = navigator.hardwareConcurrency;
+          if ('deviceMemory' in navigator) info.memory = (navigator as any).deviceMemory;
+          if ((navigator as any).userAgentData) {
+            const uaData = await (navigator as any).userAgentData.getHighEntropyValues(['platform']);
+            info.platform = uaData.platform;
+          } else if ('platform' in navigator) {
+            info.platform = navigator.platform;
+          }
+          if ('connection' in navigator) info.connectionType = (navigator as any).connection.effectiveType;
+
+          if ('getBattery' in navigator) {
+            const battery = await (navigator as any).getBattery();
+            info.battery = {
+              level: battery.level * 100,
+              charging: battery.charging,
+            };
+          }
+        } catch (error) {
+          console.warn("Could not retrieve some advanced device info:", error);
+        } finally {
+          setHardwareInfo(info);
+          setIsHardwareInfoLoading(false);
+        }
+      };
+
+      getAdvancedInfo();
 
       return () => {
         window.removeEventListener('online', updateOnlineStatus);
@@ -181,14 +227,14 @@ function ProfileView() {
             </CardContent>
         </Card>
 
-        {/* Browser & Network Info */}
+        {/* Browser & Device Info */}
          <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Bot />Thông tin Trình duyệt & Mạng</CardTitle>
-                <CardDescription>Thông tin kỹ thuật về môi trường bạn đang sử dụng ứng dụng.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><Bot />Thông tin Trình duyệt</CardTitle>
+                <CardDescription>Thông tin kỹ thuật về môi trường trình duyệt của bạn.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
-                 {deviceInfo ? (
+                 {Object.keys(deviceInfo).length > 0 ? (
                     <>
                         <div className="flex items-center justify-between">
                             <div className="font-medium flex items-center gap-2"><Bot className="h-4 w-4"/>Trình duyệt (User Agent)</div>
@@ -206,12 +252,53 @@ function ProfileView() {
                             <div className="font-medium flex items-center gap-2"><Cookie className="h-4 w-4"/>Cookies</div>
                             <p className="text-muted-foreground">{deviceInfo.cookiesEnabled ? 'Đã bật' : 'Đã tắt'}</p>
                         </div>
-                         <div className="flex items-center justify-between">
+                    </>
+                ) : <Skeleton className="h-10 w-full"/>}
+            </CardContent>
+        </Card>
+
+        {/* Hardware & Network Info */}
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Cpu />Thông tin Phần cứng & Mạng</CardTitle>
+                <CardDescription>Thông tin kỹ thuật về phần cứng và kết nối mạng của thiết bị này.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+                {isHardwareInfoLoading ? (
+                    <div className="space-y-4">
+                        <Skeleton className="h-5 w-full" />
+                        <Skeleton className="h-5 w-full" />
+                        <Skeleton className="h-5 w-full" />
+                        <Skeleton className="h-5 w-full" />
+                    </div>
+                ) : (
+                    <>
+                        <div className="flex items-center justify-between">
                             <div className="font-medium flex items-center gap-2">{deviceInfo.isOnline ? <Wifi className="h-4 w-4"/> : <WifiOff className="h-4 w-4"/>}Trạng thái mạng</div>
                             <Badge variant={deviceInfo.isOnline ? 'secondary' : 'destructive'}>{deviceInfo.isOnline ? 'Online' : 'Offline'}</Badge>
                         </div>
+                         <div className="flex items-center justify-between">
+                            <div className="font-medium flex items-center gap-2"><Signal className="h-4 w-4"/>Loại kết nối mạng</div>
+                            <p className="text-muted-foreground capitalize">{hardwareInfo.connectionType || 'Không có'}</p>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div className="font-medium flex items-center gap-2"><Cpu className="h-4 w-4"/>Nhân CPU</div>
+                            <p className="text-muted-foreground">{hardwareInfo.cpuCores || 'Không có'}</p>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div className="font-medium flex items-center gap-2"><MemoryStick className="h-4 w-4"/>Bộ nhớ thiết bị (Ước tính)</div>
+                            <p className="text-muted-foreground">{hardwareInfo.memory ? `${hardwareInfo.memory} GB` : 'Không có'}</p>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div className="font-medium flex items-center gap-2"><Info className="h-4 w-4"/>Nền tảng</div>
+                            <p className="text-muted-foreground">{hardwareInfo.platform || 'Không có'}</p>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div className="font-medium flex items-center gap-2">{hardwareInfo.battery?.charging ? <BatteryCharging className="h-4 w-4"/> : <Battery className="h-4 w-4"/>}Pin</div>
+                            <p className="text-muted-foreground">{hardwareInfo.battery ? `${Math.round(hardwareInfo.battery.level)}% ${hardwareInfo.battery.charging ? '(Đang sạc)' : ''}` : 'Không có'}</p>
+                        </div>
                     </>
-                ) : <Skeleton className="h-10 w-full"/>}
+                )}
             </CardContent>
         </Card>
         
