@@ -178,6 +178,18 @@ export function InterestSidebar() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/profile')}
+                tooltip="Hồ sơ"
+              >
+                <Link href="/profile">
+                  <Icons.businessCard />
+                  <span>Hồ sơ</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
         </SidebarMenu>
         <SidebarSeparator />
         <SidebarMenu>
