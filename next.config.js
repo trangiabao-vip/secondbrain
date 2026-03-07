@@ -1,12 +1,5 @@
 /** @type {import('next').NextConfig} */
 
-const withPWA = require('next-pwa')({
-    dest: 'public',
-    register: true,
-    skipWaiting: true,
-    importScripts: ['/firebase-messaging-sw.js'],
-});
-
 const securityHeaders = [
   {
     key: 'X-DNS-Prefetch-Control',
@@ -79,4 +72,4 @@ const nextConfig = {
   },
 };
 
-module.exports = withPWA(nextConfig);
+module.exports = nextConfig;
