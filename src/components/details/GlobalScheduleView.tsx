@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { AddGoalDialog } from "../goals/AddGoalDialog";
 import { Separator } from "../ui/separator";
 import { motion, type PanInfo } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const hours = Array.from({ length: 24 }, (_, i) => i);
 
@@ -199,6 +200,7 @@ export function GlobalScheduleView() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const weekDaysContainerRef = useRef<HTMLDivElement>(null);
   const justDraggedRef = useRef(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -246,14 +248,17 @@ export function GlobalScheduleView() {
     }
   };
 
-  const week = useMemo(() => {
+  const daysToShow = useMemo(() => {
+    if (isMobile) {
+        return [currentDate];
+    }
     const start = startOfWeek(currentDate, { weekStartsOn: 0 }); // Sunday as start of the week
     return eachDayOfInterval({ start, end: addDays(start, 6) });
-  }, [currentDate]);
+  }, [currentDate, isMobile]);
 
   const scheduledItems = useMemo((): ScheduledItem[] => {
-    const rangeStart = startOfDay(startOfWeek(currentDate, { weekStartsOn: 0 }));
-    const rangeEnd = endOfDay(addDays(rangeStart, 6));
+    const rangeStart = startOfDay(daysToShow[0]);
+    const rangeEnd = endOfDay(daysToShow[daysToShow.length - 1]);
 
     const goalItems: ScheduledItem[] = goals
         .filter(g => g.startDate)
@@ -273,7 +278,7 @@ export function GlobalScheduleView() {
         .filter(item => !tasks.some(existingTask => existingTask.id === item.id));
         
     return [...goalItems, ...baseTasks, ...recurringTaskInstances];
-  }, [goals, tasks, currentDate]);
+  }, [goals, tasks, daysToShow]);
 
   const getScheduledItemsForDay = (day: Date): ScheduledItem[] => {
     const dayStart = startOfDay(day);
@@ -318,8 +323,8 @@ export function GlobalScheduleView() {
     });
   };
 
-  const goToPreviousWeek = () => setCurrentDate(prev => addDays(prev, -7));
-  const goToNextWeek = () => setCurrentDate(prev => addDays(prev, 7));
+  const goToPrevious = () => setCurrentDate(prev => addDays(prev, isMobile ? -1 : -7));
+  const goToNext = () => setCurrentDate(prev => addDays(prev, isMobile ? -1 : 7));
   const goToToday = () => setCurrentDate(new Date());
 
   const statusColors: Record<GoalStatus, string> = {
@@ -331,12 +336,18 @@ export function GlobalScheduleView() {
 
   const timeIndicatorTop = (getHours(currentTime) + getMinutes(currentTime) / 60) * 64;
 
+  const headerDateFormat = isMobile ? 'd MMMM, yyyy' : 'MMMM yyyy';
+  const headerDateString = useMemo(() => {
+    const formatted = format(currentDate, headerDateFormat, { locale: vi });
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  }, [currentDate, headerDateFormat]);
+
   return (
     <div className="flex flex-col h-full">
       <header className="flex items-center justify-between pb-4">
         <div className="flex items-center gap-4">
             <h2 className="text-xl font-bold">
-                Tháng {format(currentDate, 'M, yyyy', { locale: vi })}
+                {isMobile ? headerDateString : `Tháng ${format(currentDate, 'M, yyyy', { locale: vi })}`}
             </h2>
              <Popover>
                 <PopoverTrigger asChild>
@@ -356,18 +367,18 @@ export function GlobalScheduleView() {
             </Popover>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={goToPreviousWeek} className="h-8 w-8">
+          <Button variant="outline" size="icon" onClick={goToPrevious} className="h-8 w-8">
             <Icons.left className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={goToToday}>Hôm nay</Button>
-          <Button variant="outline" size="icon" onClick={goToNextWeek} className="h-8 w-8">
+          <Button variant="outline" size="icon" onClick={goToNext} className="h-8 w-8">
             <Icons.right className="h-4 w-4" />
           </Button>
         </div>
       </header>
 
       <div className="flex-1 overflow-auto">
-        <div className="grid grid-cols-[auto,1fr] min-w-[1000px]">
+        <div className={cn("grid grid-cols-[auto,1fr]", !isMobile && "min-w-[1000px]")}>
           {/* Time column */}
           <div className="w-16 text-xs text-center text-muted-foreground sticky left-0 bg-background z-20">
             <div className="h-10 border-b"></div>
@@ -382,8 +393,8 @@ export function GlobalScheduleView() {
           </div>
 
           {/* Day columns */}
-          <div className="grid grid-cols-7" ref={weekDaysContainerRef}>
-            {week.map(day => {
+          <div className={cn("grid", isMobile ? "grid-cols-1" : "grid-cols-7")} ref={weekDaysContainerRef}>
+            {daysToShow.map(day => {
               const dayItems = getScheduledItemsForDay(day);
               const layout = calculateLayout(dayItems);
               const isToday = isSameDay(day, new Date());
