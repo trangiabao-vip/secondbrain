@@ -165,6 +165,32 @@ export interface Notification {
   createdAt: any;
 }
 
+export interface DeviceProfile {
+  id: string;
+  userId: string;
+  createdAt: any;
+  deviceName: string;
+  deviceInfo: Partial<{
+    userAgent: string;
+    screen: string;
+    language: string;
+    isOnline: boolean;
+    cookiesEnabled: boolean;
+  }>;
+  hardwareInfo: {
+    cpuCores?: number;
+    memory?: number;
+    platform?: string;
+    connectionType?: string;
+    battery?: {
+      level: number;
+      charging: boolean;
+    };
+  };
+  permissions: Record<string, string | null>;
+}
+
+
 export type DataType = {
   interests: Interest[];
   topics: Topic[];

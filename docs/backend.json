@@ -489,6 +489,58 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["title", "body", "sendAt", "isSent", "userId", "createdAt"]
+    },
+    "DeviceProfile": {
+      "title": "Device Profile",
+      "description": "A snapshot of a user's device information, including hardware, browser, and permissions, at a specific point in time.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "deviceName": {
+            "type": "string",
+            "description": "A user-friendly name for the device, e.g., 'My Laptop'."
+        },
+        "deviceInfo": {
+          "type": "object",
+          "properties": {
+            "userAgent": { "type": "string" },
+            "screen": { "type": "string" },
+            "language": { "type": "string" },
+            "isOnline": { "type": "boolean" },
+            "cookiesEnabled": { "type": "boolean" }
+          }
+        },
+        "hardwareInfo": {
+          "type": "object",
+          "properties": {
+            "cpuCores": { "type": ["number", "null"] },
+            "memory": { "type": ["number", "null"] },
+            "platform": { "type": ["string", "null"] },
+            "connectionType": { "type": ["string", "null"] },
+            "battery": {
+              "type": ["object", "null"],
+              "properties": {
+                "level": { "type": "number" },
+                "charging": { "type": "boolean" }
+              }
+            }
+          }
+        },
+        "permissions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["granted", "denied", "prompt", "unsupported", "unknown"]
+          }
+        }
+      },
+      "required": ["userId", "createdAt", "deviceName"]
     }
   },
   "auth": {
@@ -500,6 +552,10 @@
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profile information. The document ID is the user's UID."
+    },
+    "/users/{userId}/deviceProfiles/{profileId}": {
+      "schema": { "$ref": "#/entities/DeviceProfile" },
+      "description": "Stores snapshots of device profiles for a user."
     },
     "/interests/{interestId}": {
       "schema": { "$ref": "#/entities/Interest" },

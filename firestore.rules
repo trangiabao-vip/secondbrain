@@ -15,6 +15,11 @@ service cloud.firestore {
     // Users can only read/write their own user document
     match /users/{userId} {
       allow read, write: if isSignedIn() && isOwner(userId);
+
+      // Users can manage their own device profiles
+      match /deviceProfiles/{profileId} {
+        allow read, write, delete: if isSignedIn() && isOwner(userId);
+      }
     }
     
     // Interests can be read by their owner.

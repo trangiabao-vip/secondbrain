@@ -2,13 +2,23 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
-import { useUser } from '@/firebase';
+import { useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { toast } from '@/hooks/use-toast';
 import { Bell, Camera, Mic, Wifi, WifiOff, Globe, Monitor, Bot, Languages, Cookie, Cpu, MemoryStick, Battery, BatteryCharging, Signal, Info, Database, Eye, Move3d, Orbit, Sun, Speaker, Nfc, ClipboardPaste, Repeat } from 'lucide-react';
+import type { DeviceProfile } from '@/lib/data';
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
 
 interface DeviceInfo {
   userAgent: string;
@@ -38,19 +48,18 @@ interface LocationInfo {
 type PermissionStatus = 'granted' | 'denied' | 'prompt' | 'unsupported';
 
 function ProfileView() {
-  const { user, isUserLoading } = useUser();
+  const { user, firestore, isUserLoading } = useUser();
   const [deviceInfo, setDeviceInfo] = useState<Partial<DeviceInfo>>({});
   const [hardwareInfo, setHardwareInfo] = useState<HardwareInfo>({});
   const [isHardwareInfoLoading, setIsHardwareInfoLoading] = useState(true);
   const [location, setLocation] = useState<LocationInfo | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isLocationLoading, setIsLocationLoading] = useState(false);
+  const [deviceName, setDeviceName] = useState('');
   
   const [notificationPermission, setNotificationPermission] = useState<PermissionStatus | null>(null);
   const [cameraPermission, setCameraPermission] = useState<PermissionStatus | null>(null);
   const [micPermission, setMicPermission] = useState<PermissionStatus | null>(null);
-  
-  // New permissions state
   const [clipboardReadPermission, setClipboardReadPermission] = useState<PermissionStatus | null>(null);
   const [clipboardWritePermission, setClipboardWritePermission] = useState<PermissionStatus | null>(null);
   const [backgroundSyncPermission, setBackgroundSyncPermission] = useState<PermissionStatus | null>(null);
@@ -62,10 +71,29 @@ function ProfileView() {
   const [speakerSelectionPermission, setSpeakerSelectionPermission] = useState<PermissionStatus | null>(null);
   const [nfcPermission, setNfcPermission] = useState<PermissionStatus | null>(null);
 
+  const profilesQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return collection(firestore, 'users', user.uid, 'deviceProfiles');
+  }, [firestore, user]);
+
+  const { data: savedProfiles } = useCollection<DeviceProfile>(profilesQuery);
+
+  useEffect(() => {
+    if (hardwareInfo.platform) {
+        setDeviceName(hardwareInfo.platform);
+    } else if (deviceInfo.userAgent) {
+        const match = deviceInfo.userAgent.match(/\(([^)]+)\)/);
+        if (match && match[1]) {
+            const platform = match[1].split(';')[0];
+            setDeviceName(platform);
+        } else {
+            setDeviceName('Thiết bị không tên');
+        }
+    }
+  }, [hardwareInfo.platform, deviceInfo.userAgent]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && navigator) {
-      // Basic info
       setDeviceInfo({
         userAgent: navigator.userAgent,
         screen: `${window.screen.width}x${window.screen.height}`,
@@ -78,7 +106,6 @@ function ProfileView() {
       window.addEventListener('online', updateOnlineStatus);
       window.addEventListener('offline', updateOnlineStatus);
       
-      // Permissions
       const checkQueryablePermission = async (name: PermissionName, setter: React.Dispatch<React.SetStateAction<PermissionStatus | null>>) => {
         if ('permissions' in navigator) {
             try {
@@ -121,8 +148,6 @@ function ProfileView() {
         setScreenWakeLockPermission('unsupported');
       }
 
-
-      // Advanced Hardware & Network Info
       const getAdvancedInfo = async () => {
         setIsHardwareInfoLoading(true);
         const info: HardwareInfo = {};
@@ -197,7 +222,6 @@ function ProfileView() {
   const handleRequestMedia = async (type: 'camera' | 'microphone') => {
       try {
           const stream = await navigator.mediaDevices.getUserMedia({ [type === 'camera' ? 'video' : 'audio']: true });
-          // Stop tracks immediately after getting permission to avoid leaving camera/mic on
           stream.getTracks().forEach(track => track.stop());
           if (type === 'camera') setCameraPermission('granted');
           if (type === 'microphone') setMicPermission('granted');
@@ -257,8 +281,57 @@ function ProfileView() {
     }
   };
 
+  const handleSaveProfile = () => {
+    if (!user) return;
 
-  const renderPermissionStatus = (status: PermissionStatus | null, requestFn: () => void, featureName: string) => {
+    const permissions = {
+        notifications: notificationPermission,
+        camera: cameraPermission,
+        microphone: micPermission,
+        clipboardRead: clipboardReadPermission,
+        clipboardWrite: clipboardWritePermission,
+        backgroundSync: backgroundSyncPermission,
+        persistentStorage: persistentStoragePermission,
+        screenWakeLock: screenWakeLockPermission,
+        accelerometer: accelerometerPermission,
+        gyroscope: gyroscopePermission,
+        ambientLightSensor: ambientLightSensorPermission,
+        speakerSelection: speakerSelectionPermission,
+        nfc: nfcPermission,
+        geolocation: location ? 'granted' : (locationError ? 'denied' : 'prompt'),
+    };
+    
+    const filteredPermissions = Object.fromEntries(Object.entries(permissions).filter(([, v]) => v != null)) as Record<string, string>;
+
+    const profileData: Omit<DeviceProfile, 'id'> = {
+        userId: user.uid,
+        createdAt: serverTimestamp(),
+        deviceName: deviceName || 'Thiết bị không tên',
+        deviceInfo,
+        hardwareInfo,
+        permissions: filteredPermissions,
+    };
+    
+    const collectionRef = collection(firestore, 'users', user.uid, 'deviceProfiles');
+    addDocumentNonBlocking(collectionRef, profileData);
+
+    toast({
+        title: "Đã lưu hồ sơ thiết bị!",
+        description: `Thông tin cho "${profileData.deviceName}" đã được lưu.`,
+    });
+  };
+
+  const handleDeleteProfile = (profileId: string) => {
+    if (!user) return;
+    const docRef = doc(firestore, 'users', user.uid, 'deviceProfiles', profileId);
+    deleteDocumentNonBlocking(docRef);
+    toast({
+        title: "Đã xóa hồ sơ thiết bị.",
+    });
+  }
+
+
+  const renderPermissionStatus = (status: PermissionStatus | null, requestFn: () => void) => {
     if (status === 'unsupported') {
       return <Badge variant="secondary">Không hỗ trợ</Badge>;
     }
@@ -268,7 +341,23 @@ function ProfileView() {
     if (status === 'denied') {
       return <Badge variant="destructive">Đã từ chối</Badge>;
     }
-    return <Button size="sm" onClick={requestFn}>Yêu cầu quyền</Button>;
+    return <Button size="sm" onClick={requestFn}>Yêu cầu</Button>;
+  };
+  
+  const renderStoredPermissionStatus = (status: string | null) => {
+    if (status === 'unsupported') {
+      return <Badge variant="secondary">Không hỗ trợ</Badge>;
+    }
+    if (status === 'granted') {
+      return <Badge variant="secondary" className="bg-green-500/10 text-green-700">Đã cho phép</Badge>;
+    }
+    if (status === 'denied') {
+      return <Badge variant="destructive">Đã từ chối</Badge>;
+    }
+     if (status === 'prompt') {
+      return <Badge variant="outline">Chờ hỏi</Badge>;
+    }
+    return <Badge variant="secondary">Không rõ</Badge>;
   };
 
   if (isUserLoading || !user) {
@@ -291,7 +380,6 @@ function ProfileView() {
     <div className="space-y-6">
         <h2 className="text-2xl font-bold tracking-tight">Hồ sơ & Thông tin</h2>
 
-        {/* User Account Card */}
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Icons.businessCard />Thông tin Tài khoản</CardTitle>
@@ -309,7 +397,6 @@ function ProfileView() {
             </CardContent>
         </Card>
 
-        {/* Browser & Device Info */}
          <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Bot />Thông tin Trình duyệt</CardTitle>
@@ -339,7 +426,6 @@ function ProfileView() {
             </CardContent>
         </Card>
 
-        {/* Hardware & Network Info */}
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Cpu />Thông tin Phần cứng & Mạng</CardTitle>
@@ -384,18 +470,16 @@ function ProfileView() {
             </CardContent>
         </Card>
         
-        {/* Permissions Card */}
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Icons.clipboard />Quyền Truy cập & Tính năng</CardTitle>
-                <CardDescription>Các tính năng yêu cầu quyền truy cập vào thiết bị của bạn. Thông tin này không được lưu trữ.</CardDescription>
+                <CardDescription>Các tính năng yêu cầu quyền truy cập vào thiết bị của bạn. Thông tin này không được lưu trữ trừ khi bạn lưu hồ sơ thiết bị.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 text-sm">
-                {/* Geolocation */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <div className="font-medium flex items-center gap-2"><Globe className="h-4 w-4" />Vị trí địa lý</div>
-                        {renderPermissionStatus(location ? 'granted' : (locationError ? 'denied' : 'prompt'), handleGetLocation, 'Vị trí')}
+                        {renderPermissionStatus(location ? 'granted' : (locationError ? 'denied' : 'prompt'), handleGetLocation)}
                     </div>
                      {isLocationLoading ? (
                         <div className="flex items-center gap-2 text-muted-foreground">
@@ -410,90 +494,157 @@ function ProfileView() {
                         <p className="text-destructive text-xs pl-6">{locationError}</p>
                     ) : null}
                 </div>
-                 {/* Notifications */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <div className="font-medium flex items-center gap-2"><Bell className="h-4 w-4" />Thông báo đẩy</div>
-                        {renderPermissionStatus(notificationPermission, handleRequestNotification, 'Thông báo')}
+                        {renderPermissionStatus(notificationPermission, handleRequestNotification)}
                     </div>
                 </div>
-                {/* Camera */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <div className="font-medium flex items-center gap-2"><Camera className="h-4 w-4" />Máy ảnh</div>
-                        {renderPermissionStatus(cameraPermission, () => handleRequestMedia('camera'), 'Máy ảnh')}
+                        {renderPermissionStatus(cameraPermission, () => handleRequestMedia('camera'))}
                     </div>
                 </div>
-                {/* Microphone */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <div className="font-medium flex items-center gap-2"><Mic className="h-4 w-4" />Microphone</div>
-                        {renderPermissionStatus(micPermission, () => handleRequestMedia('microphone'), 'Microphone')}
+                        {renderPermissionStatus(micPermission, () => handleRequestMedia('microphone'))}
                     </div>
                 </div>
-                 {/* Clipboard Write */}
                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <div className="font-medium flex items-center gap-2"><ClipboardPaste className="h-4 w-4" />Ghi vào Clipboard</div>
-                        {renderPermissionStatus(clipboardWritePermission, handleRequestClipboardWrite, 'Ghi vào Clipboard')}
+                        {renderPermissionStatus(clipboardWritePermission, handleRequestClipboardWrite)}
                     </div>
                 </div>
-                {/* Background Sync */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <div className="font-medium flex items-center gap-2"><Repeat className="h-4 w-4" />Đồng bộ nền</div>
-                        {renderPermissionStatus(backgroundSyncPermission, handleUnsupported, 'Đồng bộ nền')}
+                        {renderPermissionStatus(backgroundSyncPermission, handleUnsupported)}
                     </div>
                 </div>
-                {/* Persistent Storage */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <div className="font-medium flex items-center gap-2"><Database className="h-4 w-4" />Lưu trữ bền bỉ</div>
-                        {renderPermissionStatus(persistentStoragePermission, handleRequestPersistentStorage, 'Lưu trữ bền bỉ')}
+                        {renderPermissionStatus(persistentStoragePermission, handleRequestPersistentStorage)}
                     </div>
                 </div>
-                {/* Screen Wake Lock */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <div className="font-medium flex items-center gap-2"><Eye className="h-4 w-4" />Khóa màn hình</div>
-                        {renderPermissionStatus(screenWakeLockPermission, handleRequestScreenWakeLock, 'Khóa màn hình')}
+                        {renderPermissionStatus(screenWakeLockPermission, handleRequestScreenWakeLock)}
                     </div>
                 </div>
-                {/* Accelerometer */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <div className="font-medium flex items-center gap-2"><Move3d className="h-4 w-4" />Cảm biến gia tốc</div>
-                        {renderPermissionStatus(accelerometerPermission, handleUnsupported, 'Cảm biến gia tốc')}
+                        {renderPermissionStatus(accelerometerPermission, handleUnsupported)}
                     </div>
                 </div>
-                {/* Gyroscope */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <div className="font-medium flex items-center gap-2"><Orbit className="h-4 w-4" />Cảm biến con quay</div>
-                        {renderPermissionStatus(gyroscopePermission, handleUnsupported, 'Cảm biến con quay')}
+                        {renderPermissionStatus(gyroscopePermission, handleUnsupported)}
                     </div>
                 </div>
-                 {/* Ambient Light */}
                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <div className="font-medium flex items-center gap-2"><Sun className="h-4 w-4" />Cảm biến ánh sáng</div>
-                        {renderPermissionStatus(ambientLightSensorPermission, handleUnsupported, 'Cảm biến ánh sáng')}
+                        {renderPermissionStatus(ambientLightSensorPermission, handleUnsupported)}
                     </div>
                 </div>
-                 {/* Speaker Selection */}
                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <div className="font-medium flex items-center gap-2"><Speaker className="h-4 w-4" />Chọn loa</div>
-                        {renderPermissionStatus(speakerSelectionPermission, handleUnsupported, 'Chọn loa')}
+                        {renderPermissionStatus(speakerSelectionPermission, handleUnsupported)}
                     </div>
                 </div>
-                 {/* NFC */}
                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <div className="font-medium flex items-center gap-2"><Nfc className="h-4 w-4" />NFC</div>
-                        {renderPermissionStatus(nfcPermission, handleUnsupported, 'NFC')}
+                        {renderPermissionStatus(nfcPermission, handleUnsupported)}
                     </div>
                 </div>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">Lưu Hồ sơ Thiết bị</CardTitle>
+                <CardDescription>Lưu một ảnh chụp nhanh thông tin của thiết bị hiện tại vào tài khoản của bạn.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-2">
+                    <Label htmlFor="device-name">Tên thiết bị</Label>
+                    <Input id="device-name" value={deviceName} onChange={(e) => setDeviceName(e.target.value)} placeholder="ví dụ: Laptop của tôi"/>
+                </div>
+            </CardContent>
+            <CardFooter>
+                 <Button onClick={handleSaveProfile}>Lưu hồ sơ thiết bị</Button>
+            </CardFooter>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">Các thiết bị đã lưu</CardTitle>
+                <CardDescription>Xem lại thông tin từ các thiết bị bạn đã lưu trước đây.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {savedProfiles && savedProfiles.length > 0 ? (
+                    <Accordion type="single" collapsible className="w-full">
+                        {savedProfiles.map(profile => (
+                            <AccordionItem value={profile.id} key={profile.id}>
+                                <AccordionTrigger>
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full pr-4">
+                                        <span className="font-semibold text-left">{profile.deviceName}</span>
+                                        <span className="text-xs text-muted-foreground text-left sm:text-right mt-1 sm:mt-0">
+                                            {profile.createdAt ? format(profile.createdAt.toDate(), "HH:mm, dd/MM/yyyy", { locale: vi }) : ''}
+                                        </span>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="space-y-4 text-sm p-4">
+                                    <h4 className="font-semibold">Thông tin trình duyệt</h4>
+                                    <p><span className="font-medium">User Agent:</span> <span className="text-muted-foreground break-all">{profile.deviceInfo.userAgent}</span></p>
+                                    <p><span className="font-medium">Màn hình:</span> <span className="text-muted-foreground">{profile.deviceInfo.screen}</span></p>
+                                     <h4 className="font-semibold pt-2">Thông tin phần cứng & mạng</h4>
+                                     <p><span className="font-medium">Nền tảng:</span> <span className="text-muted-foreground">{profile.hardwareInfo.platform || 'Không có'}</span></p>
+                                     <p><span className="font-medium">Pin:</span> <span className="text-muted-foreground">{profile.hardwareInfo.battery ? `${Math.round(profile.hardwareInfo.battery.level)}%` : 'Không có'}</span></p>
+                                    <h4 className="font-semibold pt-2">Quyền truy cập</h4>
+                                     <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                        {Object.entries(profile.permissions).map(([key, value]) => (
+                                            <div key={key} className="flex justify-between items-center">
+                                                <span className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                                                {renderStoredPermissionStatus(value)}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex justify-end pt-4">
+                                         <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="destructive" size="sm">Xóa Hồ sơ</Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Bạn có chắc chắn muốn xóa?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Hành động này sẽ xóa vĩnh viễn hồ sơ thiết bị cho "{profile.deviceName}".
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteProfile(profile.id)} className="bg-destructive hover:bg-destructive/90">Xóa</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
+                ) : (
+                    <p className="text-center text-muted-foreground py-4">Chưa có hồ sơ thiết bị nào được lưu.</p>
+                )}
             </CardContent>
         </Card>
     </div>
