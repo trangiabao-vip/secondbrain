@@ -118,6 +118,18 @@ export function InterestSidebar() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/notifications')}
+                tooltip="Thông báo"
+              >
+                <Link href="/notifications">
+                  <Icons.notification />
+                  <span>Thông báo</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
              <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
@@ -183,5 +195,3 @@ export function InterestSidebar() {
     </>
   );
 }
-
-    

@@ -93,7 +93,11 @@ service cloud.firestore {
     match /fcmTokens/{tokenId} {
       allow write: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
+
+    // Notifications can be read, created, updated, or deleted by their owner.
+    match /notifications/{notificationId} {
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
   }
 }
-
-    

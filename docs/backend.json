@@ -467,6 +467,28 @@
         }
       },
       "required": ["userId", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a scheduled push notification.",
+      "properties": {
+        "title": { "type": "string", "description": "The title of the notification." },
+        "body": { "type": "string", "description": "The body content of the notification." },
+        "sendAt": { "type": "string", "format": "date-time", "description": "The specific time to send the notification." },
+        "isSent": { "type": "boolean", "description": "Flag to indicate if the notification has been sent." },
+        "userId": { "type": "string", "description": "The ID of the user who this notification is for." },
+        "link": {
+          "type": "object",
+          "description": "Optional deep link for when the notification is clicked.",
+          "properties": {
+            "type": { "type": "string", "enum": ["goal", "task", "topic"] },
+            "id": { "type": "string" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "body", "sendAt", "isSent", "userId", "createdAt"]
     }
   },
   "auth": {
@@ -522,6 +544,10 @@
     "/fcmTokens/{tokenId}": {
       "schema": { "$ref": "#/entities/FCMToken" },
       "description": "Stores FCM tokens for sending push notifications. The document ID is the token itself."
+    },
+    "/notifications/{notificationId}": {
+        "schema": { "$ref": "#/entities/Notification" },
+        "description": "Stores scheduled push notifications for users. Contains a userId for security rules."
     }
   }
 }

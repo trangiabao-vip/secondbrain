@@ -36,6 +36,7 @@ import {
   Search,
   Repeat,
   Youtube,
+  Bell,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -79,6 +80,7 @@ export const Icons = {
   channel: Radio,
   youtube: Youtube,
   drag: GripVertical,
+  notification: Bell,
   whoIsTheSpy: ({ className }: { className?: string }) => (
     <svg 
       className={className}

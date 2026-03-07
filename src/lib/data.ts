@@ -151,6 +151,19 @@ export interface Channel {
   createdAt: any;
 }
 
+export interface Notification {
+  id: string;
+  title: string;
+  body: string;
+  sendAt: any;
+  isSent: boolean;
+  userId: string;
+  link?: {
+    type: 'goal' | 'task' | 'topic';
+    id: string;
+  };
+  createdAt: any;
+}
 
 export type DataType = {
   interests: Interest[];
@@ -160,6 +173,7 @@ export type DataType = {
   wikiPages: WikiPage[];
   salesPages: SalesPage[];
   channels: Channel[];
+  notifications: Notification[];
 };
 
 // This initialData is now only for reference and will not be used
@@ -172,6 +186,5 @@ export const initialData: DataType = {
   wikiPages: [],
   salesPages: [],
   channels: [],
+  notifications: [],
 };
-
-    
