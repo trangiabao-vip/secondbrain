@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
@@ -6,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format, isPast } from 'date-fns';
+import { format, isPast, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import {
   DropdownMenu,
@@ -29,6 +30,21 @@ import { NotificationDialog } from './NotificationDialog';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
+const getDateFromFirestore = (date: any): Date | null => {
+    if (!date) return null;
+    if (date instanceof Date) return date;
+    if (typeof date.toDate === 'function') return date.toDate(); // Firestore Timestamp
+    if (date.seconds) return new Date(date.seconds * 1000); // Another form of timestamp
+    if (typeof date === 'string') {
+        const parsed = parseISO(date);
+        if (!isNaN(parsed.getTime())) {
+            return parsed;
+        }
+    }
+    return null;
+};
+
+
 function NotificationManager() {
   const { notifications, isDataLoading, deleteNotification } = useAppContext();
 
@@ -43,8 +59,8 @@ function NotificationManager() {
   }
 
   const sortedNotifications = [...notifications].sort((a, b) => {
-    const dateA = a.sendAt?.toDate ? a.sendAt.toDate() : new Date(0);
-    const dateB = b.sendAt?.toDate ? b.sendAt.toDate() : new Date(0);
+    const dateA = getDateFromFirestore(a.sendAt) || new Date(0);
+    const dateB = getDateFromFirestore(b.sendAt) || new Date(0);
     return dateB.getTime() - dateA.getTime();
   });
 
@@ -66,7 +82,7 @@ function NotificationManager() {
       {sortedNotifications.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {sortedNotifications.map((notification) => {
-             const sendDate = notification.sendAt?.toDate ? notification.sendAt.toDate() : null;
+             const sendDate = getDateFromFirestore(notification.sendAt);
              const hasBeenSent = notification.isSent || (sendDate && isPast(sendDate));
 
             return (
