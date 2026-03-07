@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
-import { Bell, Camera, Mic, Wifi, WifiOff, Globe, Monitor, Bot, Languages, Cookie, Cpu, MemoryStick, Battery, BatteryCharging, Signal, Info, Database, Eye, Move3d, Orbit, Sun, Speaker, Nfc, ClipboardPaste, Repeat, LocateFixed, Music, Timer, CreditCard, AppWindow, Type, Bluetooth, Usb, ScreenShare } from 'lucide-react';
+import { Bell, Camera, Mic, Wifi, WifiOff, Globe, Monitor, Bot, Languages, Cookie, Cpu, MemoryStick, Battery, BatteryCharging, Signal, Info, Database, Eye, Move3d, Orbit, Sun, Speaker, Nfc, ClipboardPaste, Repeat, LocateFixed, Music, Timer, CreditCard, AppWindow, Type, Bluetooth, Usb, ScreenShare, FileImage } from 'lucide-react';
 import type { DeviceProfile } from '@/lib/data';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -642,6 +642,15 @@ function ProfileView() {
                 </div>
                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><FileImage className="h-4 w-4" />Truy cập Ảnh/Tệp</div>
+                        <Badge variant="outline">Qua hành động của bạn</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground pl-6">
+                        Ứng dụng chỉ có thể truy cập các tệp (ảnh, tài liệu) mà bạn chủ động chọn từ hộp thoại của thiết bị khi tải lên.
+                    </p>
+                </div>
+                 <div className="space-y-2">
+                    <div className="flex items-center justify-between">
                         <div className="font-medium flex items-center gap-2"><ClipboardPaste className="h-4 w-4" />Ghi vào Clipboard</div>
                         {renderPermissionStatus(clipboardWritePermission, handleRequestClipboardWrite)}
                     </div>
@@ -847,4 +856,5 @@ export default function ProfilePage() {
     )
 }
 
+    
     
