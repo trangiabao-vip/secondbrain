@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
-import { Bell, Camera, Mic, Wifi, WifiOff, Globe, Monitor, Bot, Languages, Cookie, Cpu, MemoryStick, Battery, BatteryCharging, Signal, Info, Database, Eye, Move3d, Orbit, Sun, Speaker, Nfc, ClipboardPaste, Repeat } from 'lucide-react';
+import { Bell, Camera, Mic, Wifi, WifiOff, Globe, Monitor, Bot, Languages, Cookie, Cpu, MemoryStick, Battery, BatteryCharging, Signal, Info, Database, Eye, Move3d, Orbit, Sun, Speaker, Nfc, ClipboardPaste, Repeat, LocateFixed, Music, Timer, CreditCard, AppWindow, Type, Bluetooth, Usb, ScreenShare } from 'lucide-react';
 import type { DeviceProfile } from '@/lib/data';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -45,7 +45,7 @@ interface LocationInfo {
     accuracy: number;
 }
 
-type PermissionStatus = 'granted' | 'denied' | 'prompt' | 'unsupported';
+type PermissionStatus = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown';
 
 function ProfileView() {
   const { user, firestore, isUserLoading } = useFirebase();
@@ -70,6 +70,18 @@ function ProfileView() {
   const [ambientLightSensorPermission, setAmbientLightSensorPermission] = useState<PermissionStatus | null>(null);
   const [speakerSelectionPermission, setSpeakerSelectionPermission] = useState<PermissionStatus | null>(null);
   const [nfcPermission, setNfcPermission] = useState<PermissionStatus | null>(null);
+
+  // 10 new permissions
+  const [magnetometerPermission, setMagnetometerPermission] = useState<PermissionStatus | null>(null);
+  const [midiPermission, setMidiPermission] = useState<PermissionStatus | null>(null);
+  const [idleDetectionPermission, setIdleDetectionPermission] = useState<PermissionStatus | null>(null);
+  const [paymentHandlerPermission, setPaymentHandlerPermission] = useState<PermissionStatus | null>(null);
+  const [windowManagementPermission, setWindowManagementPermission] = useState<PermissionStatus | null>(null);
+  const [localFontsPermission, setLocalFontsPermission] = useState<PermissionStatus | null>(null);
+  const [displayCapturePermission, setDisplayCapturePermission] = useState<PermissionStatus | null>(null);
+  const [storageAccessPermission, setStorageAccessPermission] = useState<PermissionStatus | null>(null);
+  const [bluetoothPermission, setBluetoothPermission] = useState<PermissionStatus | null>(null);
+  const [usbPermission, setUsbPermission] = useState<PermissionStatus | null>(null);
 
   const profilesQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -132,6 +144,46 @@ function ProfileView() {
       checkQueryablePermission('ambient-light-sensor', setAmbientLightSensorPermission);
       checkQueryablePermission('speaker-selection', setSpeakerSelectionPermission);
       checkQueryablePermission('nfc', setNfcPermission);
+
+      // New permissions
+      checkQueryablePermission('magnetometer', setMagnetometerPermission);
+      checkQueryablePermission('midi', setMidiPermission);
+      checkQueryablePermission('idle-detection', setIdleDetectionPermission);
+      checkQueryablePermission('payment-handler', setPaymentHandlerPermission);
+      checkQueryablePermission('window-management', setWindowManagementPermission);
+
+      if ('queryLocalFonts' in window) {
+        checkQueryablePermission('local-fonts' as PermissionName, setLocalFontsPermission);
+      } else {
+        setLocalFontsPermission('unsupported');
+      }
+
+      // Special handling for non-Permission API features
+      if ('getDisplayMedia' in navigator.mediaDevices) {
+        setDisplayCapturePermission('prompt');
+      } else {
+        setDisplayCapturePermission('unsupported');
+      }
+      
+      if ('hasStorageAccess' in document) {
+        document.hasStorageAccess().then(hasAccess => {
+          setStorageAccessPermission(hasAccess ? 'granted' : 'prompt');
+        }).catch(() => setStorageAccessPermission('unsupported'));
+      } else {
+        setStorageAccessPermission('unsupported');
+      }
+
+      if ('bluetooth' in navigator) {
+        setBluetoothPermission('prompt');
+      } else {
+        setBluetoothPermission('unsupported');
+      }
+      
+      if ('usb' in navigator) {
+        setUsbPermission('prompt');
+      } else {
+        setUsbPermission('unsupported');
+      }
 
 
       if (navigator.storage && navigator.storage.persisted) {
@@ -233,7 +285,11 @@ function ProfileView() {
   };
 
   const handleUnsupported = () => {
-    alert("Tính năng này không được trình duyệt của bạn hỗ trợ hoặc yêu cầu thiết lập đặc biệt (ví dụ: HTTPS).");
+    toast({
+        variant: 'destructive',
+        title: "Không được hỗ trợ",
+        description: "Tính năng này không được trình duyệt của bạn hỗ trợ hoặc yêu cầu thiết lập đặc biệt (ví dụ: HTTPS)."
+    });
   };
 
   const handleRequestClipboardWrite = async () => {
@@ -243,7 +299,7 @@ function ProfileView() {
    }
    try {
        await navigator.clipboard.writeText(' ');
-       alert('Đã cấp quyền ghi vào Clipboard (quyền này thường được cấp tự động).');
+       toast({title: 'Đã cấp quyền ghi vào Clipboard (quyền này thường được cấp tự động).'});
        setClipboardWritePermission('granted');
    } catch (err: any) {
        if(err.name === 'NotAllowedError') {
@@ -257,7 +313,7 @@ function ProfileView() {
     if (navigator.storage && navigator.storage.persist) {
         const persisted = await navigator.storage.persist();
         setPersistentStoragePermission(persisted ? 'granted' : 'denied');
-        alert(persisted ? 'Đã cấp quyền Lưu trữ bền bỉ.' : 'Yêu cầu Lưu trữ bền bỉ đã bị từ chối.');
+        toast({title: persisted ? 'Đã cấp quyền Lưu trữ bền bỉ.' : 'Yêu cầu Lưu trữ bền bỉ đã bị từ chối.'});
     } else {
         handleUnsupported();
     }
@@ -268,7 +324,7 @@ function ProfileView() {
         try {
             const wakeLock = await navigator.wakeLock.request('screen');
             setScreenWakeLockPermission('granted');
-            alert('Đã bật khóa màn hình. Nó sẽ được giải phóng khi bạn rời khỏi trang.');
+            toast({title: 'Đã bật khóa màn hình. Nó sẽ được giải phóng khi bạn rời khỏi trang.'});
             wakeLock.addEventListener('release', () => {
                 setScreenWakeLockPermission('prompt');
             });
@@ -280,6 +336,65 @@ function ProfileView() {
         handleUnsupported();
     }
   };
+
+    const handleRequestDisplayCapture = async () => {
+      if ('getDisplayMedia' in navigator.mediaDevices) {
+          try {
+              const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+              stream.getTracks().forEach(track => track.stop());
+              setDisplayCapturePermission('granted');
+          } catch (err) {
+              setDisplayCapturePermission('denied');
+              console.error('Display capture request failed:', err);
+          }
+      } else {
+          handleUnsupported();
+      }
+  };
+
+  const handleRequestStorageAccess = async () => {
+      if ('requestStorageAccess' in document) {
+          try {
+              await document.requestStorageAccess();
+              setStorageAccessPermission('granted');
+          } catch (err) {
+              setStorageAccessPermission('denied');
+              console.error('Storage Access API request failed:', err);
+          }
+      } else {
+          handleUnsupported();
+      }
+  };
+
+  const handleRequestBluetooth = async () => {
+    if ('requestDevice' in (navigator as any).bluetooth) {
+        try {
+            await (navigator as any).bluetooth.requestDevice({ acceptAllDevices: true });
+            setBluetoothPermission('granted');
+            toast({ title: 'Đã chọn thiết bị Bluetooth (mô phỏng).', description: 'Thực tế sẽ liệt kê các dịch vụ.' });
+        } catch (error) {
+            setBluetoothPermission('denied');
+            console.error('Yêu cầu Bluetooth thất bại:', error);
+        }
+    } else {
+        handleUnsupported();
+    }
+  };
+
+    const handleRequestUsb = async () => {
+        if ('requestDevice' in navigator.usb) {
+            try {
+                await navigator.usb.requestDevice({ filters: [] });
+                setUsbPermission('granted');
+                toast({ title: 'Đã chọn thiết bị USB (mô phỏng).', description: 'Thực tế sẽ chỉ định bộ lọc thiết bị.' });
+            } catch (error) {
+                setUsbPermission('denied');
+                console.error('Yêu cầu USB thất bại:', error);
+            }
+        } else {
+            handleUnsupported();
+        }
+    };
 
   const handleSaveProfile = () => {
     if (!user) return;
@@ -299,6 +414,16 @@ function ProfileView() {
         speakerSelection: speakerSelectionPermission,
         nfc: nfcPermission,
         geolocation: location ? 'granted' : (locationError ? 'denied' : 'prompt'),
+        magnetometer: magnetometerPermission,
+        midi: midiPermission,
+        idleDetection: idleDetectionPermission,
+        paymentHandler: paymentHandlerPermission,
+        windowManagement: windowManagementPermission,
+        localFonts: localFontsPermission,
+        displayCapture: displayCapturePermission,
+        storageAccess: storageAccessPermission,
+        bluetooth: bluetoothPermission,
+        usb: usbPermission,
     };
     
     const filteredPermissions = Object.fromEntries(Object.entries(permissions).filter(([, v]) => v != null)) as Record<string, string>;
@@ -340,6 +465,9 @@ function ProfileView() {
     }
     if (status === 'denied') {
       return <Badge variant="destructive">Đã từ chối</Badge>;
+    }
+    if (status === 'unknown') {
+      return <Badge variant="outline">Không rõ</Badge>;
     }
     return <Button size="sm" onClick={requestFn}>Yêu cầu</Button>;
   };
@@ -566,6 +694,66 @@ function ProfileView() {
                         {renderPermissionStatus(nfcPermission, handleUnsupported)}
                     </div>
                 </div>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><LocateFixed className="h-4 w-4" />Cảm biến từ kế</div>
+                        {renderPermissionStatus(magnetometerPermission, handleUnsupported)}
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><Music className="h-4 w-4" />MIDI</div>
+                        {renderPermissionStatus(midiPermission, handleUnsupported)}
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><Timer className="h-4 w-4" />Phát hiện không hoạt động</div>
+                        {renderPermissionStatus(idleDetectionPermission, handleUnsupported)}
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><CreditCard className="h-4 w-4" />Xử lý thanh toán</div>
+                        {renderPermissionStatus(paymentHandlerPermission, handleUnsupported)}
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><AppWindow className="h-4 w-4" />Quản lý cửa sổ</div>
+                        {renderPermissionStatus(windowManagementPermission, handleUnsupported)}
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><Type className="h-4 w-4" />Phông chữ cục bộ</div>
+                        {renderPermissionStatus(localFontsPermission, handleUnsupported)}
+                    </div>
+                </div>
+                 <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><ScreenShare className="h-4 w-4" />Quay màn hình</div>
+                        {renderPermissionStatus(displayCapturePermission, handleRequestDisplayCapture)}
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><Database className="h-4 w-4" />Truy cập bộ nhớ</div>
+                        {renderPermissionStatus(storageAccessPermission, handleRequestStorageAccess)}
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><Bluetooth className="h-4 w-4" />Bluetooth</div>
+                        {renderPermissionStatus(bluetoothPermission, handleRequestBluetooth)}
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><Usb className="h-4 w-4" />USB</div>
+                        {renderPermissionStatus(usbPermission, handleRequestUsb)}
+                    </div>
+                </div>
             </CardContent>
         </Card>
 
@@ -658,3 +846,5 @@ export default function ProfilePage() {
         </AuthGuard>
     )
 }
+
+    
