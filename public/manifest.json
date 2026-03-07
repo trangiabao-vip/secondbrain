@@ -1,6 +1,6 @@
 {
   "name": "Trung tâm Sở thích",
-  "short_name": "InterestHub",
+  "short_name": "Sở thích",
   "description": "Quản lý sở thích, chủ đề, mục tiêu và công việc của bạn.",
   "start_url": "/",
   "display": "standalone",
