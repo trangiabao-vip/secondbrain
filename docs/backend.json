@@ -450,6 +450,23 @@
         }
       },
       "required": ["name", "userId", "createdAt"]
+    },
+    "FCMToken": {
+      "title": "FCM Token",
+      "type": "object",
+      "description": "Represents a Firebase Cloud Messaging token for a user's device.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user this token belongs to."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp indicating when the token was saved."
+        }
+      },
+      "required": ["userId", "createdAt"]
     }
   },
   "auth": {
@@ -501,6 +518,10 @@
     "/channels/{channelId}": {
       "schema": { "$ref": "#/entities/Channel" },
       "description": "Collection for channels, which can be linked to topics and contain social media links."
+    },
+    "/fcmTokens/{tokenId}": {
+      "schema": { "$ref": "#/entities/FCMToken" },
+      "description": "Stores FCM tokens for sending push notifications. The document ID is the token itself."
     }
   }
 }
