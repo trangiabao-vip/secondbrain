@@ -1,15 +1,14 @@
 {
   "name": "Trung tâm Sở thích",
-  "short_name": "Sở thích",
+  "short_name": "InterestHub",
   "description": "Quản lý sở thích, chủ đề, mục tiêu và công việc của bạn.",
   "start_url": "/",
-  "scope": "/",
   "display": "standalone",
   "background_color": "#111827",
-  "theme_color": "#74c0fc",
+  "theme_color": "#111827",
   "icons": [
     {
-      "src": "icon.svg",
+      "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml"
     }
