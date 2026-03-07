@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Camera, Mic, Wifi, WifiOff, Globe, Monitor, Bot, Languages, Cookie, Clipboard, Cpu, MemoryStick, Battery, BatteryCharging, Signal, Info } from 'lucide-react';
+import { Bell, Camera, Mic, Wifi, WifiOff, Globe, Monitor, Bot, Languages, Cookie, Cpu, MemoryStick, Battery, BatteryCharging, Signal, Info, Database, Eye, Move3d, Orbit, Sun, Speaker, Nfc, ClipboardPaste, Repeat } from 'lucide-react';
 
 interface DeviceInfo {
   userAgent: string;
@@ -34,7 +35,7 @@ interface LocationInfo {
     accuracy: number;
 }
 
-type PermissionStatus = 'granted' | 'denied' | 'prompt';
+type PermissionStatus = 'granted' | 'denied' | 'prompt' | 'unsupported';
 
 function ProfileView() {
   const { user, isUserLoading } = useUser();
@@ -48,6 +49,19 @@ function ProfileView() {
   const [notificationPermission, setNotificationPermission] = useState<PermissionStatus | null>(null);
   const [cameraPermission, setCameraPermission] = useState<PermissionStatus | null>(null);
   const [micPermission, setMicPermission] = useState<PermissionStatus | null>(null);
+  
+  // New permissions state
+  const [clipboardReadPermission, setClipboardReadPermission] = useState<PermissionStatus | null>(null);
+  const [clipboardWritePermission, setClipboardWritePermission] = useState<PermissionStatus | null>(null);
+  const [backgroundSyncPermission, setBackgroundSyncPermission] = useState<PermissionStatus | null>(null);
+  const [persistentStoragePermission, setPersistentStoragePermission] = useState<PermissionStatus | null>(null);
+  const [screenWakeLockPermission, setScreenWakeLockPermission] = useState<PermissionStatus | null>(null);
+  const [accelerometerPermission, setAccelerometerPermission] = useState<PermissionStatus | null>(null);
+  const [gyroscopePermission, setGyroscopePermission] = useState<PermissionStatus | null>(null);
+  const [ambientLightSensorPermission, setAmbientLightSensorPermission] = useState<PermissionStatus | null>(null);
+  const [speakerSelectionPermission, setSpeakerSelectionPermission] = useState<PermissionStatus | null>(null);
+  const [nfcPermission, setNfcPermission] = useState<PermissionStatus | null>(null);
+
 
   useEffect(() => {
     if (typeof window !== 'undefined' && navigator) {
@@ -65,12 +79,48 @@ function ProfileView() {
       window.addEventListener('offline', updateOnlineStatus);
       
       // Permissions
-      if ('permissions' in navigator) {
-          navigator.permissions.query({ name: 'notifications' }).then(status => {
-              setNotificationPermission(status.state);
-              status.onchange = () => setNotificationPermission(status.state);
-          });
+      const checkQueryablePermission = async (name: PermissionName, setter: React.Dispatch<React.SetStateAction<PermissionStatus | null>>) => {
+        if ('permissions' in navigator) {
+            try {
+                const status = await navigator.permissions.query({ name });
+                setter(status.state as PermissionStatus);
+                status.onchange = () => setter(status.state as PermissionStatus);
+            } catch (e) {
+                console.warn(`Could not query permission ${name}:`, e);
+                setter('unsupported');
+            }
+        } else {
+          setter('unsupported');
+        }
       }
+      
+      checkQueryablePermission('notifications', setNotificationPermission);
+      checkQueryablePermission('camera', setCameraPermission);
+      checkQueryablePermission('microphone', setMicPermission);
+      checkQueryablePermission('clipboard-read', setClipboardReadPermission);
+      checkQueryablePermission('clipboard-write', setClipboardWritePermission);
+      checkQueryablePermission('background-sync', setBackgroundSyncPermission);
+      checkQueryablePermission('accelerometer', setAccelerometerPermission);
+      checkQueryablePermission('gyroscope', setGyroscopePermission);
+      checkQueryablePermission('ambient-light-sensor', setAmbientLightSensorPermission);
+      checkQueryablePermission('speaker-selection', setSpeakerSelectionPermission);
+      checkQueryablePermission('nfc', setNfcPermission);
+
+
+      if (navigator.storage && navigator.storage.persisted) {
+        navigator.storage.persisted().then(persisted => {
+          setPersistentStoragePermission(persisted ? 'granted' : 'prompt');
+        });
+      } else {
+        setPersistentStoragePermission('unsupported');
+      }
+  
+      if ('wakeLock' in navigator) {
+        setScreenWakeLockPermission('prompt');
+      } else {
+        setScreenWakeLockPermission('unsupported');
+      }
+
 
       // Advanced Hardware & Network Info
       const getAdvancedInfo = async () => {
@@ -144,42 +194,74 @@ function ProfileView() {
     });
   };
 
-  const checkMediaPermission = async (name: 'camera' | 'microphone') => {
-      if ('permissions' in navigator) {
-          try {
-            const status = await navigator.permissions.query({ name: name as PermissionName });
-            if (name === 'camera') setCameraPermission(status.state);
-            if (name === 'microphone') setMicPermission(status.state);
-            status.onchange = () => {
-                if (name === 'camera') setCameraPermission(status.state);
-                if (name === 'microphone') setMicPermission(status.state);
-            };
-          } catch (e) {
-             console.error(`Không thể truy vấn quyền ${name}:`, e);
-             if (name === 'camera') setCameraPermission('prompt');
-             if (name === 'microphone') setMicPermission('prompt');
-          }
-      }
-  }
-
   const handleRequestMedia = async (type: 'camera' | 'microphone') => {
       try {
           const stream = await navigator.mediaDevices.getUserMedia({ [type === 'camera' ? 'video' : 'audio']: true });
           // Stop tracks immediately after getting permission to avoid leaving camera/mic on
           stream.getTracks().forEach(track => track.stop());
-          checkMediaPermission(type);
+          if (type === 'camera') setCameraPermission('granted');
+          if (type === 'microphone') setMicPermission('granted');
       } catch (err) {
           console.error(`Lỗi khi yêu cầu quyền ${type}:`, err);
-          checkMediaPermission(type);
+          if (type === 'camera') setCameraPermission('denied');
+          if (type === 'microphone') setMicPermission('denied');
       }
   };
 
-  useEffect(() => {
-    checkMediaPermission('camera');
-    checkMediaPermission('microphone');
-  }, []);
+  const handleUnsupported = () => {
+    alert("Tính năng này không được trình duyệt của bạn hỗ trợ hoặc yêu cầu thiết lập đặc biệt (ví dụ: HTTPS).");
+  };
+
+  const handleRequestClipboardWrite = async () => {
+    if (!navigator.clipboard || !navigator.clipboard.writeText) {
+       handleUnsupported();
+       return;
+   }
+   try {
+       await navigator.clipboard.writeText(' ');
+       alert('Đã cấp quyền ghi vào Clipboard (quyền này thường được cấp tự động).');
+       setClipboardWritePermission('granted');
+   } catch (err: any) {
+       if(err.name === 'NotAllowedError') {
+           setClipboardWritePermission('denied');
+       }
+       console.error('Clipboard write request failed:', err);
+   }
+ };
+
+ const handleRequestPersistentStorage = async () => {
+    if (navigator.storage && navigator.storage.persist) {
+        const persisted = await navigator.storage.persist();
+        setPersistentStoragePermission(persisted ? 'granted' : 'denied');
+        alert(persisted ? 'Đã cấp quyền Lưu trữ bền bỉ.' : 'Yêu cầu Lưu trữ bền bỉ đã bị từ chối.');
+    } else {
+        handleUnsupported();
+    }
+  };
+
+  const handleRequestScreenWakeLock = async () => {
+    if ('wakeLock' in navigator) {
+        try {
+            const wakeLock = await navigator.wakeLock.request('screen');
+            setScreenWakeLockPermission('granted');
+            alert('Đã bật khóa màn hình. Nó sẽ được giải phóng khi bạn rời khỏi trang.');
+            wakeLock.addEventListener('release', () => {
+                setScreenWakeLockPermission('prompt');
+            });
+        } catch (err: any) {
+            setScreenWakeLockPermission('denied');
+            console.error('Screen Wake Lock request failed:', err);
+        }
+    } else {
+        handleUnsupported();
+    }
+  };
+
 
   const renderPermissionStatus = (status: PermissionStatus | null, requestFn: () => void, featureName: string) => {
+    if (status === 'unsupported') {
+      return <Badge variant="secondary">Không hỗ trợ</Badge>;
+    }
     if (status === 'granted') {
       return <Badge variant="secondary" className="bg-green-500/10 text-green-700">Đã cho phép</Badge>;
     }
@@ -305,7 +387,7 @@ function ProfileView() {
         {/* Permissions Card */}
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Clipboard />Quyền Truy cập & Tính năng</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Icons.clipboard />Quyền Truy cập & Tính năng</CardTitle>
                 <CardDescription>Các tính năng yêu cầu quyền truy cập vào thiết bị của bạn. Thông tin này không được lưu trữ.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 text-sm">
@@ -347,6 +429,69 @@ function ProfileView() {
                     <div className="flex items-center justify-between">
                         <div className="font-medium flex items-center gap-2"><Mic className="h-4 w-4" />Microphone</div>
                         {renderPermissionStatus(micPermission, () => handleRequestMedia('microphone'), 'Microphone')}
+                    </div>
+                </div>
+                 {/* Clipboard Write */}
+                 <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><ClipboardPaste className="h-4 w-4" />Ghi vào Clipboard</div>
+                        {renderPermissionStatus(clipboardWritePermission, handleRequestClipboardWrite, 'Ghi vào Clipboard')}
+                    </div>
+                </div>
+                {/* Background Sync */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><Repeat className="h-4 w-4" />Đồng bộ nền</div>
+                        {renderPermissionStatus(backgroundSyncPermission, handleUnsupported, 'Đồng bộ nền')}
+                    </div>
+                </div>
+                {/* Persistent Storage */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><Database className="h-4 w-4" />Lưu trữ bền bỉ</div>
+                        {renderPermissionStatus(persistentStoragePermission, handleRequestPersistentStorage, 'Lưu trữ bền bỉ')}
+                    </div>
+                </div>
+                {/* Screen Wake Lock */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><Eye className="h-4 w-4" />Khóa màn hình</div>
+                        {renderPermissionStatus(screenWakeLockPermission, handleRequestScreenWakeLock, 'Khóa màn hình')}
+                    </div>
+                </div>
+                {/* Accelerometer */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><Move3d className="h-4 w-4" />Cảm biến gia tốc</div>
+                        {renderPermissionStatus(accelerometerPermission, handleUnsupported, 'Cảm biến gia tốc')}
+                    </div>
+                </div>
+                {/* Gyroscope */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><Orbit className="h-4 w-4" />Cảm biến con quay</div>
+                        {renderPermissionStatus(gyroscopePermission, handleUnsupported, 'Cảm biến con quay')}
+                    </div>
+                </div>
+                 {/* Ambient Light */}
+                 <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><Sun className="h-4 w-4" />Cảm biến ánh sáng</div>
+                        {renderPermissionStatus(ambientLightSensorPermission, handleUnsupported, 'Cảm biến ánh sáng')}
+                    </div>
+                </div>
+                 {/* Speaker Selection */}
+                 <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><Speaker className="h-4 w-4" />Chọn loa</div>
+                        {renderPermissionStatus(speakerSelectionPermission, handleUnsupported, 'Chọn loa')}
+                    </div>
+                </div>
+                 {/* NFC */}
+                 <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="font-medium flex items-center gap-2"><Nfc className="h-4 w-4" />NFC</div>
+                        {renderPermissionStatus(nfcPermission, handleUnsupported, 'NFC')}
                     </div>
                 </div>
             </CardContent>

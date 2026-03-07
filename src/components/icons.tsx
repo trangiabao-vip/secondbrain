@@ -38,6 +38,16 @@ import {
   Youtube,
   Bell,
   type LucideIcon,
+  Database,
+  Eye,
+  Move3d,
+  Orbit,
+  Sun,
+  Speaker,
+  Nfc,
+  ClipboardPaste,
+  Clipboard,
+  ScreenShare,
 } from 'lucide-react';
 
 export type Icon = LucideIcon;
@@ -81,6 +91,16 @@ export const Icons = {
   youtube: Youtube,
   drag: GripVertical,
   notification: Bell,
+  database: Database,
+  eye: Eye,
+  move3d: Move3d,
+  orbit: Orbit,
+  sun: Sun,
+  speaker: Speaker,
+  nfc: Nfc,
+  clipboardPaste: ClipboardPaste,
+  clipboard: Clipboard,
+  screenShare: ScreenShare,
   whoIsTheSpy: ({ className }: { className?: string }) => (
     <svg 
       className={className}
