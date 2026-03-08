@@ -9,19 +9,35 @@ interface FirebaseClientProviderProps {
 }
 
 export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
-  // This useEffect will run once on the client and unregister any stale service workers.
+  // This useEffect will run once on the client and unregister any stale service workers and clear caches.
   // This is a cleanup step to prevent issues from previous PWA configurations.
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (const registration of registrations) {
-          registration.unregister();
-          console.log('Stale service worker unregistered:', registration);
+    const cleanup = async () => {
+      if ('serviceWorker' in navigator) {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const registration of registrations) {
+            await registration.unregister();
+            console.log('Stale service worker unregistered:', registration);
+          }
+        } catch (error) {
+          console.error('Error unregistering service worker:', error);
         }
-      }).catch((error) => {
-        console.error('Error unregistering service worker:', error);
-      });
-    }
+      }
+      if (window.caches) {
+        try {
+          const cacheNames = await window.caches.keys();
+          for (const name of cacheNames) {
+            await window.caches.delete(name);
+            console.log('Cache deleted:', name);
+          }
+        } catch (error) {
+          console.error('Error deleting cache:', error);
+        }
+      }
+    };
+
+    cleanup();
   }, []);
   
   const firebaseServices = useMemo(() => {
