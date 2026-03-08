@@ -498,6 +498,10 @@
         "userId": {
           "type": "string"
         },
+        "deviceId": {
+          "type": "string",
+          "description": "A unique identifier for the device/browser profile, stored in localStorage."
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time"
@@ -540,7 +544,7 @@
           }
         }
       },
-      "required": ["userId", "createdAt", "deviceName"]
+      "required": ["userId", "deviceId", "createdAt", "deviceName"]
     }
   },
   "auth": {

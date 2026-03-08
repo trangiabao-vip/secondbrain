@@ -1,10 +1,11 @@
 
+
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, serverTimestamp } from 'firebase/firestore';
-import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,6 +20,9 @@ import { Bell, Camera, Mic, Wifi, WifiOff, Globe, Monitor, Bot, Languages, Cooki
 import type { DeviceProfile } from '@/lib/data';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { Switch } from '@/components/ui/switch';
+import { generateId } from '@/lib/utils';
 
 interface DeviceInfo {
   userAgent: string;
@@ -49,6 +53,9 @@ type PermissionStatus = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unkno
 
 function ProfileView() {
   const { user, firestore, isUserLoading } = useFirebase();
+  const [autoSave, setAutoSave] = useLocalStorage('profileAutoSaveEnabled', false);
+  const [currentDeviceId, setCurrentDeviceId] = useState<string | null>(null);
+
   const [deviceInfo, setDeviceInfo] = useState<Partial<DeviceInfo>>({});
   const [hardwareInfo, setHardwareInfo] = useState<HardwareInfo>({});
   const [isHardwareInfoLoading, setIsHardwareInfoLoading] = useState(true);
@@ -70,8 +77,6 @@ function ProfileView() {
   const [ambientLightSensorPermission, setAmbientLightSensorPermission] = useState<PermissionStatus | null>(null);
   const [speakerSelectionPermission, setSpeakerSelectionPermission] = useState<PermissionStatus | null>(null);
   const [nfcPermission, setNfcPermission] = useState<PermissionStatus | null>(null);
-
-  // 10 new permissions
   const [magnetometerPermission, setMagnetometerPermission] = useState<PermissionStatus | null>(null);
   const [midiPermission, setMidiPermission] = useState<PermissionStatus | null>(null);
   const [idleDetectionPermission, setIdleDetectionPermission] = useState<PermissionStatus | null>(null);
@@ -83,26 +88,21 @@ function ProfileView() {
   const [bluetoothPermission, setBluetoothPermission] = useState<PermissionStatus | null>(null);
   const [usbPermission, setUsbPermission] = useState<PermissionStatus | null>(null);
 
+  useEffect(() => {
+    let deviceId = localStorage.getItem('deviceProfileId');
+    if (!deviceId) {
+      deviceId = generateId();
+      localStorage.setItem('deviceProfileId', deviceId);
+    }
+    setCurrentDeviceId(deviceId);
+  }, []);
+
   const profilesQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return collection(firestore, 'users', user.uid, 'deviceProfiles');
   }, [firestore, user]);
 
-  const { data: savedProfiles } = useCollection<DeviceProfile>(profilesQuery);
-
-  useEffect(() => {
-    if (hardwareInfo.platform) {
-        setDeviceName(hardwareInfo.platform);
-    } else if (deviceInfo.userAgent) {
-        const match = deviceInfo.userAgent.match(/\(([^)]+)\)/);
-        if (match && match[1]) {
-            const platform = match[1].split(';')[0];
-            setDeviceName(platform);
-        } else {
-            setDeviceName('Thiết bị không tên');
-        }
-    }
-  }, [hardwareInfo.platform, deviceInfo.userAgent]);
+  const { data: savedProfiles, isLoading: areProfilesLoading } = useCollection<DeviceProfile>(profilesQuery);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && navigator) {
@@ -144,8 +144,6 @@ function ProfileView() {
       checkQueryablePermission('ambient-light-sensor', setAmbientLightSensorPermission);
       checkQueryablePermission('speaker-selection', setSpeakerSelectionPermission);
       checkQueryablePermission('nfc', setNfcPermission);
-
-      // New permissions
       checkQueryablePermission('magnetometer', setMagnetometerPermission);
       checkQueryablePermission('midi', setMidiPermission);
       checkQueryablePermission('idle-detection', setIdleDetectionPermission);
@@ -158,7 +156,6 @@ function ProfileView() {
         setLocalFontsPermission('unsupported');
       }
 
-      // Special handling for non-Permission API features
       if ('getDisplayMedia' in navigator.mediaDevices) {
         setDisplayCapturePermission('prompt');
       } else {
@@ -184,7 +181,6 @@ function ProfileView() {
       } else {
         setUsbPermission('unsupported');
       }
-
 
       if (navigator.storage && navigator.storage.persisted) {
         navigator.storage.persisted().then(persisted => {
@@ -237,6 +233,106 @@ function ProfileView() {
       };
     }
   }, []);
+
+  const allDeviceInfo = useMemo(() => {
+    const permissions = {
+        notifications: notificationPermission,
+        camera: cameraPermission,
+        microphone: micPermission,
+        clipboardRead: clipboardReadPermission,
+        clipboardWrite: clipboardWritePermission,
+        backgroundSync: backgroundSyncPermission,
+        persistentStorage: persistentStoragePermission,
+        screenWakeLock: screenWakeLockPermission,
+        accelerometer: accelerometerPermission,
+        gyroscope: gyroscopePermission,
+        ambientLightSensor: ambientLightSensorPermission,
+        speakerSelection: speakerSelectionPermission,
+        nfc: nfcPermission,
+        geolocation: location ? 'granted' : (locationError ? 'denied' : 'prompt'),
+        magnetometer: magnetometerPermission,
+        midi: midiPermission,
+        idleDetection: idleDetectionPermission,
+        paymentHandler: paymentHandlerPermission,
+        windowManagement: windowManagementPermission,
+        localFonts: localFontsPermission,
+        displayCapture: displayCapturePermission,
+        storageAccess: storageAccessPermission,
+        bluetooth: bluetoothPermission,
+        usb: usbPermission,
+        fileAccess: 'prompt',
+    };
+    const filteredPermissions = Object.fromEntries(Object.entries(permissions).filter(([, v]) => v != null)) as Record<string, string>;
+
+    return {
+        deviceName,
+        deviceInfo,
+        hardwareInfo,
+        permissions: filteredPermissions,
+    };
+  }, [
+      deviceName, deviceInfo, hardwareInfo, notificationPermission, cameraPermission, micPermission, 
+      clipboardReadPermission, clipboardWritePermission, backgroundSyncPermission, persistentStoragePermission, 
+      screenWakeLockPermission, accelerometerPermission, gyroscopePermission, ambientLightSensorPermission, 
+      speakerSelectionPermission, nfcPermission, location, locationError, magnetometerPermission, 
+      midiPermission, idleDetectionPermission, paymentHandlerPermission, windowManagementPermission, 
+      localFontsPermission, displayCapturePermission, storageAccessPermission, bluetoothPermission, usbPermission
+  ]);
+
+  const handleSaveOrUpdateProfile = useCallback((isAuto: boolean) => {
+    if (!user || !currentDeviceId || isHardwareInfoLoading || areProfilesLoading) return;
+
+    const profileData: Omit<DeviceProfile, 'id'> = {
+        userId: user.uid,
+        deviceId: currentDeviceId,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        ...allDeviceInfo
+    };
+    
+    const existingProfile = savedProfiles?.find(p => p.deviceId === currentDeviceId);
+
+    if (existingProfile) {
+        const docRef = doc(firestore, 'users', user.uid, 'deviceProfiles', existingProfile.id);
+        updateDocumentNonBlocking(docRef, { ...profileData, createdAt: existingProfile.createdAt });
+        if (!isAuto) {
+            toast({ title: "Đã cập nhật hồ sơ!", description: `Thông tin cho "${profileData.deviceName}" đã được cập nhật.` });
+        }
+    } else {
+        const collectionRef = collection(firestore, 'users', user.uid, 'deviceProfiles');
+        addDocumentNonBlocking(collectionRef, profileData);
+        if (!isAuto) {
+            toast({ title: "Đã lưu hồ sơ thiết bị!", description: `Thông tin cho "${profileData.deviceName}" đã được lưu.` });
+        }
+    }
+  }, [user, currentDeviceId, firestore, savedProfiles, allDeviceInfo, isHardwareInfoLoading, areProfilesLoading]);
+
+  useEffect(() => {
+    const existingProfile = savedProfiles?.find(p => p.deviceId === currentDeviceId);
+    if(existingProfile) {
+        setDeviceName(existingProfile.deviceName);
+    } else if (hardwareInfo.platform) {
+        setDeviceName(hardwareInfo.platform);
+    } else if (deviceInfo.userAgent) {
+        const match = deviceInfo.userAgent.match(/\(([^)]+)\)/);
+        if (match && match[1]) {
+            const platform = match[1].split(';')[0];
+            setDeviceName(platform);
+        } else {
+            setDeviceName('Thiết bị không tên');
+        }
+    }
+  }, [hardwareInfo.platform, deviceInfo.userAgent, savedProfiles, currentDeviceId]);
+
+  useEffect(() => {
+    if (autoSave && !isUserLoading && !isHardwareInfoLoading && currentDeviceId && !areProfilesLoading) {
+        const handler = setTimeout(() => {
+            handleSaveOrUpdateProfile(true);
+        }, 2000); // Debounce for 2 seconds
+
+        return () => clearTimeout(handler);
+    }
+  }, [autoSave, allDeviceInfo, isUserLoading, isHardwareInfoLoading, currentDeviceId, areProfilesLoading, handleSaveOrUpdateProfile]);
 
   const handleGetLocation = () => {
     if (navigator.geolocation) {
@@ -396,56 +492,6 @@ function ProfileView() {
         }
     };
 
-  const handleSaveProfile = () => {
-    if (!user) return;
-
-    const permissions = {
-        notifications: notificationPermission,
-        camera: cameraPermission,
-        microphone: micPermission,
-        clipboardRead: clipboardReadPermission,
-        clipboardWrite: clipboardWritePermission,
-        backgroundSync: backgroundSyncPermission,
-        persistentStorage: persistentStoragePermission,
-        screenWakeLock: screenWakeLockPermission,
-        accelerometer: accelerometerPermission,
-        gyroscope: gyroscopePermission,
-        ambientLightSensor: ambientLightSensorPermission,
-        speakerSelection: speakerSelectionPermission,
-        nfc: nfcPermission,
-        geolocation: location ? 'granted' : (locationError ? 'denied' : 'prompt'),
-        magnetometer: magnetometerPermission,
-        midi: midiPermission,
-        idleDetection: idleDetectionPermission,
-        paymentHandler: paymentHandlerPermission,
-        windowManagement: windowManagementPermission,
-        localFonts: localFontsPermission,
-        displayCapture: displayCapturePermission,
-        storageAccess: storageAccessPermission,
-        bluetooth: bluetoothPermission,
-        usb: usbPermission,
-    };
-    
-    const filteredPermissions = Object.fromEntries(Object.entries(permissions).filter(([, v]) => v != null)) as Record<string, string>;
-
-    const profileData: Omit<DeviceProfile, 'id'> = {
-        userId: user.uid,
-        createdAt: serverTimestamp(),
-        deviceName: deviceName || 'Thiết bị không tên',
-        deviceInfo,
-        hardwareInfo,
-        permissions: filteredPermissions,
-    };
-    
-    const collectionRef = collection(firestore, 'users', user.uid, 'deviceProfiles');
-    addDocumentNonBlocking(collectionRef, profileData);
-
-    toast({
-        title: "Đã lưu hồ sơ thiết bị!",
-        description: `Thông tin cho "${profileData.deviceName}" đã được lưu.`,
-    });
-  };
-
   const handleDeleteProfile = (profileId: string) => {
     if (!user) return;
     const docRef = doc(firestore, 'users', user.uid, 'deviceProfiles', profileId);
@@ -454,7 +500,6 @@ function ProfileView() {
         title: "Đã xóa hồ sơ thiết bị.",
     });
   }
-
 
   const renderPermissionStatus = (status: PermissionStatus | null, requestFn: () => void) => {
     if (status === 'unsupported') {
@@ -768,17 +813,23 @@ function ProfileView() {
 
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2">Lưu Hồ sơ Thiết bị</CardTitle>
-                <CardDescription>Lưu một ảnh chụp nhanh thông tin của thiết bị hiện tại vào tài khoản của bạn.</CardDescription>
+                <CardTitle className="flex items-center gap-2">Lưu & Tự động hóa</CardTitle>
+                <CardDescription>Lưu một ảnh chụp nhanh hoặc bật tự động cập nhật cho thiết bị này.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="space-y-2">
                     <Label htmlFor="device-name">Tên thiết bị</Label>
                     <Input id="device-name" value={deviceName} onChange={(e) => setDeviceName(e.target.value)} placeholder="ví dụ: Laptop của tôi"/>
                 </div>
+                <div className="flex items-center space-x-2 mt-4 pt-4 border-t">
+                    <Switch id="autosave-switch" checked={autoSave} onCheckedChange={setAutoSave} />
+                    <Label htmlFor="autosave-switch">Tự động lưu khi có thay đổi</Label>
+                </div>
             </CardContent>
             <CardFooter>
-                 <Button onClick={handleSaveProfile}>Lưu hồ sơ thiết bị</Button>
+                 <Button onClick={() => handleSaveOrUpdateProfile(false)} disabled={autoSave}>
+                    {savedProfiles?.some(p => p.deviceId === currentDeviceId) ? 'Cập nhật Hồ sơ' : 'Lưu Hồ sơ Thủ công'}
+                 </Button>
             </CardFooter>
         </Card>
 
@@ -788,7 +839,9 @@ function ProfileView() {
                 <CardDescription>Xem lại thông tin từ các thiết bị bạn đã lưu trước đây.</CardDescription>
             </CardHeader>
             <CardContent>
-                {savedProfiles && savedProfiles.length > 0 ? (
+                {areProfilesLoading ? (
+                  <p className="text-center text-muted-foreground py-4">Đang tải hồ sơ đã lưu...</p>
+                ) : savedProfiles && savedProfiles.length > 0 ? (
                     <Accordion type="single" collapsible className="w-full">
                         {savedProfiles.map(profile => (
                             <AccordionItem value={profile.id} key={profile.id}>
@@ -796,7 +849,8 @@ function ProfileView() {
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full pr-4">
                                         <span className="font-semibold text-left">{profile.deviceName}</span>
                                         <span className="text-xs text-muted-foreground text-left sm:text-right mt-1 sm:mt-0">
-                                            {profile.createdAt ? format(profile.createdAt.toDate(), "HH:mm, dd/MM/yyyy", { locale: vi }) : ''}
+                                            {profile.updatedAt ? `Cập nhật lúc ${format(profile.updatedAt.toDate(), "HH:mm, dd/MM/yyyy", { locale: vi })}` : 
+                                             (profile.createdAt ? `Lưu lúc ${format(profile.createdAt.toDate(), "HH:mm, dd/MM/yyyy", { locale: vi })}` : '')}
                                         </span>
                                     </div>
                                 </AccordionTrigger>

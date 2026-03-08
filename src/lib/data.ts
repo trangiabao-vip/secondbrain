@@ -168,7 +168,9 @@ export interface Notification {
 export interface DeviceProfile {
   id: string;
   userId: string;
+  deviceId: string;
   createdAt: any;
+  updatedAt?: any;
   deviceName: string;
   deviceInfo: Partial<{
     userAgent: string;
