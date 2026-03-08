@@ -48,6 +48,15 @@ import {
   ClipboardPaste,
   Clipboard,
   ScreenShare,
+  LocateFixed,
+  Music,
+  Timer,
+  CreditCard,
+  AppWindow,
+  Type,
+  Bluetooth,
+  Usb,
+  FileImage,
 } from 'lucide-react';
 
 export type Icon = LucideIcon;
@@ -101,6 +110,15 @@ export const Icons = {
   clipboardPaste: ClipboardPaste,
   clipboard: Clipboard,
   screenShare: ScreenShare,
+  locateFixed: LocateFixed,
+  music: Music,
+  timer: Timer,
+  creditCard: CreditCard,
+  appWindow: AppWindow,
+  type: Type,
+  bluetooth: Bluetooth,
+  usb: Usb,
+  fileImage: FileImage,
   whoIsTheSpy: ({ className }: { className?: string }) => (
     <svg 
       className={className}
@@ -164,3 +182,5 @@ export const Icons = {
     </svg>
   )
 };
+
+    
