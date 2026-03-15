@@ -29,12 +29,18 @@ export function InterestSidebar() {
   const { deleteInterest } = useAppContext();
   const { interestId, selectInterest, pathname } = useUIContext();
   const { user } = useFirebase();
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
   const { setOpen: setSearchOpen } = useSearch();
 
   const isActive = (id: string) => {
     return pathname.startsWith(`/interests/${id}`);
   }
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const renderInterests = () => {
     if (isDataLoading) {
@@ -54,7 +60,7 @@ export function InterestSidebar() {
                 isActive={isActive(interest.id)}
                 tooltip={interest.name}
             >
-                <Link href={`/interests/${interest.id}`} onClick={() => selectInterest(interest.id)}>
+                <Link href={`/interests/${interest.id}`} onClick={() => { selectInterest(interest.id); handleLinkClick(); }}>
                 <Icons.interest />
                 <span>{interest.name}</span>
                 </Link>
@@ -101,7 +107,7 @@ export function InterestSidebar() {
               placeholder="Tìm kiếm..."
               className="pl-8"
               onFocus={!isMobile ? () => setSearchOpen(true) : undefined}
-              onClick={isMobile ? () => setSearchOpen(true) : undefined}
+              onClick={() => { if(isMobile) { setSearchOpen(true) }}}
               readOnly={isMobile}
             />
           </div>
@@ -115,7 +121,7 @@ export function InterestSidebar() {
                 isActive={pathname.startsWith('/schedule')}
                 tooltip="Lịch"
               >
-                <Link href="/schedule">
+                <Link href="/schedule" onClick={handleLinkClick}>
                   <Icons.calendar />
                   <span>Lịch</span>
                 </Link>
@@ -127,7 +133,7 @@ export function InterestSidebar() {
                 isActive={pathname.startsWith('/notifications')}
                 tooltip="Thông báo"
               >
-                <Link href="/notifications">
+                <Link href="/notifications" onClick={handleLinkClick}>
                   <Icons.notification />
                   <span>Thông báo</span>
                 </Link>
@@ -139,7 +145,7 @@ export function InterestSidebar() {
                 isActive={pathname.startsWith('/games')}
                 tooltip="Game"
               >
-                <Link href="/games">
+                <Link href="/games" onClick={handleLinkClick}>
                   <Icons.game />
                   <span>Game</span>
                 </Link>
@@ -151,7 +157,7 @@ export function InterestSidebar() {
                 isActive={pathname.startsWith('/sales-pages')}
                 tooltip="Sales Pages"
               >
-                <Link href="/sales-pages">
+                <Link href="/sales-pages" onClick={handleLinkClick}>
                   <Icons.salesPage />
                   <span>Sales Pages</span>
                 </Link>
@@ -163,7 +169,7 @@ export function InterestSidebar() {
                 isActive={pathname.startsWith('/channels')}
                 tooltip="Kênh"
               >
-                <Link href="/channels">
+                <Link href="/channels" onClick={handleLinkClick}>
                   <Icons.channel />
                   <span>Kênh</span>
                 </Link>
@@ -175,7 +181,7 @@ export function InterestSidebar() {
                 isActive={pathname.startsWith('/dashboard')}
                 tooltip="Tổng hợp"
               >
-                <Link href="/dashboard">
+                <Link href="/dashboard" onClick={handleLinkClick}>
                   <Icons.dashboard />
                   <span>Tổng hợp</span>
                 </Link>
@@ -187,7 +193,7 @@ export function InterestSidebar() {
                 isActive={pathname.startsWith('/profile')}
                 tooltip="Hồ sơ"
               >
-                <Link href="/profile">
+                <Link href="/profile" onClick={handleLinkClick}>
                   <Icons.businessCard />
                   <span>Hồ sơ</span>
                 </Link>
