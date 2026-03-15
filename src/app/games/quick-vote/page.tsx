@@ -38,13 +38,11 @@ export default function QuickVotePage() {
     };
 
     const handleVote = (name: string) => {
-        if (votedPlayers.includes(name)) {
-            // Unvote
-            setPlayers(players.map(p => p.name === name ? { ...p, votes: p.votes - 1 } : p));
-            setVotedPlayers(votedPlayers.filter(pName => pName !== name));
-        } else {
-            // Vote
-            setPlayers(players.map(p => p.name === name ? { ...p, votes: p.votes + 1 } : p));
+        // Always increment vote count on click
+        setPlayers(players.map(p => p.name === name ? { ...p, votes: p.votes + 1 } : p));
+
+        // Keep track of who has been voted for at least once for UI highlighting, without duplicates.
+        if (!votedPlayers.includes(name)) {
             setVotedPlayers([...votedPlayers, name]);
         }
     };
@@ -123,7 +121,7 @@ export default function QuickVotePage() {
     const renderVoting = () => (
         <div className="text-center">
              <h2 className="text-2xl font-bold mb-2">{question}</h2>
-             <p className="text-muted-foreground mb-8">Nhấn vào tên để bình chọn. Bạn có thể thay đổi phiếu của mình.</p>
+             <p className="text-muted-foreground mb-8">Nhấn vào tên để bình chọn. Bạn có thể bình chọn nhiều lần.</p>
              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                  {players.map((player, index) => (
                     <Card 
