@@ -94,18 +94,18 @@ export function InterestSidebar() {
             <h1 className="text-lg font-semibold">Trung tâm Sở thích</h1>
           </div>
         </div>
-        {!isMobile && (
-          <div className="p-2">
-            <div className="relative">
-              <Icons.search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <SidebarInput 
-                placeholder="Tìm kiếm..." 
-                className="pl-8"
-                onFocus={() => setSearchOpen(true)}
-              />
-            </div>
+        <div className="p-2">
+          <div className="relative">
+            <Icons.search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <SidebarInput
+              placeholder="Tìm kiếm..."
+              className="pl-8"
+              onFocus={!isMobile ? () => setSearchOpen(true) : undefined}
+              onClick={isMobile ? () => setSearchOpen(true) : undefined}
+              readOnly={isMobile}
+            />
           </div>
-        )}
+        </div>
       </SidebarHeader>
       <SidebarContent className="p-2">
         <SidebarMenu>
