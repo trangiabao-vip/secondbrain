@@ -1005,5 +1005,42 @@
       "Để đối phương chọn một tổ chức từ thiện để hai bạn cùng quyên góp.",
       "Cùng nhau viết ra những mục tiêu chung cho 5 năm tới."
     ]
+  },
+  "tren-ban-nhau": {
+    "name": "Trên Bàn Nhậu",
+    "truths": [
+      "Lần say xỉn đáng xấu hổ nhất của bạn là khi nào?",
+      "Bạn đã bao giờ nhắn tin cho người yêu cũ khi say chưa?",
+      "Trong bàn này, ai là người có 'tửu lượng' đáng gờm nhất theo bạn?",
+      "Kể về một lần bạn nói dối để trốn một cuộc nhậu.",
+      "Bạn đã bao giờ 'thả thính' ai đó khi đang say chưa?",
+      "Bí mật 'trên trời dưới bể' nào bạn chỉ dám kể khi có chút men?",
+      "Ai trong bàn nhậu này bạn muốn 'chạm ly' riêng nhất?",
+      "Món 'mồi' nhậu dở nhất bạn từng ăn là gì?",
+      "Nếu phải uống một ly 'tự chế' của người bên cạnh, bạn có dám không?",
+      "Nếu được chọn một người trong bàn để cùng đi 'tăng hai', bạn sẽ chọn ai?",
+      "Bài hát tủ của bạn khi đi karaoke là gì?",
+      "Bạn đã bao giờ ngủ quên tại bàn nhậu chưa?",
+      "Lý do ngớ ngẩn nhất bạn từng dùng để mời ai đó uống là gì?",
+      "Trong một thang điểm từ 1 đến 10, bạn chấm cho khả năng uống của mình mấy điểm?",
+      "Bạn đã bao giờ hối hận về một điều gì đó đã nói hoặc làm khi say chưa?"
+    ],
+    "dares": [
+      "Uống cạn ly của bạn. Nếu không làm được, hai người bên cạnh bạn sẽ uống thay, mỗi người một nửa.",
+      "Chọn một người và 'mời' họ một ly. Bạn phải uống cùng họ.",
+      "Cả bàn cùng hô '1, 2, 3, zô!' và tất cả cùng uống một ngụm.",
+      "Người bên trái và người bên phải bạn oẳn tù tì, người thua uống một ly.",
+      "Thực hiện một điệu nhảy ngớ ngẩn trong 30 giây. Nếu từ chối, uống một ly.",
+      "Quy định một luật mới cho bàn nhậu (ví dụ: không được dùng điện thoại). Ai phạm luật phải uống.",
+      "Kể một câu chuyện cười. Nếu không ai cười, bạn phải uống. Nếu có người cười, người đó phải uống.",
+      "Chọn một người 'may mắn' và uống cạn ly cùng họ.",
+      "Hát một đoạn điệp khúc của bài hát bất kỳ. Nếu hát sai, uống một ly.",
+      "Tất cả các bạn nữ trong bàn cùng nâng ly và uống.",
+      "Tất cả các bạn nam trong bàn cùng nâng ly và uống.",
+      "Người có sinh nhật gần nhất phải uống một ly.",
+      "Gọi tên một người trong bàn, người đó phải kể tên một người khác, tiếp tục cho đến khi có người lặp lại hoặc không trả lời được trong 3 giây. Người đó phải uống.",
+      "Chơi trò 'nối từ'. Bắt đầu bằng từ 'Bia'. Ai không nối được phải uống.",
+      "Đứng lên và nói một lời chúc thật 'kêu' cho cả bàn, sau đó uống cạn ly của bạn."
+    ]
   }
 }
