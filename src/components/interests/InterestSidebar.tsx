@@ -9,6 +9,7 @@ import {
   SidebarFooter,
   SidebarSeparator,
   SidebarInput,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Icons } from "@/components/icons";
 import { AddInterestDialog } from "./AddInterestDialog";
@@ -28,7 +29,7 @@ export function InterestSidebar() {
   const { deleteInterest } = useAppContext();
   const { interestId, selectInterest, pathname } = useUIContext();
   const { user } = useFirebase();
-
+  const { isMobile } = useSidebar();
   const { setOpen: setSearchOpen } = useSearch();
 
   const isActive = (id: string) => {
@@ -93,16 +94,18 @@ export function InterestSidebar() {
             <h1 className="text-lg font-semibold">Trung tâm Sở thích</h1>
           </div>
         </div>
-        <div className="p-2">
-          <div className="relative">
-            <Icons.search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <SidebarInput 
-              placeholder="Tìm kiếm..." 
-              className="pl-8"
-              onFocus={() => setSearchOpen(true)}
-            />
+        {!isMobile && (
+          <div className="p-2">
+            <div className="relative">
+              <Icons.search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <SidebarInput 
+                placeholder="Tìm kiếm..." 
+                className="pl-8"
+                onFocus={() => setSearchOpen(true)}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </SidebarHeader>
       <SidebarContent className="p-2">
         <SidebarMenu>
