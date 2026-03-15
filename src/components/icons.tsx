@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ChevronUp,
   Copy,
+  Crown,
   Edit,
   Film,
   Gamepad2,
@@ -26,6 +27,7 @@ import {
   Target,
   Trash2,
   Users,
+  Vote,
   X,
   BookUser,
   Github,
@@ -119,6 +121,8 @@ export const Icons = {
   bluetooth: Bluetooth,
   usb: Usb,
   fileImage: FileImage,
+  vote: Vote,
+  crown: Crown,
   whoIsTheSpy: ({ className }: { className?: string }) => (
     <svg 
       className={className}
@@ -182,5 +186,3 @@ export const Icons = {
     </svg>
   )
 };
-
-    

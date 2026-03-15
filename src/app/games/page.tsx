@@ -1,3 +1,4 @@
+
 'use client';
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +41,14 @@ const games = [
     description: 'Một trò chơi suy luận xã hội, nơi người thường phải tìm ra gián điệp có từ khóa khác biệt.',
     icon: Icons.whoIsTheSpy,
     href: '/games/who-is-the-spy',
-  }
+  },
+  {
+    id: 'quick-vote',
+    title: 'Bình Chọn Nhanh',
+    description: 'Tạo một cuộc bình chọn và xem ai là người được "lên thớt" nhiều nhất.',
+    icon: Icons.vote,
+    href: '/games/quick-vote',
+  },
 ];
 
 export default function GamesPage() {
