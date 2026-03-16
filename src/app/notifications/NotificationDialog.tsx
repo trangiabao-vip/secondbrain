@@ -1,5 +1,5 @@
 'use client';
-import { useState, type ReactNode, useEffect, useMemo } from 'react';
+import { useState, type ReactNode, useEffect, useMemo, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -114,7 +114,7 @@ export function NotificationDialog({ mode, notificationId, children, initialData
     return date;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!title.trim() || !body.trim() || !sendAtDate) {
         toast({
             variant: 'destructive',
@@ -139,7 +139,7 @@ export function NotificationDialog({ mode, notificationId, children, initialData
     }
     
     setIsOpen(false);
-  };
+  }, [title, body, sendAtDate, sendAtTime, linkType, linkId, mode, notificationId, addNotification, updateNotification, toast, setIsOpen]);
   
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
