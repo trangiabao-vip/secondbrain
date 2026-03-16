@@ -25,6 +25,8 @@ import { GoalStatus, GoalPriority, Goal } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { NotificationDialog } from '@/app/notifications/NotificationDialog';
 
 const getDateFromFirestore = (date: any): Date | undefined => {
     if (!date) return undefined;
@@ -294,6 +296,37 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
               </Select>
             </div>
              <Separator />
+              <div className="space-y-2">
+                  <Label>Nhắc nhở</Label>
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                          <Button variant="outline" className="w-full justify-between" disabled={!startDate}>
+                              <span>Thêm lời nhắc...</span>
+                              <Icons.notification className="h-4 w-4" />
+                          </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                          {[5, 10, 15].map(min => (
+                              <NotificationDialog
+                                  key={min}
+                                  mode="add"
+                                  initialData={{
+                                      title: `Sắp tới: ${goalTitle}`,
+                                      body: `Mục tiêu "${goalTitle}" sẽ bắt đầu trong ${min} phút nữa.`,
+                                      sendAt: startDate ? new Date(startDate.getTime() - min * 60000) : new Date(),
+                                      link: { type: 'goal', id: goalId }
+                                  }}
+                              >
+                                  <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                                      Trước {min} phút
+                                  </DropdownMenuItem>
+                              </NotificationDialog>
+                          ))}
+                      </DropdownMenuContent>
+                  </DropdownMenu>
+                  {!startDate && <p className="text-xs text-muted-foreground mt-2">Vui lòng đặt ngày bắt đầu để thêm lời nhắc.</p>}
+              </div>
+            <Separator />
             <div className="space-y-2">
               <Label>Thuộc tính tùy chỉnh</Label>
               <div className="space-y-2">

@@ -27,6 +27,7 @@ interface NotificationDialogProps {
   mode: 'add' | 'edit';
   notificationId?: string;
   children: ReactNode;
+  initialData?: Partial<Omit<Notification, 'id'>>;
 }
 
 const getDateFromFirestore = (date: any): Date | undefined => {
@@ -38,7 +39,7 @@ const getDateFromFirestore = (date: any): Date | undefined => {
 };
 
 
-export function NotificationDialog({ mode, notificationId, children }: NotificationDialogProps) {
+export function NotificationDialog({ mode, notificationId, children, initialData }: NotificationDialogProps) {
   const { getNotificationById, addNotification, updateNotification, topics, goals, tasks, getTopicBreadcrumbs } = useAppContext();
   const { toast } = useToast();
 
@@ -79,6 +80,18 @@ export function NotificationDialog({ mode, notificationId, children }: Notificat
                 setLinkType(notification.link?.type || 'none');
                 setLinkId(notification.link?.id);
             }
+        } else if (initialData) {
+            setTitle(initialData.title || '');
+            setBody(initialData.body || '');
+            const sendDate = getDateFromFirestore(initialData.sendAt);
+            setSendAtDate(sendDate);
+            if (sendDate) {
+                setSendAtTime(format(sendDate, "HH:mm"));
+            } else {
+                setSendAtTime('09:00');
+            }
+            setLinkType(initialData.link?.type || 'none');
+            setLinkId(initialData.link?.id);
         } else {
             // Reset for 'add' mode
             setTitle('');
@@ -89,7 +102,7 @@ export function NotificationDialog({ mode, notificationId, children }: Notificat
             setLinkId(undefined);
         }
     }
-  }, [isOpen, mode, notificationId, getNotificationById]);
+  }, [isOpen, mode, notificationId, getNotificationById, initialData]);
 
   const combineDateTime = (date: Date, time: string): Date => {
     try {

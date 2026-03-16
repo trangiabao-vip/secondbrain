@@ -38,6 +38,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import { NotificationDialog } from '@/app/notifications/NotificationDialog';
 
 
 interface AddOrEditTaskDialogProps {
@@ -644,6 +645,39 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
               )}
             </div>
           </div>
+          <Separator/>
+            {mode === 'edit' && taskId && !isRecurringInstance && (
+              <div className="space-y-2">
+                  <Label>Nhắc nhở</Label>
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                          <Button variant="outline" className="w-full justify-between" disabled={!startDate}>
+                              <span>Thêm lời nhắc...</span>
+                              <Icons.notification className="h-4 w-4" />
+                          </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                          {[5, 10, 15].map(min => (
+                              <NotificationDialog
+                                  key={min}
+                                  mode="add"
+                                  initialData={{
+                                      title: `Sắp tới: ${taskText}`,
+                                      body: `Nhiệm vụ "${taskText}" sẽ bắt đầu trong ${min} phút nữa.`,
+                                      sendAt: startDate ? new Date(startDate.getTime() - min * 60000) : new Date(),
+                                      link: { type: 'task', id: taskId }
+                                  }}
+                              >
+                                  <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                                      Trước {min} phút
+                                  </DropdownMenuItem>
+                              </NotificationDialog>
+                          ))}
+                      </DropdownMenuContent>
+                  </DropdownMenu>
+                  {!startDate && <p className="text-xs text-muted-foreground mt-2">Vui lòng đặt thời gian bắt đầu để thêm lời nhắc.</p>}
+              </div>
+            )}
           <Separator/>
           <div className="space-y-4">
               <div className="flex items-center space-x-2">
