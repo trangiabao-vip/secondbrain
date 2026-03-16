@@ -230,6 +230,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const getInterestById = useCallback((id: string) => dataContext.interests.find(i => i.id === id), [dataContext.interests]);
+
   const deleteInterest = async (id: string) => {
     const interest = getInterestById(id);
     createUndoableDelete('sở thích', id, interest?.name, async () => {
@@ -251,6 +253,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
     });
   };
+
+  const getTopicById = useCallback((id: string) => dataContext.topics.find(t => t.id === id), [dataContext.topics]);
 
   const deleteTopic = async (id: string) => {
     const topic = getTopicById(id);
@@ -282,6 +286,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
     });
   };
+
+  const getGoalById = useCallback((id: string) => dataContext.goals.find(g => g.id === id), [dataContext.goals]);
 
   const deleteGoal = async (id: string) => {
     const goal = getGoalById(id);
@@ -350,16 +356,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const isRecurringInstance = id.includes('-recur-');
     const originalTaskId = isRecurringInstance ? id.split('-recur-')[0] : id;
     
-    // We need the task for its text, for the toast.
-    // findTaskInstance can get the details even for a recurring instance.
     const task = findTaskInstance(id); 
 
-    // We pass the originalTaskId to createUndoableDelete so that the source document is removed from the `tasks` array,
-    // which will prevent any of its recurring instances from being generated.
     createUndoableDelete('nhiệm vụ', originalTaskId, task?.text, async () => {
         await deleteDoc(doc(firestore, 'tasks', originalTaskId));
     });
   };
+
+  const getTasksByGoalId = useCallback((goalId: string) => dataContext.tasks.filter(t => t.goalId === goalId), [dataContext.tasks]);
 
   const duplicateGoal = async (goalId: string) => {
     if (!user) return;
@@ -458,6 +462,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Trang Wiki đã được cập nhật" });
   };
 
+  const getWikiPageById = useCallback((id: string) => dataContext.wikiPages.find(p => p.id === id), [dataContext.wikiPages]);
+
   const deleteWikiPage = (pageId: string) => {
     const page = getWikiPageById(pageId);
     createUndoableDelete('trang wiki', pageId, page?.title, async () => {
@@ -465,6 +471,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
   
+  const getSalesPageById = useCallback((id: string) => dataContext.salesPages.find(p => p.id === id), [dataContext.salesPages]);
+
   const addSalesPage = async (pageData: Partial<Omit<SalesPage, 'id'>>) => {
     if (!user) return;
     const newPage: Omit<SalesPage, 'id'> = {
@@ -501,6 +509,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const getChannelById = useCallback((id: string) => dataContext.channels.find(c => c.id === id), [dataContext.channels]);
+
   const addChannel = async (channelData: Partial<Omit<Channel, 'id'>>) => {
     if (!user) return;
     const newChannel = {
@@ -530,7 +540,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const addNotification = async (notificationData: Partial<Omit<Notification, 'id'>>) => {
+  const addNotification = useCallback(async (notificationData: Partial<Omit<Notification, 'id'>>) => {
     if (!user) return;
     const newNotification = {
       ...notificationData,
@@ -546,19 +556,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error("Error adding notification: ", e);
         toast({ variant: 'destructive', title: "Lỗi", description: 'Không thể lên lịch thông báo.' });
     }
-  };
+  }, [user, firestore, toast]);
 
-  const updateNotification = async (notificationId: string, updatedData: Partial<Omit<Notification, 'id'>>) => {
+  const updateNotification = useCallback(async (notificationId: string, updatedData: Partial<Omit<Notification, 'id'>>) => {
     await updateDocumentNonBlocking(doc(firestore, 'notifications', notificationId), updatedData);
     toast({ title: "Thông báo đã được cập nhật" });
-  };
+  }, [firestore, toast]);
+  
+  const getNotificationById = useCallback((id: string) => dataContext.notifications.find(n => n.id === id), [dataContext.notifications]);
 
-  const deleteNotification = (notificationId: string) => {
+  const deleteNotification = useCallback((notificationId: string) => {
     const notification = getNotificationById(notificationId);
     createUndoableDelete('thông báo', notificationId, notification?.title, async () => {
         await deleteDoc(doc(firestore, 'notifications', notificationId));
     });
-  };
+  }, [getNotificationById, createUndoableDelete, firestore]);
 
   const handleDragEnd = (result: DropResult) => {
     const { destination, source, type } = result;
@@ -616,16 +628,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const getInterestById = (id: string) => dataContext.interests.find(i => i.id === id);
-  const getGoalById = (id: string) => dataContext.goals.find(g => g.id === id);
-  const getTaskById = (id: string) => dataContext.tasks.find(t => t.id === id);
-  const getTasksByGoalId = (goalId: string) => dataContext.tasks.filter(t => t.goalId === goalId);
-  const getTopicById = (id: string) => dataContext.topics.find(t => t.id === id);
-  const getWikiPageById = (id: string) => dataContext.wikiPages.find(p => p.id === id);
-  const getSalesPageById = (id: string) => dataContext.salesPages.find(p => p.id === id);
-  const getChannelById = (id: string) => dataContext.channels.find(c => c.id === id);
-  const getNotificationById = (id: string) => dataContext.notifications.find(n => n.id === id);
-
+  const getTaskById = useCallback((id: string) => dataContext.tasks.find(t => t.id === id), [dataContext.tasks]);
+  
   const selectedInterest = useMemo(() => dataContext.interests.find((i) => i.id === uiContext.interestId) ?? null, [dataContext.interests, uiContext.interestId]);
   const selectedTopic = useMemo(() => dataContext.topics.find((t) => t.id === uiContext.topicId) ?? null, [dataContext.topics, uiContext.topicId]);
 
@@ -692,7 +696,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getTopicBreadcrumbs,
     handleDragEnd,
     logout,
-  }), [dataContext, uiContext, topicBreadcrumbs, selectedInterest, selectedTopic, getTopicBreadcrumbs, findTaskInstance]);
+  }), [
+    dataContext, uiContext, topicBreadcrumbs, selectedInterest, selectedTopic, 
+    getTopicBreadcrumbs, findTaskInstance, addNotification, updateNotification, 
+    deleteNotification, getGoalById, getInterestById, getTopicById, getWikiPageById, 
+    getChannelById, getSalesPageById, getTasksByGoalId
+  ]);
 
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
