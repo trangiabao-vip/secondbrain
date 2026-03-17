@@ -347,7 +347,7 @@ export function GlobalScheduleView() {
       <header className="flex items-center justify-between pb-4">
         <div className="flex items-center gap-4">
             <h2 className="text-xl font-bold">
-                {isMobile ? headerDateString : `Tháng ${format(currentDate, 'M, yyyy', { locale: vi })}`}
+                {headerDateString}
             </h2>
              <Popover>
                 <PopoverTrigger asChild>
