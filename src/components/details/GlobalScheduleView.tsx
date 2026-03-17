@@ -358,6 +358,7 @@ export function GlobalScheduleView() {
                 <PopoverContent className="w-auto p-0">
                 <Calendar
                     locale={vi}
+                    weekStartsOn={0}
                     mode="single"
                     selected={currentDate}
                     onSelect={(date) => date && setCurrentDate(date)}
@@ -543,3 +544,5 @@ export function GlobalScheduleView() {
 }
 
 export default GlobalScheduleView;
+
+    
