@@ -1,5 +1,5 @@
 'use client';
-import { useState, type ReactNode, useEffect, useMemo, useCallback } from 'react';
+import { useState, type ReactNode, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -65,44 +65,45 @@ export function NotificationDialog({ mode, notificationId, children, initialData
     }
   }, [linkType, topics, goals, tasks, getTopicBreadcrumbs]);
   
-  useEffect(() => {
-    if (isOpen) {
-        if (mode === 'edit' && notificationId) {
-            const notification = getNotificationById(notificationId);
-            if (notification) {
-                setTitle(notification.title);
-                setBody(notification.body);
-                const sendDate = getDateFromFirestore(notification.sendAt);
-                setSendAtDate(sendDate);
-                if (sendDate) {
-                    setSendAtTime(format(sendDate, "HH:mm"));
-                }
-                setLinkType(notification.link?.type || 'none');
-                setLinkId(notification.link?.id);
-            }
-        } else if (initialData) {
-            setTitle(initialData.title || '');
-            setBody(initialData.body || '');
-            const sendDate = getDateFromFirestore(initialData.sendAt);
-            setSendAtDate(sendDate);
-            if (sendDate) {
-                setSendAtTime(format(sendDate, "HH:mm"));
-            } else {
-                setSendAtTime('09:00');
-            }
-            setLinkType(initialData.link?.type || 'none');
-            setLinkId(initialData.link?.id);
-        } else {
-            // Reset for 'add' mode
-            setTitle('');
-            setBody('');
-            setSendAtDate(new Date());
-            setSendAtTime('09:00');
-            setLinkType('none');
-            setLinkId(undefined);
-        }
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      if (mode === 'edit' && notificationId) {
+          const notification = getNotificationById(notificationId);
+          if (notification) {
+              setTitle(notification.title);
+              setBody(notification.body);
+              const sendDate = getDateFromFirestore(notification.sendAt);
+              setSendAtDate(sendDate);
+              if (sendDate) {
+                  setSendAtTime(format(sendDate, "HH:mm"));
+              }
+              setLinkType(notification.link?.type || 'none');
+              setLinkId(notification.link?.id);
+          }
+      } else if (initialData) {
+          setTitle(initialData.title || '');
+          setBody(initialData.body || '');
+          const sendDate = getDateFromFirestore(initialData.sendAt);
+          setSendAtDate(sendDate);
+          if (sendDate) {
+              setSendAtTime(format(sendDate, "HH:mm"));
+          } else {
+              setSendAtTime('09:00');
+          }
+          setLinkType(initialData.link?.type || 'none');
+          setLinkId(initialData.link?.id);
+      } else {
+          // Reset for 'add' mode
+          setTitle('');
+          setBody('');
+          setSendAtDate(new Date());
+          setSendAtTime('09:00');
+          setLinkType('none');
+          setLinkId(undefined);
+      }
     }
-  }, [isOpen, mode, notificationId, getNotificationById, initialData]);
+    setIsOpen(open);
+  };
 
   const combineDateTime = (date: Date, time: string): Date => {
     try {
@@ -114,7 +115,7 @@ export function NotificationDialog({ mode, notificationId, children, initialData
     return date;
   };
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = async () => {
     if (!title.trim() || !body.trim() || !sendAtDate) {
         toast({
             variant: 'destructive',
@@ -139,10 +140,10 @@ export function NotificationDialog({ mode, notificationId, children, initialData
     }
     
     setIsOpen(false);
-  }, [title, body, sendAtDate, sendAtTime, linkType, linkId, mode, notificationId, addNotification, updateNotification, toast, setIsOpen]);
+  };
   
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
