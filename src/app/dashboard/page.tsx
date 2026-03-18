@@ -1,11 +1,9 @@
 'use client';
 import { AuthGuard } from '@/components/auth/AuthGuard';
-import React, { Suspense } from 'react';
+import React from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const DashboardView = React.lazy(() =>
-  import('@/components/dashboard/DashboardView').then(module => ({ default: module.DashboardView }))
-);
+import DashboardView from '@/components/dashboard/DashboardView';
+import { useAppContext } from '@/contexts/AppContext';
 
 const DashboardSkeleton = () => (
   <div className="space-y-6">
@@ -18,11 +16,19 @@ const DashboardSkeleton = () => (
 );
 
 function DashboardPage() {
+    const { isDataLoading } = useAppContext();
+
+    if (isDataLoading) {
+      return (
+        <AuthGuard>
+          <DashboardSkeleton />
+        </AuthGuard>
+      )
+    }
+
     return (
         <AuthGuard>
-            <Suspense fallback={<DashboardSkeleton />}>
-                <DashboardView />
-            </Suspense>
+          <DashboardView />
         </AuthGuard>
     );
 }

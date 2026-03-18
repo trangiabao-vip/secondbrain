@@ -3,12 +3,9 @@
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { useAppContext } from "@/contexts/AppContext";
 import { AuthGuard } from "@/components/auth/AuthGuard";
-import React, { Suspense } from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
-
-const TopicGrid = React.lazy(() => 
-  import('@/components/topics/TopicGrid').then(module => ({ default: module.TopicGrid }))
-);
+import React from 'react';
+import { Skeleton } from "@/components/ui/skeleton";
+import TopicGrid from '@/components/topics/TopicGrid';
 
 const TopicGridSkeleton = () => (
     <div className="space-y-6">
@@ -46,9 +43,7 @@ export default function InterestPage() {
     
     return (
         <AuthGuard>
-            <Suspense fallback={<TopicGridSkeleton />}>
-                <TopicGrid />
-            </Suspense>
+            <TopicGrid />
         </AuthGuard>
     );
 }

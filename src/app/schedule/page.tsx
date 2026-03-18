@@ -1,11 +1,9 @@
 'use client';
 import { AuthGuard } from '@/components/auth/AuthGuard';
-import React, { Suspense } from 'react';
+import React from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const GlobalScheduleView = React.lazy(() =>
-  import('@/components/details/GlobalScheduleView').then(module => ({ default: module.GlobalScheduleView }))
-);
+import GlobalScheduleView from '@/components/details/GlobalScheduleView';
+import { useAppContext } from '@/contexts/AppContext';
 
 const ScheduleSkeleton = () => (
   <div className="flex flex-col h-full">
@@ -27,11 +25,19 @@ const ScheduleSkeleton = () => (
 );
 
 function SchedulePage() {
+    const { isDataLoading } = useAppContext();
+
+    if (isDataLoading) {
+      return (
+        <AuthGuard>
+          <ScheduleSkeleton />
+        </AuthGuard>
+      );
+    }
+
     return (
         <AuthGuard>
-            <Suspense fallback={<ScheduleSkeleton />}>
-                <GlobalScheduleView />
-            </Suspense>
+          <GlobalScheduleView />
         </AuthGuard>
     );
 }

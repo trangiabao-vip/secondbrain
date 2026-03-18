@@ -1,11 +1,9 @@
 'use client';
 import { AuthGuard } from "@/components/auth/AuthGuard";
-import React, { Suspense } from 'react';
+import React from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const TopicDetailView = React.lazy(() => 
-  import('@/components/details/TopicDetailView').then(module => ({ default: module.TopicDetailView }))
-);
+import TopicDetailView from '@/components/details/TopicDetailView';
+import { useAppContext } from "@/contexts/AppContext";
 
 const TopicDetailSkeleton = () => (
   <div className="space-y-4">
@@ -31,11 +29,19 @@ const TopicDetailSkeleton = () => (
 );
 
 export default function TopicPage() {
+    const { isDataLoading } = useAppContext();
+
+    if (isDataLoading) {
+      return (
+        <AuthGuard>
+          <TopicDetailSkeleton />
+        </AuthGuard>
+      )
+    }
+
     return (
         <AuthGuard>
-            <Suspense fallback={<TopicDetailSkeleton />}>
-                <TopicDetailView />
-            </Suspense>
+            <TopicDetailView />
         </AuthGuard>
     );
 }
