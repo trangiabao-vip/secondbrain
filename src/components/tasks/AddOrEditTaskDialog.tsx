@@ -333,6 +333,15 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
       });
       return;
     }
+    
+    if (!selectedGoalId && !selectedTopicIdForTask) {
+      toast({
+        variant: 'destructive',
+        title: 'Thiếu thông tin',
+        description: 'Vui lòng chọn một chủ đề cho nhiệm vụ này.',
+      });
+      return;
+    }
 
     const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
     const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
