@@ -176,7 +176,7 @@ export function NotificationDialog({ mode, notificationId, children, initialData
             <div className="space-y-2">
               <Label htmlFor="send-date">Thời gian gửi</Label>
               <div className="flex gap-2">
-                <Popover>
+                <Popover modal={false}>
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}
@@ -210,7 +210,7 @@ export function NotificationDialog({ mode, notificationId, children, initialData
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="link-type">Liên kết đến (Tùy chọn)</Label>
-                <Select value={linkType} onValueChange={(v: any) => { setLinkType(v); setLinkId(undefined); }}>
+                <Select value={linkType} onValueChange={(v: any) => { setLinkType(v); setLinkId(undefined); }} modal={false}>
                     <SelectTrigger id="link-type">
                         <SelectValue />
                     </SelectTrigger>
@@ -224,7 +224,7 @@ export function NotificationDialog({ mode, notificationId, children, initialData
               </div>
               <div className="space-y-2">
                  <Label htmlFor="link-id">Mục cụ thể</Label>
-                 <Select value={linkId} onValueChange={setLinkId} disabled={linkType === 'none' || linkableItems.length === 0}>
+                 <Select value={linkId} onValueChange={setLinkId} disabled={linkType === 'none' || linkableItems.length === 0} modal={false}>
                     <SelectTrigger id="link-id">
                         <SelectValue placeholder="Chọn một mục..."/>
                     </SelectTrigger>

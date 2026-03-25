@@ -161,7 +161,7 @@ export function AddGoalDialog({ children, startDate: initialStartDate }: { child
             </div>
              <div className="space-y-2">
               <Label htmlFor="priority-add">Mức độ ưu tiên</Label>
-              <Select value={priority} onValueChange={(value: GoalPriority) => setPriority(value)}>
+              <Select value={priority} onValueChange={(value: GoalPriority) => setPriority(value)} modal={false}>
                 <SelectTrigger id="priority-add">
                   <SelectValue placeholder="Chọn mức độ ưu tiên" />
                 </SelectTrigger>
@@ -175,7 +175,7 @@ export function AddGoalDialog({ children, startDate: initialStartDate }: { child
             <div className="space-y-2">
               <Label htmlFor="start-date">Ngày bắt đầu (Tùy chọn)</Label>
               <div className="flex gap-2">
-                <Popover>
+                <Popover modal={false}>
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}
@@ -209,7 +209,7 @@ export function AddGoalDialog({ children, startDate: initialStartDate }: { child
             <div className="space-y-2">
               <Label htmlFor="end-date">Ngày kết thúc (Tùy chọn)</Label>
               <div className="flex gap-2">
-                <Popover>
+                <Popover modal={false}>
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}

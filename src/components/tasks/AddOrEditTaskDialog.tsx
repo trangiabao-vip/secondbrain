@@ -333,6 +333,14 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
       });
       return;
     }
+     if (!selectedGoalId && !selectedTopicIdForTask) {
+        toast({
+            variant: 'destructive',
+            title: 'Thiếu thông tin',
+            description: 'Vui lòng chọn một chủ đề cho nhiệm vụ này.',
+        });
+        return;
+    }
 
     const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
     const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
@@ -449,7 +457,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
           </div>
            <div className="space-y-2">
             <Label htmlFor="task-topic">Chủ đề</Label>
-            <Popover open={topicPopoverOpen} onOpenChange={setTopicPopoverOpen}>
+            <Popover open={topicPopoverOpen} onOpenChange={setTopicPopoverOpen} modal={false}>
                 <PopoverTrigger asChild>
                     <Button
                         variant="outline"
@@ -470,11 +478,26 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                         <CommandInput placeholder="Tìm chủ đề..." />
                         <CommandList>
                             <CommandEmpty>Không tìm thấy chủ đề.</CommandEmpty>
+                             <CommandItem
+                                value="none-topic"
+                                onSelect={() => {
+                                    handleTopicChange('');
+                                    setTopicPopoverOpen(false);
+                                }}
+                            >
+                                <Check
+                                    className={cn(
+                                        "mr-2 h-4 w-4",
+                                        !selectedTopicIdForTask ? "opacity-100" : "opacity-0"
+                                    )}
+                                />
+                                Không có chủ đề
+                            </CommandItem>
                             <CommandGroup>
                               {topicOptions.map(topic => (
                                   <CommandItem
                                       key={topic.id}
-                                      value={topic.id}
+                                      value={topic.name}
                                       onSelect={() => {
                                           handleTopicChange(topic.id);
                                           setTopicPopoverOpen(false);
@@ -497,7 +520,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
           </div>
           <div className="space-y-2">
             <Label htmlFor="task-goal">Mục tiêu (Tùy chọn)</Label>
-            <Popover open={goalPopoverOpen} onOpenChange={setGoalPopoverOpen}>
+            <Popover open={goalPopoverOpen} onOpenChange={setGoalPopoverOpen} modal={false}>
                 <PopoverTrigger asChild>
                     <Button
                         variant="outline"
@@ -560,7 +583,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
           <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
               <Label htmlFor="difficulty-edit">Độ khó</Label>
-              <Select value={difficulty} onValueChange={(value: TaskDifficulty) => setDifficulty(value)}>
+              <Select value={difficulty} onValueChange={(value: TaskDifficulty) => setDifficulty(value)} modal={false}>
                   <SelectTrigger id="difficulty-edit">
                   <SelectValue placeholder="Chọn độ khó" />
                   </SelectTrigger>
@@ -573,7 +596,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
               </div>
               <div className="space-y-2">
               <Label htmlFor="status-edit-task">Trạng thái</Label>
-              <Select value={status} onValueChange={(value: TaskStatus) => setStatus(value)}>
+              <Select value={status} onValueChange={(value: TaskStatus) => setStatus(value)} modal={false}>
                   <SelectTrigger id="status-edit-task">
                   <SelectValue placeholder="Chọn trạng thái" />
                   </SelectTrigger>
@@ -588,7 +611,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
           <div className="space-y-2">
             <Label htmlFor="start-date-edit">Thời gian bắt đầu (Tùy chọn)</Label>
             <div className="flex gap-2">
-              <Popover>
+              <Popover modal={false}>
                   <PopoverTrigger asChild>
                   <Button
                       variant={"outline"}
@@ -622,7 +645,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
           <div className="space-y-2">
             <Label htmlFor="end-date-edit">Thời gian kết thúc (Tùy chọn)</Label>
             <div className="flex gap-2">
-              <Popover>
+              <Popover modal={false}>
                   <PopoverTrigger asChild>
                   <Button
                       variant={"outline"}
@@ -657,7 +680,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
             {mode === 'edit' && taskId && !isRecurringInstance && (
               <div className="space-y-2">
                   <Label>Nhắc nhở</Label>
-                  <DropdownMenu>
+                  <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
                           <Button variant="outline" className="w-full justify-between" disabled={!startDate}>
                               <span>Thêm lời nhắc...</span>
@@ -703,7 +726,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                               onChange={e => handleRecurrenceChange('interval', parseInt(e.target.value) || 1)}
                               min="1"
                           />
-                          <Select value={recurrenceRule.frequency} onValueChange={(v: RecurrenceFrequency) => handleRecurrenceChange('frequency', v)}>
+                          <Select value={recurrenceRule.frequency} onValueChange={(v: RecurrenceFrequency) => handleRecurrenceChange('frequency', v)} modal={false}>
                               <SelectTrigger className="w-32">
                                   <SelectValue />
                               </SelectTrigger>
@@ -731,7 +754,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                       )}
                       <div>
                         <Label>Ngày kết thúc (Tùy chọn)</Label>
-                         <Popover>
+                         <Popover modal={false}>
                             <PopoverTrigger asChild>
                             <Button
                                 variant={"outline"}

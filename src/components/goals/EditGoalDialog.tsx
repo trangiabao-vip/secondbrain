@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, type ReactNode, useEffect, useRef } from 'react';
 import {
@@ -202,7 +201,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             </div>
             <div className="space-y-2">
               <Label htmlFor="priority-edit">Mức độ ưu tiên</Label>
-              <Select value={priority} onValueChange={(value: GoalPriority) => setPriority(value)}>
+              <Select value={priority} onValueChange={(value: GoalPriority) => setPriority(value)} modal={false}>
                 <SelectTrigger id="priority-edit">
                   <SelectValue placeholder="Chọn mức độ ưu tiên" />
                 </SelectTrigger>
@@ -216,7 +215,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             <div className="space-y-2">
               <Label htmlFor="start-date-edit">Ngày bắt đầu (Tùy chọn)</Label>
               <div className="flex gap-2">
-                <Popover>
+                <Popover modal={false}>
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}
@@ -250,7 +249,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             <div className="space-y-2">
               <Label htmlFor="end-date-edit">Ngày kết thúc (Tùy chọn)</Label>
               <div className="flex gap-2">
-                <Popover>
+                <Popover modal={false}>
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}
@@ -283,7 +282,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             </div>
             <div className="space-y-2">
               <Label htmlFor="status-edit">Trạng thái</Label>
-              <Select value={status} onValueChange={(value: GoalStatus) => setStatus(value)}>
+              <Select value={status} onValueChange={(value: GoalStatus) => setStatus(value)} modal={false}>
                 <SelectTrigger id="status-edit">
                   <SelectValue placeholder="Chọn trạng thái" />
                 </SelectTrigger>
@@ -298,7 +297,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
              <Separator />
               <div className="space-y-2">
                   <Label>Nhắc nhở</Label>
-                  <DropdownMenu>
+                  <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
                           <Button variant="outline" className="w-full justify-between" disabled={!startDate}>
                               <span>Thêm lời nhắc...</span>
@@ -378,5 +377,3 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
     </Dialog>
   );
 }
-
-    

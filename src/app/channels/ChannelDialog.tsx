@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, type ReactNode, useEffect, useMemo } from 'react';
 import {
@@ -201,7 +200,7 @@ export function ChannelDialog({ open, onOpenChange, mode, channelId }: ChannelDi
 
               <div className="space-y-2">
                   <Label>Chủ đề liên quan</Label>
-                  <Popover open={topicPopoverOpen} onOpenChange={setTopicPopoverOpen}>
+                  <Popover open={topicPopoverOpen} onOpenChange={setTopicPopoverOpen} modal={false}>
                       <PopoverTrigger asChild>
                       <Button
                           variant="outline"
@@ -273,7 +272,7 @@ export function ChannelDialog({ open, onOpenChange, mode, channelId }: ChannelDi
               {selectedTopicIds.length > 0 && availableGoals.length > 0 && (
                 <div className="space-y-2">
                   <Label>Mục tiêu liên quan</Label>
-                  <Popover open={goalPopoverOpen} onOpenChange={setGoalPopoverOpen}>
+                  <Popover open={goalPopoverOpen} onOpenChange={setGoalPopoverOpen} modal={false}>
                       <PopoverTrigger asChild>
                       <Button
                           variant="outline"
@@ -346,7 +345,7 @@ export function ChannelDialog({ open, onOpenChange, mode, channelId }: ChannelDi
               {selectedTopicIds.length > 0 && availableTasks.length > 0 && (
                 <div className="space-y-2">
                   <Label>Nhiệm vụ liên quan</Label>
-                  <Popover open={taskPopoverOpen} onOpenChange={setTaskPopoverOpen}>
+                  <Popover open={taskPopoverOpen} onOpenChange={setTaskPopoverOpen} modal={false}>
                       <PopoverTrigger asChild>
                       <Button
                           variant="outline"
@@ -450,5 +449,3 @@ export function ChannelDialog({ open, onOpenChange, mode, channelId }: ChannelDi
     </Dialog>
   );
 }
-
-    
