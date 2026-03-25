@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, type ReactNode, useEffect, useMemo } from 'react';
 import {
@@ -39,6 +38,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { NotificationDialog } from '@/app/notifications/NotificationDialog';
+import { useToast } from '@/hooks/use-toast';
 
 
 interface AddOrEditTaskDialogProps {
@@ -171,6 +171,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
       duplicateTask, getGoalById, updateChannel, getChannelById, getTopicById,
       interests, topics, getTopicBreadcrumbs 
     } = useAppContext();
+  const { toast } = useToast();
   
   const [taskText, setTaskText] = useState('');
   const [notes, setNotes] = useState('');
@@ -324,53 +325,60 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
   };
 
   const handleSubmit = async () => {
-    if (taskText.trim()) {
-      const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
-      const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
-      
-      const customPropsObject = customProperties
-        .filter(p => p.key.trim() !== '')
-        .reduce((acc, prop) => {
-          acc[prop.key.trim()] = prop.value;
-          return acc;
-        }, {} as { [key: string]: string });
-      
-      const taskData: Partial<Omit<Task, 'id'>> = {
-        text: taskText.trim(),
-        notes: notes,
-        difficulty: difficulty,
-        status: status,
-        startDate: finalStartDate,
-        endDate: finalEndDate,
-        recurrence: isRecurring && !isRecurringInstance ? recurrenceRule : null,
-        customProperties: customPropsObject,
-      };
-      
-      if (selectedGoalId) {
-        const parentGoal = getGoalById(selectedGoalId);
-        if(parentGoal) {
-          taskData.topicId = parentGoal.topicId;
-          taskData.goalId = selectedGoalId;
-        }
-      } else {
-        taskData.topicId = selectedTopicIdForTask;
-        taskData.goalId = null;
-      }
-
-      if (mode === 'edit' && taskId) {
-        updateTask(taskId, taskData);
-      } else {
-        const newTaskId = await addTask(taskData);
-        if (newTaskId && initialChannelId) {
-            const channel = getChannelById(initialChannelId);
-            if (channel) {
-                const updatedTaskIds = [...(channel.taskIds || []), newTaskId];
-                updateChannel(initialChannelId, { taskIds: updatedTaskIds });
-            }
-        }
-      }
-      closeDialog();
+    if (!taskText.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Lỗi',
+        description: 'Tên nhiệm vụ không được để trống.',
+      });
+      return;
     }
+
+    const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
+    const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
+    
+    const customPropsObject = customProperties
+      .filter(p => p.key.trim() !== '')
+      .reduce((acc, prop) => {
+        acc[prop.key.trim()] = prop.value;
+        return acc;
+      }, {} as { [key: string]: string });
+    
+    const taskData: Partial<Omit<Task, 'id'>> = {
+      text: taskText.trim(),
+      notes: notes,
+      difficulty: difficulty,
+      status: status,
+      startDate: finalStartDate,
+      endDate: finalEndDate,
+      recurrence: isRecurring && !isRecurringInstance ? recurrenceRule : null,
+      customProperties: customPropsObject,
+    };
+    
+    if (selectedGoalId) {
+      const parentGoal = getGoalById(selectedGoalId);
+      if(parentGoal) {
+        taskData.topicId = parentGoal.topicId;
+        taskData.goalId = selectedGoalId;
+      }
+    } else {
+      taskData.topicId = selectedTopicIdForTask;
+      taskData.goalId = null;
+    }
+
+    if (mode === 'edit' && taskId) {
+      updateTask(taskId, taskData);
+    } else {
+      const newTaskId = await addTask(taskData);
+      if (newTaskId && initialChannelId) {
+          const channel = getChannelById(initialChannelId);
+          if (channel) {
+              const updatedTaskIds = [...(channel.taskIds || []), newTaskId];
+              updateChannel(initialChannelId, { taskIds: updatedTaskIds });
+          }
+      }
+    }
+    closeDialog();
   };
 
   const handleDeleteTask = () => {

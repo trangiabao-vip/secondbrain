@@ -21,13 +21,13 @@ export function AddTaskForm({ goalId }: { goalId: string }) {
     <div className="flex gap-2">
       <Input
         type="text"
-        placeholder="Thêm một công việc nhanh..."
+        placeholder="Thêm nhiệm vụ nhanh và nhấn Enter..."
         value={taskText}
         onChange={(e) => setTaskText(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
       />
       <AddOrEditTaskDialog mode="add" goalId={goalId}>
-        <Button onClick={handleAddTask} variant="secondary">
+        <Button variant="secondary">
           <Icons.add className="h-4 w-4" />
         </Button>
       </AddOrEditTaskDialog>
