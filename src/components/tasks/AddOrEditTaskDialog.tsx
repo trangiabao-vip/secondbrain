@@ -333,15 +333,6 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
       });
       return;
     }
-    
-    if (!selectedGoalId && !selectedTopicIdForTask) {
-      toast({
-        variant: 'destructive',
-        title: 'Thiếu thông tin',
-        description: 'Vui lòng chọn một chủ đề cho nhiệm vụ này.',
-      });
-      return;
-    }
 
     const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
     const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
@@ -483,7 +474,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                               {topicOptions.map(topic => (
                                   <CommandItem
                                       key={topic.id}
-                                      value={topic.name}
+                                      value={topic.id}
                                       onSelect={() => {
                                           handleTopicChange(topic.id);
                                           setTopicPopoverOpen(false);
@@ -529,7 +520,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                         <CommandList>
                             <CommandEmpty>Không có mục tiêu nào.</CommandEmpty>
                             <CommandItem
-                                value="Không có mục tiêu (nhiệm vụ độc lập)"
+                                value="none"
                                 onSelect={() => {
                                     setSelectedGoalId(null);
                                     setGoalPopoverOpen(false);
@@ -546,7 +537,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                             {availableGoals.map(goal => (
                                 <CommandItem
                                     key={goal.id}
-                                    value={goal.title}
+                                    value={goal.id}
                                     onSelect={() => {
                                         setSelectedGoalId(goal.id);
                                         setGoalPopoverOpen(false);
