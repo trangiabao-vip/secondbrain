@@ -333,6 +333,10 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
       });
       return;
     }
+    
+    if (!selectedGoalId && !selectedTopicIdForTask) {
+        // Allow creating tasks without topic or goal
+    }
 
     const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
     const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
@@ -362,7 +366,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         taskData.goalId = selectedGoalId;
       }
     } else {
-      taskData.topicId = selectedTopicIdForTask;
+      taskData.topicId = selectedTopicIdForTask || null;
       taskData.goalId = null;
     }
 
@@ -449,7 +453,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
           </div>
            <div className="space-y-2">
             <Label htmlFor="task-topic">Chủ đề</Label>
-            <Popover open={topicPopoverOpen} onOpenChange={setTopicPopoverOpen}>
+            <Popover open={topicPopoverOpen} onOpenChange={setTopicPopoverOpen} modal={false}>
                 <PopoverTrigger asChild>
                     <Button
                         variant="outline"
@@ -512,7 +516,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
           </div>
           <div className="space-y-2">
             <Label htmlFor="task-goal">Mục tiêu (Tùy chọn)</Label>
-            <Popover open={goalPopoverOpen} onOpenChange={setGoalPopoverOpen}>
+            <Popover open={goalPopoverOpen} onOpenChange={setGoalPopoverOpen} modal={false}>
                 <PopoverTrigger asChild>
                     <Button
                         variant="outline"
@@ -603,7 +607,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
           <div className="space-y-2">
             <Label htmlFor="start-date-edit">Thời gian bắt đầu (Tùy chọn)</Label>
             <div className="flex gap-2">
-              <Popover>
+              <Popover modal={false}>
                   <PopoverTrigger asChild>
                   <Button
                       variant={"outline"}
@@ -637,7 +641,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
           <div className="space-y-2">
             <Label htmlFor="end-date-edit">Thời gian kết thúc (Tùy chọn)</Label>
             <div className="flex gap-2">
-              <Popover>
+              <Popover modal={false}>
                   <PopoverTrigger asChild>
                   <Button
                       variant={"outline"}
