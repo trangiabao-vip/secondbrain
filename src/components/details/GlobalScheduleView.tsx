@@ -95,13 +95,12 @@ const generateRecurrencesInRange = (task: Task, rangeStart: Date, rangeEnd: Date
         }
         
         // Increment date
-        if (task.recurrence.frequency === 'weekly' && task.recurrence.daysOfWeek && task.recurrence.daysOfWeek.length > 0) {
+        if (task.recurrence.frequency === 'daily') {
+            currentDate = addDays(currentDate, task.recurrence.interval || 1);
+        } else if (task.recurrence.frequency === 'weekly' && task.recurrence.daysOfWeek && task.recurrence.daysOfWeek.length > 0) {
              currentDate = addDays(currentDate, 1);
         } else {
              switch (task.recurrence.frequency) {
-                case 'daily':
-                    currentDate = addDays(currentDate, task.recurrence.interval || 1);
-                    break;
                 case 'weekly':
                     currentDate = addWeeks(currentDate, task.recurrence.interval || 1);
                     break;
@@ -198,6 +197,7 @@ export function GlobalScheduleView() {
   const { goals, tasks, updateTask, updateGoal } = useAppContext();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [openPopoverKey, setOpenPopoverKey] = useState<string | null>(null);
   const weekDaysContainerRef = useRef<HTMLDivElement>(null);
   const justDraggedRef = useRef(false);
   const isMobile = useIsMobile();
@@ -246,6 +246,10 @@ export function GlobalScheduleView() {
     } else {
         updateTask(item.id, updatedData);
     }
+  };
+
+  const handleDragStart = () => {
+    setOpenPopoverKey(null);
   };
 
   const daysToShow = useMemo(() => {
@@ -441,8 +445,13 @@ export function GlobalScheduleView() {
                   <div className="relative">
                     {hours.map(hour => {
                         const slotDate = setMinutes(setHours(day, hour), 0);
+                        const popoverKey = `${day.toISOString()}-${hour}`;
                         return (
-                        <Popover key={hour}>
+                        <Popover 
+                            key={popoverKey}
+                            open={openPopoverKey === popoverKey}
+                            onOpenChange={(isOpen) => setOpenPopoverKey(isOpen ? popoverKey : null)}
+                        >
                             <PopoverTrigger asChild>
                             <div className="h-16 border-b relative group cursor-pointer">
                                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-primary/10 transition-opacity flex items-center justify-center">
@@ -484,6 +493,7 @@ export function GlobalScheduleView() {
                         const content = (
                             <motion.div
                                 drag="y"
+                                onDragStart={handleDragStart}
                                 onDragEnd={(e, info) => handleEventDrop(info, item)}
                                 dragConstraints={weekDaysContainerRef}
                                 dragMomentum={false}
