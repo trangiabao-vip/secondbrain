@@ -37,6 +37,7 @@ export interface Goal {
   title: string;
   description?: string;
   topicId: string;
+  parentId?: string | null;
   status: GoalStatus;
   priority?: GoalPriority;
   startDate?: any; // Can be string or Firebase Timestamp

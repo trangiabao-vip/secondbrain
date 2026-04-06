@@ -1,5 +1,5 @@
 'use client';
-import { useState, type ReactNode, useEffect, useRef } from 'react';
+import { useState, type ReactNode, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -63,7 +63,7 @@ function EditableMarkdown({ value, onChange, placeholder }: { value: string, onC
 }
 
 export function EditGoalDialog({ goalId, children }: { goalId: string, children: ReactNode }) {
-  const { getGoalById, updateGoal, deleteGoal, duplicateGoal } = useAppContext();
+  const { getGoalById, updateGoal, deleteGoal, duplicateGoal, goals } = useAppContext();
   const [goalTitle, setGoalTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<GoalPriority>('Vừa');
@@ -72,19 +72,44 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [endTime, setEndTime] = useState('10:00');
   const [status, setStatus] = useState<GoalStatus>('chưa bắt đầu');
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isOpen, setIsOpen] = useState(false);
+  
+  const originalGoal = useMemo(() => getGoalById(goalId), [getGoalById, goalId]);
+
+  const potentialParentGoals = useMemo(() => {
+    if (!originalGoal) return [];
+    
+    const descendants = new Set<string>();
+    const findDescendants = (parentId: string) => {
+        goals.forEach(g => {
+            if (g.parentId === parentId) {
+                descendants.add(g.id);
+                findDescendants(g.id);
+            }
+        });
+    };
+    findDescendants(goalId);
+
+    return goals.filter(g => 
+        g.topicId === originalGoal.topicId && 
+        g.id !== goalId &&
+        !descendants.has(g.id)
+    );
+  }, [goals, originalGoal, goalId]);
+
 
   useEffect(() => {
     if (isOpen) {
-      const goal = getGoalById(goalId);
-      if (goal) {
-        setGoalTitle(goal.title);
-        setDescription(goal.description || '');
-        setStatus(goal.status);
-        setPriority(goal.priority || 'Vừa');
+      if (originalGoal) {
+        setGoalTitle(originalGoal.title);
+        setDescription(originalGoal.description || '');
+        setStatus(originalGoal.status);
+        setPriority(originalGoal.priority || 'Vừa');
+        setSelectedParentId(originalGoal.parentId || null);
         
-        const sDate = getDateFromFirestore(goal.startDate);
+        const sDate = getDateFromFirestore(originalGoal.startDate);
         setStartDate(sDate);
         if (sDate) {
           setStartTime(format(sDate, "HH:mm"));
@@ -92,7 +117,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
           setStartTime('09:00');
         }
 
-        const eDate = getDateFromFirestore(goal.endDate);
+        const eDate = getDateFromFirestore(originalGoal.endDate);
         setEndDate(eDate);
         if (eDate) {
           setEndTime(format(eDate, "HH:mm"));
@@ -100,16 +125,16 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
           setEndTime('10:00');
         }
 
-        if (goal.customProperties) {
+        if (originalGoal.customProperties) {
           setCustomProperties(
-            Object.entries(goal.customProperties).map(([key, value], index) => ({ id: index, key, value: String(value) }))
+            Object.entries(originalGoal.customProperties).map(([key, value], index) => ({ id: index, key, value: String(value) }))
           );
         } else {
           setCustomProperties([]);
         }
       }
     }
-  }, [isOpen, goalId, getGoalById]);
+  }, [isOpen, originalGoal]);
 
    const combineDateTime = (date: Date, time: string): Date => {
     try {
@@ -153,6 +178,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
         endDate: finalEndDate,
         status: status,
         customProperties: customPropsObject,
+        parentId: selectedParentId,
       };
 
       updateGoal(goalId, updatedData);
@@ -200,8 +226,28 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                 />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="parent-goal-edit">Mục tiêu cha (Tùy chọn)</Label>
+              <Select
+                  value={selectedParentId || 'none'}
+                  onValueChange={(value) => setSelectedParentId(value === 'none' ? null : value)}
+                  
+              >
+                  <SelectTrigger id="parent-goal-edit">
+                      <SelectValue placeholder="Chọn mục tiêu cha..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="none">Không có (Mục tiêu gốc)</SelectItem>
+                      {potentialParentGoals.map((parentGoal) => (
+                          <SelectItem key={parentGoal.id} value={parentGoal.id}>
+                              {parentGoal.title}
+                          </SelectItem>
+                      ))}
+                  </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="priority-edit">Mức độ ưu tiên</Label>
-              <Select value={priority} onValueChange={(value: GoalPriority) => setPriority(value)} modal={false}>
+              <Select value={priority} onValueChange={(value: GoalPriority) => setPriority(value)} >
                 <SelectTrigger id="priority-edit">
                   <SelectValue placeholder="Chọn mức độ ưu tiên" />
                 </SelectTrigger>
@@ -215,7 +261,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             <div className="space-y-2">
               <Label htmlFor="start-date-edit">Ngày bắt đầu (Tùy chọn)</Label>
               <div className="flex gap-2">
-                <Popover modal={false}>
+                <Popover >
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}
@@ -249,7 +295,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             <div className="space-y-2">
               <Label htmlFor="end-date-edit">Ngày kết thúc (Tùy chọn)</Label>
               <div className="flex gap-2">
-                <Popover modal={false}>
+                <Popover >
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}
@@ -282,7 +328,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             </div>
             <div className="space-y-2">
               <Label htmlFor="status-edit">Trạng thái</Label>
-              <Select value={status} onValueChange={(value: GoalStatus) => setStatus(value)} modal={false}>
+              <Select value={status} onValueChange={(value: GoalStatus) => setStatus(value)} >
                 <SelectTrigger id="status-edit">
                   <SelectValue placeholder="Chọn trạng thái" />
                 </SelectTrigger>
@@ -297,7 +343,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
              <Separator />
               <div className="space-y-2">
                   <Label>Nhắc nhở</Label>
-                  <DropdownMenu modal={false}>
+                  <DropdownMenu >
                       <DropdownMenuTrigger asChild>
                           <Button variant="outline" className="w-full justify-between" disabled={!startDate}>
                               <span>Thêm lời nhắc...</span>

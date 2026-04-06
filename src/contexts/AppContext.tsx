@@ -157,8 +157,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const addGoal = (goalData: Partial<Omit<Goal, 'id'>>) => {
     if (!uiContext.topicId || !user) return;
-    const topicGoals = goals.filter(g => g.topicId === uiContext.topicId);
-    const maxOrder = topicGoals.reduce((max, g) => Math.max(max, g.order || 0), 0);
+
+    const siblingGoals = goals.filter(g => 
+        g.topicId === uiContext.topicId && 
+        g.parentId === (goalData.parentId || null)
+    );
+    const maxOrder = siblingGoals.reduce((max, g) => Math.max(max, g.order || 0), -1);
 
     const newGoal: Partial<Omit<Goal, 'id'>> = {
       title: goalData.title || 'Mục tiêu không tên',
@@ -166,10 +170,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       status: 'chưa bắt đầu',
       userId: user.uid,
       createdAt: serverTimestamp(),
-      startDate: goalData.startDate || null,
-      endDate: goalData.endDate || null,
       order: maxOrder + 1,
       ...goalData,
+      startDate: goalData.startDate || null,
+      endDate: goalData.endDate || null,
     };
     addDocumentNonBlocking(collection(firestore, 'goals'), newGoal);
     toast({ title: "Đã thêm mục tiêu", description: `"${newGoal.title}" đã được thêm.` });
@@ -595,7 +599,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       reordered.forEach((item, index) => {
         let collectionName = '';
         if ('interestId' in item) collectionName = 'topics';
-        else if ('topicId' in item && !('goalId' in item)) collectionName = 'goals';
+        else if ('topicId' in item && !('text' in item)) collectionName = 'goals';
         else if ('text' in item) collectionName = 'tasks';
         
         if (collectionName) {
@@ -622,7 +626,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     
     if (source.droppableId.startsWith('goalsDroppable')) {
       const topicId = source.droppableId.replace('goalsDroppable-', '');
-      const items = goals.filter(g => g.topicId === topicId).sort((a, b) => a.order - b.order);
+      const items = goals.filter(g => g.topicId === topicId && !g.parentId).sort((a, b) => a.order - b.order);
       reorderItems(items).catch(e => console.error("Failed to reorder goals", e));
       return;
     }
@@ -700,7 +704,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dataContext, uiContext, topicBreadcrumbs, selectedInterest, selectedTopic, 
     getTopicBreadcrumbs, findTaskInstance, addNotification, updateNotification, 
     deleteNotification, getGoalById, getInterestById, getTopicById, getWikiPageById, 
-    getChannelById, getSalesPageById, getTasksByGoalId
+    getChannelById, getSalesPageById, getTasksByGoalId, deleteChannel, deleteInterest, deleteGoal, 
+    deleteNotification, deleteSalesPage, deleteTask, deleteTopic, deleteWikiPage, duplicateGoal, duplicateTask,
+    addChannel, addGoal, addInterest, addSalesPage, addTask, addTopic, addWikiPage, handleDragEnd, logout,
+    updateChannel, updateGoal, updateInterest, updateNotification, updateSalesPage, updateTask, updateTopic, updateWikiPage
   ]);
 
 

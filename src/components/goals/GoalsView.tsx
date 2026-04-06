@@ -1,7 +1,7 @@
 
 
 'use client';
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 import { useAppContext } from "@/contexts/AppContext";
 import { TaskList } from "@/components/tasks/TaskList";
@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader } from "../ui/card";
 import { EditGoalDialog } from "./EditGoalDialog";
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
-import type { GoalStatus, GoalPriority } from "@/lib/data";
+import type { Goal, GoalStatus, GoalPriority } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "../ui/tooltip";
@@ -108,20 +108,30 @@ export function GoalsView() {
 
   const topicGoals = goals.filter(goal => goal.topicId === selectedTopic.id);
 
-  const filteredGoals = topicGoals.filter(goal => {
+  const rootGoals = useMemo(() => topicGoals.filter(goal => !goal.parentId), [topicGoals]);
+  const subGoalsByParent = useMemo(() => {
+    const acc = {} as Record<string, Goal[]>;
+    topicGoals.forEach(goal => {
+      if (goal.parentId) {
+        (acc[goal.parentId] = acc[goal.parentId] || []).push(goal);
+      }
+    });
+    for (const parentId in acc) {
+      acc[parentId].sort((a,b) => a.order - b.order);
+    }
+    return acc;
+  }, [topicGoals]);
+
+
+  const filteredRootGoals = rootGoals.filter(goal => {
     if (typeFilter === 'task') return false; 
     if (statusFilters.length === 0) return true;
     return statusFilters.includes(goal.status);
   }).sort((a,b) => a.order - b.order);
   
   const filteredStandaloneTasks = tasks.filter(task => {
-    // Must be a standalone task (no goalId)
     if (task.goalId) return false;
-    
-    // And it must belong to the selected topic
     if (task.topicId !== selectedTopic.id) return false;
-    
-    // And it must match the UI filters
     if (typeFilter === 'goal') return false;
     if (statusFilters.length > 0 && !statusFilters.includes(task.status)) return false;
     
@@ -229,16 +239,17 @@ export function GoalsView() {
         </DropdownMenu>
       </div>
       <DragDropContext onDragEnd={handleDragEnd}>
-        {filteredGoals.length > 0 && (
+        {filteredRootGoals.length > 0 && (
           <Droppable droppableId={`goalsDroppable-${selectedTopic.id}`}>
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-                {filteredGoals.map((goal, index) => {
+                {filteredRootGoals.map((goal, index) => {
                   const endDate = getDateFromFirestore(goal.endDate);
                   const priority = goal.priority || 'Vừa';
                   const { color: priorityColor, icon: PriorityIcon, label: priorityLabel } = priorityConfig[priority];
                   const IconComponent = Icons[PriorityIcon] as React.ElementType;
                   const progress = calculateProgress(goal.id);
+                  const currentSubGoals = subGoalsByParent[goal.id] || [];
 
                   return (
                     <Draggable key={goal.id} draggableId={goal.id} index={index}>
@@ -388,6 +399,45 @@ export function GoalsView() {
                                      )}
                                   </div>
                                 )}
+
+                                {currentSubGoals.length > 0 && (
+                                  <>
+                                    <Separator className="my-2" />
+                                    <div className="px-4 pb-4 pt-2 space-y-2">
+                                        <Label className="text-xs font-semibold text-muted-foreground">Mục tiêu con</Label>
+                                        <div className="space-y-2">
+                                            {currentSubGoals.map(subGoal => {
+                                                const subGoalPriority = subGoal.priority || 'Vừa';
+                                                const { color: subGoalPriorityColor, icon: SubGoalPriorityIcon } = priorityConfig[subGoalPriority];
+                                                const SubGoalIconComponent = Icons[SubGoalPriorityIcon] as React.ElementType;
+
+                                                return (
+                                                    <div key={subGoal.id} className="flex items-center gap-3 p-2.5 rounded-md bg-background/50 border">
+                                                        <Badge variant="outline" className={cn("capitalize text-xs", statusColors[subGoal.status])}>
+                                                          <div className="w-2 h-2 rounded-full mr-1.5 bg-current"></div>
+                                                          {subGoal.status}
+                                                        </Badge>
+                                                        <p className="text-sm font-medium flex-1 truncate">{subGoal.title}</p>
+                                                        <TooltipProvider>
+                                                          <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                              <SubGoalIconComponent className={cn("h-4 w-4", subGoalPriorityColor)} />
+                                                            </TooltipTrigger>
+                                                            <TooltipContent><p>{priorityConfig[subGoalPriority].label}</p></TooltipContent>
+                                                          </Tooltip>
+                                                        </TooltipProvider>
+                                                        <EditGoalDialog goalId={subGoal.id}>
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
+                                                                <Icons.edit className="h-4 w-4"/>
+                                                            </Button>
+                                                        </EditGoalDialog>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                  </>
+                                )}
                                 
                                 <div className="bg-secondary/50 p-4">
                                     <TaskList goalId={goal.id} />
@@ -432,7 +482,7 @@ export function GoalsView() {
         </Card>
       )}
       
-      {filteredGoals.length === 0 && filteredStandaloneTasks.length === 0 && (
+      {filteredRootGoals.length === 0 && filteredStandaloneTasks.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-card p-12 text-center">
             <Icons.goal className="h-12 w-12 text-muted-foreground" />
             <h3 className="mt-4 text-lg font-semibold">

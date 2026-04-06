@@ -1,5 +1,5 @@
 'use client';
-import { useState, type ReactNode, useEffect } from 'react';
+import { useState, type ReactNode, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -52,7 +52,7 @@ function EditableMarkdown({ value, onChange, placeholder }: { value: string, onC
 }
 
 export function AddGoalDialog({ children, startDate: initialStartDate }: { children: ReactNode, startDate?: Date }) {
-  const { addGoal, selectedTopic } = useAppContext();
+  const { addGoal, selectedTopic, goals } = useAppContext();
   const [goalTitle, setGoalTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<GoalPriority>('Vừa');
@@ -60,8 +60,14 @@ export function AddGoalDialog({ children, startDate: initialStartDate }: { child
   const [startTime, setStartTime] = useState('09:00');
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [endTime, setEndTime] = useState('10:00');
+  const [parentId, setParentId] = useState<string | null>(null);
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isOpen, setIsOpen] = useState(false);
+
+  const potentialParentGoals = useMemo(() => {
+    if (!selectedTopic) return [];
+    return goals.filter(g => g.topicId === selectedTopic.id && !g.parentId);
+  }, [goals, selectedTopic]);
 
   useEffect(() => {
     if (isOpen) {
@@ -80,6 +86,7 @@ export function AddGoalDialog({ children, startDate: initialStartDate }: { child
       setStartTime('09:00');
       setEndDate(undefined);
       setEndTime('10:00');
+      setParentId(null);
       setCustomProperties([]);
     }
   }, [isOpen, initialStartDate]);
@@ -124,7 +131,8 @@ export function AddGoalDialog({ children, startDate: initialStartDate }: { child
         priority,
         startDate: finalStartDate,
         endDate: finalEndDate,
-        customProperties: customPropsObject
+        customProperties: customPropsObject,
+        parentId,
       });
       setIsOpen(false);
     }
@@ -159,9 +167,29 @@ export function AddGoalDialog({ children, startDate: initialStartDate }: { child
                   placeholder="Mô tả chi tiết hơn về mục tiêu này. Hỗ trợ Markdown."
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="parent-goal-add">Mục tiêu cha (Tùy chọn)</Label>
+              <Select
+                  value={parentId || 'none'}
+                  onValueChange={(value) => setParentId(value === 'none' ? null : value)}
+                  
+              >
+                  <SelectTrigger id="parent-goal-add">
+                      <SelectValue placeholder="Chọn mục tiêu cha..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="none">Không có (Mục tiêu gốc)</SelectItem>
+                      {potentialParentGoals.map((parentGoal) => (
+                          <SelectItem key={parentGoal.id} value={parentGoal.id}>
+                              {parentGoal.title}
+                          </SelectItem>
+                      ))}
+                  </SelectContent>
+              </Select>
+            </div>
              <div className="space-y-2">
               <Label htmlFor="priority-add">Mức độ ưu tiên</Label>
-              <Select value={priority} onValueChange={(value: GoalPriority) => setPriority(value)} modal={false}>
+              <Select value={priority} onValueChange={(value: GoalPriority) => setPriority(value)} >
                 <SelectTrigger id="priority-add">
                   <SelectValue placeholder="Chọn mức độ ưu tiên" />
                 </SelectTrigger>
@@ -175,7 +203,7 @@ export function AddGoalDialog({ children, startDate: initialStartDate }: { child
             <div className="space-y-2">
               <Label htmlFor="start-date">Ngày bắt đầu (Tùy chọn)</Label>
               <div className="flex gap-2">
-                <Popover modal={false}>
+                <Popover >
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}
@@ -209,7 +237,7 @@ export function AddGoalDialog({ children, startDate: initialStartDate }: { child
             <div className="space-y-2">
               <Label htmlFor="end-date">Ngày kết thúc (Tùy chọn)</Label>
               <div className="flex gap-2">
-                <Popover modal={false}>
+                <Popover >
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}

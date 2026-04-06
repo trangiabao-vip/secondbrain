@@ -102,6 +102,10 @@
           "type": "string",
           "description": "The ID of the parent topic."
         },
+        "parentId": {
+          "type": ["string", "null"],
+          "description": "The ID of the parent goal, if this is a sub-goal."
+        },
         "startDate": {
           "type": "string",
           "description": "The date and time when the goal starts.",
