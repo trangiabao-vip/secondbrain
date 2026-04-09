@@ -3,6 +3,7 @@
 import React, { useMemo, type ReactNode, useEffect } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase/client';
+import { NotificationPermissionManager } from '@/components/NotificationPermissionManager';
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
@@ -17,6 +18,10 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
         try {
           const registrations = await navigator.serviceWorker.getRegistrations();
           for (const registration of registrations) {
+            // Unregister all service workers except the one for Firebase Messaging
+            if (registration.scope.includes('firebase-messaging-sw')) {
+              continue;
+            }
             await registration.unregister();
             console.log('Stale service worker unregistered:', registration);
           }
@@ -51,6 +56,7 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
       auth={firebaseServices.auth}
       firestore={firebaseServices.firestore}
     >
+      <NotificationPermissionManager />
       {children}
     </FirebaseProvider>
   );
