@@ -32,7 +32,8 @@ interface NotificationDialogProps {
 
 const getDateFromFirestore = (date: any): Date | undefined => {
     if (!date) return undefined;
-    if (typeof date === 'string') return new Date(date);
+    if (date instanceof Date) return date;
+    if (typeof date === 'string') return parseISO(date);
     if (date && typeof date.toDate === 'function') return date.toDate();
     if (date.seconds) return new Date(date.seconds * 1000);
     return undefined;
