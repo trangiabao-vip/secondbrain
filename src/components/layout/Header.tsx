@@ -97,6 +97,9 @@ export function Header() {
      if (pathname.startsWith('/profile')) {
         return <><Icons.right className="h-4 w-4" /><span className="text-sm font-medium">Hồ sơ</span></>;
     }
+    if (pathname.startsWith('/notifications')) {
+        return <><Icons.right className="h-4 w-4" /><span className="text-sm font-medium">Thông báo</span></>;
+    }
 
 
     return null;

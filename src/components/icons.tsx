@@ -100,7 +100,6 @@ export const Icons = {
   recurrence: Repeat,
   channel: Radio,
   youtube: Youtube,
-  drag: GripVertical,
   notification: Bell,
   database: Database,
   eye: Eye,
