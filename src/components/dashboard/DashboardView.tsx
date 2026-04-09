@@ -7,16 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
 import { Topic } from '@/lib/data';
 import { Button } from '../ui/button';
+import { useRouter } from 'next/navigation';
 
 export function DashboardView() {
-  const { interests, topics, goals, selectInterest, selectTopic } = useAppContext();
+  const { interests, topics, goals } = useAppContext();
+  const router = useRouter();
 
   const handleTopicClick = (topic: Topic) => {
-    selectInterest(topic.interestId);
-    // Use a timeout to ensure the state update for interest selection has propagated
-    setTimeout(() => {
-      selectTopic(topic.id);
-    }, 0);
+    router.push(`/interests/${topic.interestId}/${topic.id}`);
   };
 
   return (
