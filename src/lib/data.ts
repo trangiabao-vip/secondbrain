@@ -193,6 +193,12 @@ export interface DeviceProfile {
   permissions: Record<string, string | null>;
 }
 
+export interface FCMToken {
+  id: string;
+  userId: string;
+  createdAt: any;
+}
+
 
 export type DataType = {
   interests: Interest[];
