@@ -26,7 +26,7 @@ import { Separator } from '../ui/separator';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
 import { Switch } from '../ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from '../ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import {
@@ -334,10 +334,6 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
       return;
     }
     
-    if (!selectedGoalId && !selectedTopicIdForTask) {
-        // Allow creating tasks without topic or goal
-    }
-
     const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
     const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
     
@@ -579,7 +575,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
           <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
               <Label htmlFor="difficulty-edit">Độ khó</Label>
-              <Select value={difficulty} onValueChange={(value: TaskDifficulty) => setDifficulty(value)}>
+              <Select value={difficulty} onValueChange={(value: TaskDifficulty) => setDifficulty(value)} modal={false}>
                   <SelectTrigger id="difficulty-edit">
                   <SelectValue placeholder="Chọn độ khó" />
                   </SelectTrigger>
@@ -592,7 +588,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
               </div>
               <div className="space-y-2">
               <Label htmlFor="status-edit-task">Trạng thái</Label>
-              <Select value={status} onValueChange={(value: TaskStatus) => setStatus(value)}>
+              <Select value={status} onValueChange={(value: TaskStatus) => setStatus(value)} modal={false}>
                   <SelectTrigger id="status-edit-task">
                   <SelectValue placeholder="Chọn trạng thái" />
                   </SelectTrigger>
@@ -678,31 +674,65 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                   <Label>Nhắc nhở</Label>
                   <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                          <Button variant="outline" className="w-full justify-between" disabled={!startDate}>
+                          <Button variant="outline" className="w-full justify-between" disabled={!startDate && !endDate}>
                               <span>Thêm lời nhắc...</span>
                               <Icons.notification className="h-4 w-4" />
                           </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                          {[5, 10, 15].map(min => (
-                              <NotificationDialog
-                                  key={min}
-                                  mode="add"
-                                  initialData={{
-                                      title: `Sắp tới: ${taskText}`,
-                                      body: `Nhiệm vụ "${taskText}" sẽ bắt đầu trong ${min} phút nữa.`,
-                                      sendAt: startDate ? new Date(startDate.getTime() - min * 60000) : new Date(),
-                                      link: { type: 'task', id: taskId }
-                                  }}
-                              >
-                                  <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                                      Trước {min} phút
-                                  </DropdownMenuItem>
-                              </NotificationDialog>
-                          ))}
+                        <DropdownMenuSub>
+                            <DropdownMenuSubTrigger disabled={!startDate}>
+                                <span>Trước khi bắt đầu</span>
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                                <DropdownMenuSubContent>
+                                    {[5, 15, 30, 60].map(min => (
+                                        <NotificationDialog
+                                            key={`start-${min}`}
+                                            mode="add"
+                                            initialData={{
+                                                title: `Nhiệm vụ sắp bắt đầu: ${taskText}`,
+                                                body: `"${taskText}" sẽ bắt đầu trong ${min} phút.`,
+                                                sendAt: startDate ? new Date(startDate.getTime() - min * 60000) : new Date(),
+                                                link: { type: 'task', id: taskId }
+                                            }}
+                                        >
+                                            <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                                                Trước {min} phút
+                                            </DropdownMenuItem>
+                                        </NotificationDialog>
+                                    ))}
+                                </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                        </DropdownMenuSub>
+                        <DropdownMenuSub>
+                            <DropdownMenuSubTrigger disabled={!endDate}>
+                                <span>Trước khi kết thúc</span>
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                                <DropdownMenuSubContent>
+                                    {[5, 15, 30, 60].map(min => (
+                                        <NotificationDialog
+                                            key={`end-${min}`}
+                                            mode="add"
+                                            initialData={{
+                                                title: `Nhiệm vụ sắp hết hạn: ${taskText}`,
+                                                body: `"${taskText}" sẽ kết thúc trong ${min} phút.`,
+                                                sendAt: endDate ? new Date(endDate.getTime() - min * 60000) : new Date(),
+                                                link: { type: 'task', id: taskId }
+                                            }}
+                                        >
+                                            <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                                                Trước {min} phút
+                                            </DropdownMenuItem>
+                                        </NotificationDialog>
+                                    ))}
+                                </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                        </DropdownMenuSub>
                       </DropdownMenuContent>
                   </DropdownMenu>
-                  {!startDate && <p className="text-xs text-muted-foreground mt-2">Vui lòng đặt thời gian bắt đầu để thêm lời nhắc.</p>}
+                  {(!startDate && !endDate) && <p className="text-xs text-muted-foreground mt-2">Vui lòng đặt thời gian bắt đầu hoặc kết thúc để thêm lời nhắc.</p>}
               </div>
             )}
           <Separator/>
@@ -722,7 +752,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                               onChange={e => handleRecurrenceChange('interval', parseInt(e.target.value) || 1)}
                               min="1"
                           />
-                          <Select value={recurrenceRule.frequency} onValueChange={(v: RecurrenceFrequency) => handleRecurrenceChange('frequency', v)}>
+                          <Select value={recurrenceRule.frequency} onValueChange={(v: RecurrenceFrequency) => handleRecurrenceChange('frequency', v)} modal={false}>
                               <SelectTrigger className="w-32">
                                   <SelectValue />
                               </SelectTrigger>
@@ -750,7 +780,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                       )}
                       <div>
                         <Label>Ngày kết thúc (Tùy chọn)</Label>
-                         <Popover>
+                         <Popover modal={false}>
                             <PopoverTrigger asChild>
                             <Button
                                 variant={"outline"}

@@ -24,7 +24,7 @@ import { GoalStatus, GoalPriority, Goal } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from '../ui/dropdown-menu';
 import { NotificationDialog } from '@/app/notifications/NotificationDialog';
 
 const getDateFromFirestore = (date: any): Date | undefined => {
@@ -230,7 +230,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
               <Select
                   value={selectedParentId || 'none'}
                   onValueChange={(value) => setSelectedParentId(value === 'none' ? null : value)}
-                  
+                  modal={false}
               >
                   <SelectTrigger id="parent-goal-edit">
                       <SelectValue placeholder="Chọn mục tiêu cha..." />
@@ -247,7 +247,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             </div>
             <div className="space-y-2">
               <Label htmlFor="priority-edit">Mức độ ưu tiên</Label>
-              <Select value={priority} onValueChange={(value: GoalPriority) => setPriority(value)} >
+              <Select value={priority} onValueChange={(value: GoalPriority) => setPriority(value)} modal={false}>
                 <SelectTrigger id="priority-edit">
                   <SelectValue placeholder="Chọn mức độ ưu tiên" />
                 </SelectTrigger>
@@ -261,7 +261,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             <div className="space-y-2">
               <Label htmlFor="start-date-edit">Ngày bắt đầu (Tùy chọn)</Label>
               <div className="flex gap-2">
-                <Popover >
+                <Popover modal={false}>
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}
@@ -295,7 +295,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             <div className="space-y-2">
               <Label htmlFor="end-date-edit">Ngày kết thúc (Tùy chọn)</Label>
               <div className="flex gap-2">
-                <Popover >
+                <Popover modal={false}>
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}
@@ -328,7 +328,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             </div>
             <div className="space-y-2">
               <Label htmlFor="status-edit">Trạng thái</Label>
-              <Select value={status} onValueChange={(value: GoalStatus) => setStatus(value)} >
+              <Select value={status} onValueChange={(value: GoalStatus) => setStatus(value)} modal={false}>
                 <SelectTrigger id="status-edit">
                   <SelectValue placeholder="Chọn trạng thái" />
                 </SelectTrigger>
@@ -343,33 +343,67 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
              <Separator />
               <div className="space-y-2">
                   <Label>Nhắc nhở</Label>
-                  <DropdownMenu >
+                  <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                          <Button variant="outline" className="w-full justify-between" disabled={!startDate}>
+                          <Button variant="outline" className="w-full justify-between" disabled={!startDate && !endDate}>
                               <span>Thêm lời nhắc...</span>
                               <Icons.notification className="h-4 w-4" />
                           </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                          {[5, 10, 15].map(min => (
-                              <NotificationDialog
-                                  key={min}
-                                  mode="add"
-                                  initialData={{
-                                      title: `Sắp tới: ${goalTitle}`,
-                                      body: `Mục tiêu "${goalTitle}" sẽ bắt đầu trong ${min} phút nữa.`,
-                                      sendAt: startDate ? new Date(startDate.getTime() - min * 60000) : new Date(),
-                                      link: { type: 'goal', id: goalId }
-                                  }}
-                              >
-                                  <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                                      Trước {min} phút
-                                  </DropdownMenuItem>
-                              </NotificationDialog>
-                          ))}
+                          <DropdownMenuSub>
+                              <DropdownMenuSubTrigger disabled={!startDate}>
+                                  <span>Trước khi bắt đầu</span>
+                              </DropdownMenuSubTrigger>
+                              <DropdownMenuPortal>
+                                  <DropdownMenuSubContent>
+                                      {[5, 15, 30, 60].map(min => (
+                                          <NotificationDialog
+                                              key={`start-${min}`}
+                                              mode="add"
+                                              initialData={{
+                                                  title: `Mục tiêu sắp bắt đầu: ${goalTitle}`,
+                                                  body: `Mục tiêu "${goalTitle}" sẽ bắt đầu trong ${min} phút nữa.`,
+                                                  sendAt: startDate ? new Date(startDate.getTime() - min * 60000) : new Date(),
+                                                  link: { type: 'goal', id: goalId }
+                                              }}
+                                          >
+                                              <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                                                  Trước {min} phút
+                                              </DropdownMenuItem>
+                                          </NotificationDialog>
+                                      ))}
+                                  </DropdownMenuSubContent>
+                              </DropdownMenuPortal>
+                          </DropdownMenuSub>
+                          <DropdownMenuSub>
+                              <DropdownMenuSubTrigger disabled={!endDate}>
+                                  <span>Trước khi kết thúc</span>
+                              </DropdownMenuSubTrigger>
+                              <DropdownMenuPortal>
+                                  <DropdownMenuSubContent>
+                                      {[5, 15, 30, 60].map(min => (
+                                          <NotificationDialog
+                                              key={`end-${min}`}
+                                              mode="add"
+                                              initialData={{
+                                                  title: `Mục tiêu sắp hết hạn: ${goalTitle}`,
+                                                  body: `Mục tiêu "${goalTitle}" sẽ kết thúc trong ${min} phút nữa.`,
+                                                  sendAt: endDate ? new Date(endDate.getTime() - min * 60000) : new Date(),
+                                                  link: { type: 'goal', id: goalId }
+                                              }}
+                                          >
+                                              <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                                                  Trước {min} phút
+                                              </DropdownMenuItem>
+                                          </NotificationDialog>
+                                      ))}
+                                  </DropdownMenuSubContent>
+                              </DropdownMenuPortal>
+                          </DropdownMenuSub>
                       </DropdownMenuContent>
                   </DropdownMenu>
-                  {!startDate && <p className="text-xs text-muted-foreground mt-2">Vui lòng đặt ngày bắt đầu để thêm lời nhắc.</p>}
+                  {(!startDate && !endDate) && <p className="text-xs text-muted-foreground mt-2">Vui lòng đặt ngày bắt đầu hoặc kết thúc để thêm lời nhắc.</p>}
               </div>
             <Separator />
             <div className="space-y-2">
