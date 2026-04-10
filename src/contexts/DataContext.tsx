@@ -1,10 +1,12 @@
 
+
 'use client';
 
 import { createContext, useContext, useState, useMemo, ReactNode } from 'react';
 import { collection, query, where } from 'firebase/firestore';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { type Interest, type Topic, type Goal, type Task, type WikiPage, type SalesPage, type Channel, type Notification } from '@/lib/data';
+import { useUIContext } from './UIContext';
 
 export interface DataContextType {
   interests: Interest[];
@@ -24,15 +26,60 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const { firestore, user, isUserLoading } = useFirebase();
+  const { topicId, pathname } = useUIContext();
 
+  const onSchedule = pathname.startsWith('/schedule');
+  const onDashboard = pathname.startsWith('/dashboard');
+  const onChannels = pathname.startsWith('/channels');
+  const onSalesPages = pathname.startsWith('/sales-pages');
+  const onNotifications = pathname.startsWith('/notifications');
+  const isGlobalView = onSchedule || onDashboard;
+
+  // Interests and Topics are small and foundational, fetch them always.
   const interestsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'interests'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const topicsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'topics'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const goalsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'goals'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const tasksQuery = useMemoFirebase(() => user ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const wikiPagesQuery = useMemoFirebase(() => user ? query(collection(firestore, 'wikiPages'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const salesPagesQuery = useMemoFirebase(() => user ? query(collection(firestore, 'salesPages'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const channelsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'channels'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const notificationsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'notifications'), where('userId', '==', user.uid)) : null, [firestore, user]);
+
+  const goalsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    if (isGlobalView || onChannels) {
+      return query(collection(firestore, 'goals'), where('userId', '==', user.uid));
+    }
+    if (topicId) {
+      return query(collection(firestore, 'goals'), where('userId', '==', user.uid), where('topicId', '==', topicId));
+    }
+    return null;
+  }, [firestore, user, topicId, isGlobalView, onChannels]);
+  
+  const tasksQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    if (isGlobalView || onChannels) {
+      return query(collection(firestore, 'tasks'), where('userId', '==', user.uid));
+    }
+    if (topicId) {
+      return query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('topicId', '==', topicId));
+    }
+    return null;
+  }, [firestore, user, topicId, isGlobalView, onChannels]);
+  
+  const wikiPagesQuery = useMemoFirebase(() => {
+    if (!user || !topicId) return null;
+    return query(collection(firestore, 'wikiPages'), where('userId', '==', user.uid), where('topicId', '==', topicId));
+  }, [firestore, user, topicId]);
+
+  const salesPagesQuery = useMemoFirebase(() => {
+    if (!user || !onSalesPages) return null;
+    return query(collection(firestore, 'salesPages'), where('userId', '==', user.uid));
+  }, [firestore, user, onSalesPages]);
+
+  const channelsQuery = useMemoFirebase(() => {
+    if (!user || !onChannels) return null;
+    return query(collection(firestore, 'channels'), where('userId', '==', user.uid));
+  }, [firestore, user, onChannels]);
+  
+  const notificationsQuery = useMemoFirebase(() => {
+    if (!user || !onNotifications) return null;
+    return query(collection(firestore, 'notifications'), where('userId', '==', user.uid));
+  }, [firestore, user, onNotifications]);
 
   const { data: interestsData, isLoading: interestsLoading } = useCollection<Interest>(interestsQuery);
   const { data: topicsData, isLoading: topicsLoading } = useCollection<Topic>(topicsQuery);

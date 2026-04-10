@@ -167,8 +167,8 @@
           "description": "The ID of the parent goal. Optional."
         },
         "topicId": {
-          "type": ["string", "null"],
-          "description": "The ID of the parent topic if not associated with a goal. Optional."
+          "type": "string",
+          "description": "The ID of the parent topic. This is required."
         },
         "startDate": {
           "type": "string",
@@ -235,7 +235,7 @@
           "description": "The ID of the user who owns this task."
         }
       },
-      "required": ["text", "status", "order", "createdAt", "userId"]
+      "required": ["text", "status", "order", "createdAt", "userId", "topicId"]
     },
     "WikiPage": {
       "title": "Wiki Page",

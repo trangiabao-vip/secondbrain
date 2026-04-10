@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { ReactNode } from 'react';
@@ -6,7 +7,7 @@ import { createContext, useContext, useMemo, useCallback } from 'react';
 import { type Interest, type Topic, type Goal, type Task, type WikiPage, type SalesPage, type Channel, type Notification } from '@/lib/data';
 import { toast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp, writeBatch, addDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, writeBatch, addDoc, deleteDoc, Timestamp, getDoc, updateDoc } from 'firebase/firestore';
 import { 
   addDocumentNonBlocking, 
   deleteDocumentNonBlocking, 
@@ -32,7 +33,7 @@ interface AppContextType extends DataContextType, UIContextType {
   addGoal: (goalData: Partial<Omit<Goal, 'id'>>) => void;
   updateGoal: (goalId: string, updatedData: Partial<Omit<Goal, 'id'>>) => void;
   addTask: (taskData: Partial<Omit<Task, 'id'>>) => Promise<string | undefined>;
-  updateTask: (taskId: string, updatedData: Partial<Task>, instanceDate?: Date) => void;
+  updateTask: (taskId: string, updatedData: Partial<Task>, instanceDate?: Date) => Promise<void>;
   deleteInterest: (id: string) => void;
   deleteTopic: (id: string) => void;
   deleteGoal: (id: string) => void;
@@ -187,6 +188,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addTask = async (taskData: Partial<Omit<Task, 'id'>>): Promise<string | undefined> => {
     if (!user) return;
     
+    let finalTopicId = taskData.topicId || uiContext.topicId;
+
+    if (taskData.goalId) {
+        const goalRef = doc(firestore, 'goals', taskData.goalId);
+        try {
+            const goalSnap = await getDoc(goalRef);
+            if (goalSnap.exists()) {
+                finalTopicId = goalSnap.data().topicId;
+            } else {
+                 toast({ variant: 'destructive', title: 'Lỗi', description: 'Mục tiêu cha không tồn tại.' });
+                 return;
+            }
+        } catch (error) {
+            console.error("Error fetching parent goal: ", error);
+            toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể lấy thông tin mục tiêu cha.' });
+            return;
+        }
+    }
+
+    if (!finalTopicId) {
+        toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể xác định chủ đề cho nhiệm vụ này.' });
+        return;
+    }
+    
     const dataWithTimestamps = { ...taskData };
     if (dataWithTimestamps.startDate instanceof Date) {
       dataWithTimestamps.startDate = Timestamp.fromDate(dataWithTimestamps.startDate);
@@ -195,43 +220,81 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dataWithTimestamps.endDate = Timestamp.fromDate(dataWithTimestamps.endDate);
     }
 
-    const siblingTasks = taskData.goalId 
-      ? tasks.filter(t => t.goalId === taskData.goalId)
-      : tasks.filter(t => t.topicId === (taskData.topicId || uiContext.topicId) && !t.goalId);
+    const siblingTasks = (dataContext.tasks || []).filter(t => t.goalId === taskData.goalId);
     const maxOrder = siblingTasks.reduce((max, t) => Math.max(max, t.order || 0), -1);
 
-    const newTask: Partial<Task> = {
-      ...dataWithTimestamps,
+    const newTask: Omit<Task, 'id'> = {
+      text: taskData.text || 'Nhiệm vụ không tên',
       status: taskData.status || 'chưa bắt đầu',
+      order: maxOrder + 1,
       userId: user.uid,
       createdAt: serverTimestamp(),
-      order: maxOrder + 1,
+      topicId: finalTopicId,
+      notes: taskData.notes || '',
+      difficulty: taskData.difficulty || 'Vừa',
+      goalId: taskData.goalId || null,
+      startDate: dataWithTimestamps.startDate || null,
+      endDate: dataWithTimestamps.endDate || null,
+      recurrence: taskData.recurrence || null,
+      customProperties: taskData.customProperties || {},
     };
     
-    const docRef = await addDocumentNonBlocking(collection(firestore, 'tasks'), newTask);
+    const docRef = await addDoc(collection(firestore, 'tasks'), newTask);
     toast({ title: "Đã thêm nhiệm vụ", description: `"${newTask.text}" đã được thêm.` });
     return docRef?.id;
   };
 
-  const updateTask = (taskId: string, updatedData: Partial<Task>) => {
+  const updateTask = async (taskId: string, updatedData: Partial<Task>) => {
+    if (!user) return;
     const isRecurringInstance = taskId.includes('-recur-');
+    let dataToUpdate: Partial<Task> = { ...updatedData };
   
+    if (updatedData.goalId) {
+        const goalRef = doc(firestore, 'goals', updatedData.goalId);
+        try {
+            const goalSnap = await getDoc(goalRef);
+            if (goalSnap.exists()) {
+                dataToUpdate.topicId = goalSnap.data().topicId;
+            } else {
+                 toast({ variant: 'destructive', title: 'Lỗi', description: 'Mục tiêu cha không tồn tại.' });
+                 return;
+            }
+        } catch (error) {
+            console.error("Error fetching parent goal: ", error);
+            toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể cập nhật mục tiêu cha.' });
+            return;
+        }
+    } else if (updatedData.goalId === null) {
+        if (!updatedData.topicId) {
+            const oldTask = getTaskById(taskId);
+            const oldGoal = oldTask?.goalId ? getGoalById(oldTask.goalId) : null;
+            if(oldGoal) {
+                dataToUpdate.topicId = oldGoal.topicId;
+            } else if (oldTask?.topicId) {
+                dataToUpdate.topicId = oldTask.topicId;
+            } else {
+                toast({ variant: 'destructive', title: 'Lỗi', description: 'Vui lòng chọn một chủ đề cho nhiệm vụ này.' });
+                return;
+            }
+        }
+    }
+
     if (isRecurringInstance) {
       const originalTaskId = taskId.split('-recur-')[0];
       const originalTask = getTaskById(originalTaskId);
-      if (!originalTask || !user) return;
-  
+      if (!originalTask) return;
+      
       const fullDataForInstance = {
         ...originalTask,
-        ...updatedData,
-        recurrence: null,
+        ...dataToUpdate,
+        recurrence: null, // This is an instance, not the rule itself
         userId: user.uid,
       };
-      
-      setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullDataForInstance, {});
+      await setDocumentNonBlocking(doc(firestore, 'tasks', taskId), fullDataForInstance, {});
     } else {
-      updateDocumentNonBlocking(doc(firestore, 'tasks', taskId), updatedData);
+      await updateDoc(doc(firestore, 'tasks', taskId), dataToUpdate);
     }
+    toast({ title: "Nhiệm vụ đã được cập nhật" });
   };
 
   const getInterestById = useCallback((id: string) => dataContext.interests.find(i => i.id === id), [dataContext.interests]);

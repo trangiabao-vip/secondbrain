@@ -6,12 +6,12 @@ import type { ReactNode } from 'react';
 
 export function InterestHubApp({ children }: { children: ReactNode }) {
   return (
-    <DataProvider>
-      <UIProvider>
+    <UIProvider>
+      <DataProvider>
         <AppProvider>
           {children}
         </AppProvider>
-      </UIProvider>
-    </DataProvider>
+      </DataProvider>
+    </UIProvider>
   );
 }

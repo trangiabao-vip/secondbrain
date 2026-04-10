@@ -22,10 +22,10 @@ export interface Task {
   status: TaskStatus;
   difficulty?: TaskDifficulty;
   goalId?: string | null; // Optional: Link to a goal
-  topicId?: string | null; // Optional: Link directly to a topic
+  topicId: string; 
   startDate?: any; // Can be string or Firebase Timestamp
   endDate?: any; // Can be string or Firebase Timestamp
-  recurrence?: RecurrenceRule;
+  recurrence?: RecurrenceRule | null;
   customProperties?: { [key: string]: string };
   order: number;
   createdAt: any; // Can be string or Firebase Timestamp
