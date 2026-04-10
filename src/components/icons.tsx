@@ -122,6 +122,7 @@ export const Icons = {
   fileImage: FileImage,
   vote: Vote,
   crown: Crown,
+  drag: GripVertical,
   whoIsTheSpy: ({ className }: { className?: string }) => (
     <svg 
       className={className}
@@ -185,3 +186,5 @@ export const Icons = {
     </svg>
   )
 };
+
+    
