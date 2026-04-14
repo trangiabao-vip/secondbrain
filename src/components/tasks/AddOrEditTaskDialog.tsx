@@ -471,7 +471,8 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                         <CommandList>
                             <CommandEmpty>Không tìm thấy chủ đề.</CommandEmpty>
                              <CommandItem
-                                value="none-topic"
+                                key="none-topic"
+                                value=""
                                 onSelect={() => {
                                     handleTopicChange('');
                                     setTopicPopoverOpen(false);
