@@ -494,7 +494,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
   
-    const { id, createdAt, recurrence, ...taskDataToCopy } = sourceTask;
+    const { id, createdAt, recurrence, order, ...taskDataToCopy } = sourceTask;
     
     const sourceStartDate = getDateFromFirestore(sourceTask.startDate);
     const sourceEndDate = getDateFromFirestore(sourceTask.endDate);
