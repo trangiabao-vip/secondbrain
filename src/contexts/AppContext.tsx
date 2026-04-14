@@ -440,11 +440,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const { id, createdAt, ...goalData } = originalGoal;
+    const { id, createdAt, order, ...goalData } = originalGoal;
+    
+    const siblingGoals = goals.filter(g => 
+        g.topicId === originalGoal.topicId && 
+        g.parentId === originalGoal.parentId
+    );
+    const maxOrder = siblingGoals.reduce((max, g) => Math.max(max, g.order || 0), -1);
+
     const newGoalData = {
       ...goalData,
       title: `Bản sao của ${originalGoal.title}`,
       status: 'chưa bắt đầu' as const,
+      order: maxOrder + 1,
       createdAt: serverTimestamp(),
     };
 
