@@ -26,6 +26,17 @@ import { Separator } from '../ui/separator';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from '../ui/dropdown-menu';
 import { NotificationDialog } from '@/app/notifications/NotificationDialog';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+
 
 const getDateFromFirestore = (date: any): Date | undefined => {
     if (!date) return undefined;
@@ -63,7 +74,7 @@ function EditableMarkdown({ value, onChange, placeholder }: { value: string, onC
 }
 
 export function EditGoalDialog({ goalId, children }: { goalId: string, children: ReactNode }) {
-  const { getGoalById, updateGoal, deleteGoal, duplicateGoal, goals } = useAppContext();
+  const { getGoalById, updateGoal, deleteGoal, duplicateGoal, goals, topics, getTopicBreadcrumbs } = useAppContext();
   const [goalTitle, setGoalTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<GoalPriority>('Vừa');
@@ -72,14 +83,28 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [endTime, setEndTime] = useState('10:00');
   const [status, setStatus] = useState<GoalStatus>('chưa bắt đầu');
+  const [selectedTopicId, setSelectedTopicId] = useState<string | undefined>();
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [topicPopoverOpen, setTopicPopoverOpen] = useState(false);
   
   const originalGoal = useMemo(() => getGoalById(goalId), [getGoalById, goalId]);
 
+  const topicOptions = useMemo(() => {
+    return topics.map(topic => {
+        const breadcrumbs = getTopicBreadcrumbs(topic.id);
+        const name = breadcrumbs.map(b => b.name).join(' / ');
+        return {
+            id: topic.id,
+            name: name,
+            interestId: topic.interestId
+        }
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  }, [topics, getTopicBreadcrumbs]);
+
   const potentialParentGoals = useMemo(() => {
-    if (!originalGoal) return [];
+    if (!selectedTopicId) return [];
     
     const descendants = new Set<string>();
     const findDescendants = (parentId: string) => {
@@ -93,11 +118,11 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
     findDescendants(goalId);
 
     return goals.filter(g => 
-        g.topicId === originalGoal.topicId && 
+        g.topicId === selectedTopicId && 
         g.id !== goalId &&
         !descendants.has(g.id)
     );
-  }, [goals, originalGoal, goalId]);
+  }, [goals, selectedTopicId, goalId]);
 
 
   useEffect(() => {
@@ -107,6 +132,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
         setDescription(originalGoal.description || '');
         setStatus(originalGoal.status);
         setPriority(originalGoal.priority || 'Vừa');
+        setSelectedTopicId(originalGoal.topicId);
         setSelectedParentId(originalGoal.parentId || null);
         
         const sDate = getDateFromFirestore(originalGoal.startDate);
@@ -157,6 +183,12 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
   const handlePropertyChange = (id: number, field: 'key' | 'value', text: string) => {
     setCustomProperties(customProperties.map(p => p.id === id ? { ...p, [field]: text } : p));
   };
+  
+  const handleTopicChange = (topicId: string) => {
+    setSelectedTopicId(topicId);
+    setSelectedParentId(null);
+    setTopicPopoverOpen(false);
+  };
 
   const handleUpdateGoal = () => {
     if (goalTitle.trim()) {
@@ -178,6 +210,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
         endDate: finalEndDate,
         status: status,
         customProperties: customPropsObject,
+        topicId: selectedTopicId,
         parentId: selectedParentId,
       };
 
@@ -226,11 +259,57 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                 />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="goal-topic">Chủ đề</Label>
+              <Popover open={topicPopoverOpen} onOpenChange={setTopicPopoverOpen} modal={false}>
+                <PopoverTrigger asChild>
+                    <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={topicPopoverOpen}
+                        className="w-full justify-between"
+                    >
+                        <span className="truncate">
+                          {selectedTopicId
+                              ? topicOptions.find(topic => topic.id === selectedTopicId)?.name
+                              : "Chọn một chủ đề..."}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                        <CommandInput placeholder="Tìm chủ đề..." />
+                        <CommandList>
+                            <CommandEmpty>Không tìm thấy chủ đề.</CommandEmpty>
+                            <CommandGroup>
+                              {topicOptions.map(topic => (
+                                  <CommandItem
+                                      key={topic.id}
+                                      value={topic.id}
+                                      onSelect={() => handleTopicChange(topic.id)}
+                                  >
+                                      <Check
+                                          className={cn(
+                                              "mr-2 h-4 w-4",
+                                              selectedTopicId === topic.id ? "opacity-100" : "opacity-0"
+                                          )}
+                                      />
+                                      <span className="truncate">{topic.name}</span>
+                                  </CommandItem>
+                              ))}
+                            </CommandGroup>
+                        </CommandList>
+                    </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="parent-goal-edit">Mục tiêu cha (Tùy chọn)</Label>
               <Select
                   value={selectedParentId || 'none'}
                   onValueChange={(value) => setSelectedParentId(value === 'none' ? null : value)}
                   modal={false}
+                  disabled={!selectedTopicId}
               >
                   <SelectTrigger id="parent-goal-edit">
                       <SelectValue placeholder="Chọn mục tiêu cha..." />
