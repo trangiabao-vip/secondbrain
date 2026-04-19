@@ -490,7 +490,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                               {topicOptions.map(topic => (
                                   <CommandItem
                                       key={topic.id}
-                                      value={topic.id}
+                                      value={topic.name}
                                       onSelect={() => {
                                           handleTopicChange(topic.id);
                                           setTopicPopoverOpen(false);
@@ -553,7 +553,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                             {availableGoals.map(goal => (
                                 <CommandItem
                                     key={goal.id}
-                                    value={goal.id}
+                                    value={goal.title}
                                     onSelect={() => {
                                         setSelectedGoalId(goal.id);
                                         setGoalPopoverOpen(false);

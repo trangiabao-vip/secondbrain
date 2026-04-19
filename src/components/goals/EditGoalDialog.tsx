@@ -285,7 +285,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                               {topicOptions.map(topic => (
                                   <CommandItem
                                       key={topic.id}
-                                      value={topic.id}
+                                      value={topic.name}
                                       onSelect={() => handleTopicChange(topic.id)}
                                   >
                                       <Check
