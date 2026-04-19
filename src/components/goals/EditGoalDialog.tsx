@@ -309,7 +309,6 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                   value={selectedParentId || 'none'}
                   onValueChange={(value) => setSelectedParentId(value === 'none' ? null : value)}
                   modal={false}
-                  disabled={!selectedTopicId}
               >
                   <SelectTrigger id="parent-goal-edit">
                       <SelectValue placeholder="Chọn mục tiêu cha..." />
