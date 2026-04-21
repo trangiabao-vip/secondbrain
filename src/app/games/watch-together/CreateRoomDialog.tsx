@@ -128,7 +128,7 @@ export function CreateRoomDialog() {
           <div className="space-y-2">
               <Label htmlFor="showtime-date">Giờ công chiếu (Tùy chọn)</Label>
               <div className="flex gap-2">
-                <Popover modal={false}>
+                <Popover modal={true}>
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}

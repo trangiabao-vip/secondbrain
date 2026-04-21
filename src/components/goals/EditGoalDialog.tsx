@@ -260,7 +260,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             </div>
             <div className="space-y-2">
               <Label htmlFor="goal-topic">Chủ đề</Label>
-              <Popover open={topicPopoverOpen} onOpenChange={setTopicPopoverOpen} modal={false}>
+              <Popover open={topicPopoverOpen} onOpenChange={setTopicPopoverOpen} modal={true}>
                 <PopoverTrigger asChild>
                     <Button
                         variant="outline"
@@ -308,9 +308,9 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
               <Select
                   value={selectedParentId || 'none'}
                   onValueChange={(value) => setSelectedParentId(value === 'none' ? null : value)}
-                  modal={false}
+                  
               >
-                  <SelectTrigger id="parent-goal-edit">
+                  <SelectTrigger id="parent-goal-edit" disabled={potentialParentGoals.length === 0}>
                       <SelectValue placeholder="Chọn mục tiêu cha..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -339,7 +339,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             <div className="space-y-2">
               <Label htmlFor="start-date-edit">Ngày bắt đầu (Tùy chọn)</Label>
               <div className="flex gap-2">
-                <Popover modal={false}>
+                <Popover modal={true}>
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}
@@ -373,7 +373,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             <div className="space-y-2">
               <Label htmlFor="end-date-edit">Ngày kết thúc (Tùy chọn)</Label>
               <div className="flex gap-2">
-                <Popover modal={false}>
+                <Popover modal={true}>
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}

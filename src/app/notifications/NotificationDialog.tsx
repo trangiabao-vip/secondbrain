@@ -85,7 +85,7 @@ export function NotificationDialog({ mode, notificationId, children, initialData
           setTitle(initialData.title || '');
           setBody(initialData.body || '');
           const sendDate = getDateFromFirestore(initialData.sendAt);
-          setSendAtDate(sendDate);
+          setSendAtDate(sendDate || new Date());
           if (sendDate) {
               setSendAtTime(format(sendDate, "HH:mm"));
           } else {
@@ -177,7 +177,7 @@ export function NotificationDialog({ mode, notificationId, children, initialData
             <div className="space-y-2">
               <Label htmlFor="send-date">Thời gian gửi</Label>
               <div className="flex gap-2">
-                <Popover modal={false}>
+                <Popover modal={true}>
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}

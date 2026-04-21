@@ -203,7 +203,7 @@ export function AddGoalDialog({ children, startDate: initialStartDate }: { child
             <div className="space-y-2">
               <Label htmlFor="start-date">Ngày bắt đầu (Tùy chọn)</Label>
               <div className="flex gap-2">
-                <Popover >
+                <Popover modal={true}>
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}
@@ -237,7 +237,7 @@ export function AddGoalDialog({ children, startDate: initialStartDate }: { child
             <div className="space-y-2">
               <Label htmlFor="end-date">Ngày kết thúc (Tùy chọn)</Label>
               <div className="flex gap-2">
-                <Popover >
+                <Popover modal={true}>
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}

@@ -328,7 +328,7 @@ export function GlobalScheduleView() {
   };
 
   const goToPrevious = () => setCurrentDate(prev => addDays(prev, isMobile ? -1 : -7));
-  const goToNext = () => setCurrentDate(prev => addDays(prev, isMobile ? -1 : 7));
+  const goToNext = () => setCurrentDate(prev => addDays(prev, isMobile ? 1 : 7));
   const goToToday = () => setCurrentDate(new Date());
 
   const statusColors: Record<GoalStatus, string> = {
@@ -353,7 +353,7 @@ export function GlobalScheduleView() {
             <h2 className="text-xl font-bold">
                 {headerDateString}
             </h2>
-             <Popover>
+             <Popover modal={true}>
                 <PopoverTrigger asChild>
                     <Button variant="outline" size="icon" className="h-8 w-8">
                         <Icons.calendar className="h-4 w-4" />
