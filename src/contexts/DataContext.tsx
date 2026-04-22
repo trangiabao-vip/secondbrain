@@ -33,7 +33,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const onChannels = pathname.startsWith('/channels');
   const onSalesPages = pathname.startsWith('/sales-pages');
   const onNotifications = pathname.startsWith('/notifications');
-  const isGlobalView = onSchedule || onDashboard;
+  const onRedirect = pathname.startsWith('/interests/redirect');
+  const isGlobalView = onSchedule || onDashboard || onRedirect;
 
   // Interests and Topics are small and foundational, fetch them always.
   const interestsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'interests'), where('userId', '==', user.uid)) : null, [firestore, user]);
