@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Calendar } from "@/components/ui/calendar";
@@ -213,19 +214,29 @@ export function GlobalScheduleView() {
     justDraggedRef.current = true;
     setTimeout(() => { justDraggedRef.current = false; }, 100);
 
+    const { offset } = info;
+    
     // A small threshold to distinguish a click from a drag.
-    if (Math.abs(info.offset.y) < 5) {
-        return;
+    if (Math.abs(offset.x) < 5 && Math.abs(offset.y) < 5) {
+      return;
     }
 
-    const newTop = item.top + info.offset.y;
+    // --- Calculate new day ---
+    const dayWidth = weekDaysContainerRef.current 
+      ? weekDaysContainerRef.current.offsetWidth / daysToShow.length 
+      : 0;
+    const daysDragged = dayWidth > 0 ? Math.round(offset.x / dayWidth) : 0;
+    const newDayBase = addDays(item.startDate, daysDragged);
+
+    // --- Calculate new time ---
+    const newTop = item.top + offset.y;
     // Snap to nearest 15-minute interval
     const totalMinutes = Math.round((newTop / 64) * 60 / 15) * 15;
     const newHours = Math.floor(totalMinutes / 60);
     const newMinutes = totalMinutes % 60;
     
-    // Create new start date, preserving the original day
-    const newStartDate = set(item.startDate, {
+    // Create new start date by combining new day and new time
+    const newStartDate = set(newDayBase, {
         hours: newHours,
         minutes: newMinutes,
         seconds: 0,
@@ -492,7 +503,7 @@ export function GlobalScheduleView() {
                         const originalId = item.id.includes('-recur-') ? item.id.split('-recur-')[0] : item.id;
                         const content = (
                             <motion.div
-                                drag="y"
+                                drag
                                 onDragStart={handleDragStart}
                                 onDragEnd={(e, info) => handleEventDrop(info, item)}
                                 dragConstraints={weekDaysContainerRef}
