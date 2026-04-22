@@ -450,7 +450,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const newGoalData = {
       ...goalData,
-      title: `Bản sao của ${originalGoal.title}`,
+      title: originalGoal.title,
       status: 'chưa bắt đầu' as const,
       order: maxOrder + 1,
       createdAt: serverTimestamp(),
@@ -501,7 +501,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
     const newTaskData = {
       ...taskDataToCopy,
-      text: `Bản sao của ${sourceTask.text}`,
+      text: sourceTask.text,
       status: 'chưa bắt đầu' as const,
       createdAt: serverTimestamp(),
       recurrence: null, 
@@ -511,7 +511,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   
     addTask(newTaskData);
-    toast({ title: "Đã nhân bản nhiệm vụ", description: `Một bản sao của "${sourceTask.text}" đã được tạo.` });
+    toast({ title: "Đã nhân bản nhiệm vụ", description: `"${sourceTask.text}" đã được nhân bản.` });
   };
   
   const addWikiPage = (pageData: Partial<Omit<WikiPage, 'id'>>) => {
