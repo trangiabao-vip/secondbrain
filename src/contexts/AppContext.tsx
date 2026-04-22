@@ -179,8 +179,58 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const updateGoal = (goalId: string, updatedData: Partial<Omit<Goal, 'id'>>) => {
-    updateDocumentNonBlocking(doc(firestore, 'goals', goalId), updatedData);
-    toast({ title: "Mục tiêu đã được cập nhật", description: `Mục tiêu đã được cập nhật.` });
+    const originalGoal = getGoalById(goalId);
+    if (!originalGoal) return;
+
+    // If topicId is being changed, we need to update all child tasks and sub-goals as well.
+    if (updatedData.topicId && updatedData.topicId !== originalGoal.topicId) {
+        const newTopicId = updatedData.topicId;
+        const batch = writeBatch(firestore);
+        
+        // 1. Update the goal itself
+        const goalRef = doc(firestore, 'goals', goalId);
+        batch.update(goalRef, updatedData);
+
+        // 2. Find and update all descendant goals
+        const descendants = new Set<string>();
+        const findDescendants = (parentId: string) => {
+            goals.forEach(g => {
+                if (g.parentId === parentId) {
+                    descendants.add(g.id);
+                    findDescendants(g.id);
+                }
+            });
+        };
+        findDescendants(goalId);
+        
+        descendants.forEach(descendantId => {
+            const descendantRef = doc(firestore, 'goals', descendantId);
+            batch.update(descendantRef, { topicId: newTopicId });
+        });
+
+        // 3. Find and update all tasks associated with the entire goal tree
+        const allGoalIdsToUpdate = [goalId, ...Array.from(descendants)];
+        const childTasks = tasks.filter(t => t.goalId && allGoalIdsToUpdate.includes(t.goalId));
+        childTasks.forEach(task => {
+            const taskRef = doc(firestore, 'tasks', task.id);
+            batch.update(taskRef, { topicId: newTopicId });
+        });
+        
+        // Commit the batch
+        batch.commit()
+            .then(() => {
+                toast({ title: "Mục tiêu đã được cập nhật", description: `Mục tiêu và các mục con đã được chuyển sang chủ đề mới.` });
+            })
+            .catch(error => {
+                console.error("Error updating goal and its children: ", error);
+                toast({ variant: "destructive", title: "Lỗi", description: "Không thể cập nhật mục tiêu." });
+            });
+
+    } else {
+        // Normal update without topic change
+        updateDocumentNonBlocking(doc(firestore, 'goals', goalId), updatedData);
+        toast({ title: "Mục tiêu đã được cập nhật", description: `Mục tiêu đã được cập nhật.` });
+    }
   };
 
   const addTask = async (taskData: Partial<Omit<Task, 'id'>>): Promise<string | undefined> => {
