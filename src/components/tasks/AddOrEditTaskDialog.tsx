@@ -678,51 +678,47 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                             <DropdownMenuSubTrigger disabled={!startDate}>
                                 <span>Trước khi bắt đầu</span>
                             </DropdownMenuSubTrigger>
-                            <DropdownMenuPortal>
-                                <DropdownMenuSubContent>
-                                    {[5, 15, 30, 60].map(min => (
-                                        <NotificationDialog
-                                            key={`start-${min}`}
-                                            mode="add"
-                                            initialData={{
-                                                title: `Nhiệm vụ sắp bắt đầu: ${taskText}`,
-                                                body: `"${taskText}" sẽ bắt đầu trong ${min} phút.`,
-                                                sendAt: startDate ? new Date(startDate.getTime() - min * 60000) : new Date(),
-                                                link: { type: 'task', id: taskId }
-                                            }}
-                                        >
-                                            <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                                                Trước {min} phút
-                                            </DropdownMenuItem>
-                                        </NotificationDialog>
-                                    ))}
-                                </DropdownMenuSubContent>
-                            </DropdownMenuPortal>
+                            <DropdownMenuSubContent>
+                                {[5, 15, 30, 60].map(min => (
+                                    <NotificationDialog
+                                        key={`start-${min}`}
+                                        mode="add"
+                                        initialData={{
+                                            title: `Nhiệm vụ sắp bắt đầu: ${taskText}`,
+                                            body: `"${taskText}" sẽ bắt đầu trong ${min} phút.`,
+                                            sendAt: startDate ? new Date(startDate.getTime() - min * 60000) : new Date(),
+                                            link: { type: 'task', id: taskId }
+                                        }}
+                                    >
+                                        <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                                            Trước {min} phút
+                                        </DropdownMenuItem>
+                                    </NotificationDialog>
+                                ))}
+                            </DropdownMenuSubContent>
                         </DropdownMenuSub>
                         <DropdownMenuSub>
                             <DropdownMenuSubTrigger disabled={!endDate}>
                                 <span>Trước khi kết thúc</span>
                             </DropdownMenuSubTrigger>
-                            <DropdownMenuPortal>
-                                <DropdownMenuSubContent>
-                                    {[5, 15, 30, 60].map(min => (
-                                        <NotificationDialog
-                                            key={`end-${min}`}
-                                            mode="add"
-                                            initialData={{
-                                                title: `Nhiệm vụ sắp hết hạn: ${taskText}`,
-                                                body: `"${taskText}" sẽ kết thúc trong ${min} phút.`,
-                                                sendAt: endDate ? new Date(endDate.getTime() - min * 60000) : new Date(),
-                                                link: { type: 'task', id: taskId }
-                                            }}
-                                        >
-                                            <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                                                Trước {min} phút
-                                            </DropdownMenuItem>
-                                        </NotificationDialog>
-                                    ))}
-                                </DropdownMenuSubContent>
-                            </DropdownMenuPortal>
+                            <DropdownMenuSubContent>
+                                {[5, 15, 30, 60].map(min => (
+                                    <NotificationDialog
+                                        key={`end-${min}`}
+                                        mode="add"
+                                        initialData={{
+                                            title: `Nhiệm vụ sắp hết hạn: ${taskText}`,
+                                            body: `"${taskText}" sẽ kết thúc trong ${min} phút.`,
+                                            sendAt: endDate ? new Date(endDate.getTime() - min * 60000) : new Date(),
+                                            link: { type: 'task', id: taskId }
+                                        }}
+                                    >
+                                        <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                                            Trước {min} phút
+                                        </DropdownMenuItem>
+                                    </NotificationDialog>
+                                ))}
+                            </DropdownMenuSubContent>
                         </DropdownMenuSub>
                       </DropdownMenuContent>
                   </DropdownMenu>

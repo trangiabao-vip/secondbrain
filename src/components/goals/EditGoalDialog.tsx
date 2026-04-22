@@ -276,7 +276,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <PopoverContent className="w-[--radix-popover-trigger-width)] p-0">
                     <Command>
                         <CommandInput placeholder="Tìm chủ đề..." />
                         <CommandList>
@@ -433,51 +433,47 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                               <DropdownMenuSubTrigger disabled={!startDate}>
                                   <span>Trước khi bắt đầu</span>
                               </DropdownMenuSubTrigger>
-                              <DropdownMenuPortal>
-                                  <DropdownMenuSubContent>
-                                      {[5, 15, 30, 60].map(min => (
-                                          <NotificationDialog
-                                              key={`start-${min}`}
-                                              mode="add"
-                                              initialData={{
-                                                  title: `Mục tiêu sắp bắt đầu: ${goalTitle}`,
-                                                  body: `Mục tiêu "${goalTitle}" sẽ bắt đầu trong ${min} phút nữa.`,
-                                                  sendAt: startDate ? new Date(startDate.getTime() - min * 60000) : new Date(),
-                                                  link: { type: 'goal', id: goalId }
-                                              }}
-                                          >
-                                              <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                                                  Trước {min} phút
-                                              </DropdownMenuItem>
-                                          </NotificationDialog>
-                                      ))}
-                                  </DropdownMenuSubContent>
-                              </DropdownMenuPortal>
+                              <DropdownMenuSubContent>
+                                  {[5, 15, 30, 60].map(min => (
+                                      <NotificationDialog
+                                          key={`start-${min}`}
+                                          mode="add"
+                                          initialData={{
+                                              title: `Mục tiêu sắp bắt đầu: ${goalTitle}`,
+                                              body: `Mục tiêu "${goalTitle}" sẽ bắt đầu trong ${min} phút nữa.`,
+                                              sendAt: startDate ? new Date(startDate.getTime() - min * 60000) : new Date(),
+                                              link: { type: 'goal', id: goalId }
+                                          }}
+                                      >
+                                          <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                                              Trước {min} phút
+                                          </DropdownMenuItem>
+                                      </NotificationDialog>
+                                  ))}
+                              </DropdownMenuSubContent>
                           </DropdownMenuSub>
                           <DropdownMenuSub>
                               <DropdownMenuSubTrigger disabled={!endDate}>
                                   <span>Trước khi kết thúc</span>
                               </DropdownMenuSubTrigger>
-                              <DropdownMenuPortal>
-                                  <DropdownMenuSubContent>
-                                      {[5, 15, 30, 60].map(min => (
-                                          <NotificationDialog
-                                              key={`end-${min}`}
-                                              mode="add"
-                                              initialData={{
-                                                  title: `Mục tiêu sắp hết hạn: ${goalTitle}`,
-                                                  body: `Mục tiêu "${goalTitle}" sẽ kết thúc trong ${min} phút nữa.`,
-                                                  sendAt: endDate ? new Date(endDate.getTime() - min * 60000) : new Date(),
-                                                  link: { type: 'goal', id: goalId }
-                                              }}
-                                          >
-                                              <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                                                  Trước {min} phút
-                                              </DropdownMenuItem>
-                                          </NotificationDialog>
-                                      ))}
-                                  </DropdownMenuSubContent>
-                              </DropdownMenuPortal>
+                              <DropdownMenuSubContent>
+                                  {[5, 15, 30, 60].map(min => (
+                                      <NotificationDialog
+                                          key={`end-${min}`}
+                                          mode="add"
+                                          initialData={{
+                                              title: `Mục tiêu sắp hết hạn: ${goalTitle}`,
+                                              body: `Mục tiêu "${goalTitle}" sẽ kết thúc trong ${min} phút nữa.`,
+                                              sendAt: endDate ? new Date(endDate.getTime() - min * 60000) : new Date(),
+                                              link: { type: 'goal', id: goalId }
+                                          }}
+                                      >
+                                          <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                                              Trước {min} phút
+                                          </DropdownMenuItem>
+                                      </NotificationDialog>
+                                  ))}
+                              </DropdownMenuSubContent>
                           </DropdownMenuSub>
                       </DropdownMenuContent>
                   </DropdownMenu>
