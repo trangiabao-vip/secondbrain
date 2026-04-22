@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import type { ReactNode } from 'react';
@@ -188,22 +186,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addTask = async (taskData: Partial<Omit<Task, 'id'>>): Promise<string | undefined> => {
     if (!user) return;
     
-    let finalTopicId = taskData.topicId || uiContext.topicId;
+    let finalTopicId = taskData.topicId;
 
-    if (taskData.goalId) {
-        const goalRef = doc(firestore, 'goals', taskData.goalId);
-        try {
-            const goalSnap = await getDoc(goalRef);
-            if (goalSnap.exists()) {
-                finalTopicId = goalSnap.data().topicId;
-            } else {
-                 toast({ variant: 'destructive', title: 'Lỗi', description: 'Mục tiêu cha không tồn tại.' });
-                 return;
+    if (!finalTopicId) {
+        if (taskData.goalId) {
+            const goalRef = doc(firestore, 'goals', taskData.goalId);
+            try {
+                const goalSnap = await getDoc(goalRef);
+                if (goalSnap.exists()) {
+                    finalTopicId = goalSnap.data().topicId;
+                }
+            } catch (error) {
+                console.error("Error fetching parent goal: ", error);
             }
-        } catch (error) {
-            console.error("Error fetching parent goal: ", error);
-            toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể lấy thông tin mục tiêu cha.' });
-            return;
         }
     }
 
@@ -249,7 +244,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const isRecurringInstance = taskId.includes('-recur-');
     let dataToUpdate: Partial<Task> = { ...updatedData };
   
-    if (updatedData.goalId) {
+    // If a goalId is being set or changed, derive topicId from it.
+    if (updatedData.goalId && updatedData.goalId !== null) {
         const goalRef = doc(firestore, 'goals', updatedData.goalId);
         try {
             const goalSnap = await getDoc(goalRef);
@@ -264,19 +260,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
             toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể cập nhật mục tiêu cha.' });
             return;
         }
-    } else if (updatedData.goalId === null) {
-        if (!updatedData.topicId) {
-            const oldTask = getTaskById(taskId);
-            const oldGoal = oldTask?.goalId ? getGoalById(oldTask.goalId) : null;
-            if(oldGoal) {
-                dataToUpdate.topicId = oldGoal.topicId;
-            } else if (oldTask?.topicId) {
-                dataToUpdate.topicId = oldTask.topicId;
-            } else {
-                toast({ variant: 'destructive', title: 'Lỗi', description: 'Vui lòng chọn một chủ đề cho nhiệm vụ này.' });
-                return;
-            }
-        }
+    } 
+    // If goal is being explicitly removed, ensure a topicId is still present.
+    else if (updatedData.goalId === null) {
+      if (!updatedData.topicId) {
+        toast({ variant: 'destructive', title: 'Lỗi', description: 'Vui lòng chọn một chủ đề khi bỏ liên kết nhiệm vụ khỏi mục tiêu.' });
+        return;
+      }
     }
 
     if (isRecurringInstance) {
@@ -508,10 +498,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       userId: user.uid,
       startDate: sourceStartDate ? Timestamp.fromDate(sourceStartDate) : null,
       endDate: sourceEndDate ? Timestamp.fromDate(sourceEndDate) : null,
+      order: (tasks.filter(t => t.goalId === sourceTask.goalId).reduce((max, t) => Math.max(max, t.order || 0), -1)) + 1,
     };
   
     addTask(newTaskData);
-    toast({ title: "Đã nhân bản nhiệm vụ", description: `"${sourceTask.text}" đã được nhân bản.` });
   };
   
   const addWikiPage = (pageData: Partial<Omit<WikiPage, 'id'>>) => {

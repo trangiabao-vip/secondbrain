@@ -333,6 +333,15 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
       });
       return;
     }
+
+    if (!selectedTopicIdForTask) {
+        toast({
+            variant: 'destructive',
+            title: 'Lỗi',
+            description: 'Vui lòng chọn một chủ đề cho nhiệm vụ này.',
+        });
+        return;
+    }
     
     const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
     const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
@@ -362,7 +371,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         taskData.goalId = selectedGoalId;
       }
     } else {
-      taskData.topicId = selectedTopicIdForTask || null;
+      taskData.topicId = selectedTopicIdForTask;
       taskData.goalId = null;
     }
 
@@ -416,7 +425,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
     { id: 'SA', label: 'T7' },
   ] as const;
 
-  const handleTopicChange = (topicId: string) => {
+  const handleTopicChange = (topicId: string | undefined) => {
     setSelectedTopicIdForTask(topicId);
     setSelectedGoalId(null); // Reset goal when topic changes
   };
@@ -470,29 +479,13 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                         <CommandInput placeholder="Tìm chủ đề..." />
                         <CommandList>
                             <CommandEmpty>Không tìm thấy chủ đề.</CommandEmpty>
-                             <CommandItem
-                                key="none-topic"
-                                value="Không có chủ đề"
-                                onSelect={() => {
-                                    handleTopicChange('');
-                                    setTopicPopoverOpen(false);
-                                }}
-                            >
-                                <Check
-                                    className={cn(
-                                        "mr-2 h-4 w-4",
-                                        !selectedTopicIdForTask ? "opacity-100" : "opacity-0"
-                                    )}
-                                />
-                                Không có chủ đề
-                            </CommandItem>
                             <CommandGroup>
                               {topicOptions.map(topic => (
                                   <CommandItem
                                       key={topic.id}
-                                      value={topic.name}
-                                      onSelect={() => {
-                                          handleTopicChange(topic.id);
+                                      value={topic.id}
+                                      onSelect={(currentValue) => {
+                                          handleTopicChange(currentValue);
                                           setTopicPopoverOpen(false);
                                       }}
                                   >
@@ -553,9 +546,9 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                             {availableGoals.map(goal => (
                                 <CommandItem
                                     key={goal.id}
-                                    value={goal.title}
-                                    onSelect={() => {
-                                        setSelectedGoalId(goal.id);
+                                    value={goal.id}
+                                    onSelect={(currentValue) => {
+                                        setSelectedGoalId(currentValue);
                                         setGoalPopoverOpen(false);
                                     }}
                                 >
