@@ -25,7 +25,6 @@ import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from '../ui/dropdown-menu';
-import { NotificationDialog } from '@/app/notifications/NotificationDialog';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -74,7 +73,7 @@ function EditableMarkdown({ value, onChange, placeholder }: { value: string, onC
 }
 
 export function EditGoalDialog({ goalId, children }: { goalId: string, children: ReactNode }) {
-  const { getGoalById, updateGoal, deleteGoal, duplicateGoal, goals, topics, getTopicBreadcrumbs } = useAppContext();
+  const { getGoalById, updateGoal, deleteGoal, duplicateGoal, goals, topics, getTopicBreadcrumbs, addNotification } = useAppContext();
   const [goalTitle, setGoalTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<GoalPriority>('Vừa');
@@ -228,6 +227,23 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
     await duplicateGoal(goalId);
     setIsOpen(false);
   };
+  
+  const handleAddReminder = (minutes: number, before: 'start' | 'end') => {
+    if (before === 'start' && !startDate) return;
+    if (before === 'end' && !endDate) return;
+
+    const referenceDate = before === 'start' ? startDate : endDate;
+    const sendAt = new Date(referenceDate!.getTime() - minutes * 60000);
+
+    const notificationData = {
+      title: `Mục tiêu sắp ${before === 'start' ? 'bắt đầu' : 'hết hạn'}: ${goalTitle}`,
+      body: `Mục tiêu "${goalTitle}" sẽ ${before === 'start' ? 'bắt đầu' : 'kết thúc'} trong ${minutes} phút nữa.`,
+      sendAt,
+      link: { type: 'goal' as const, id: goalId }
+    };
+    
+    addNotification(notificationData);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -310,7 +326,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                   onValueChange={(value) => setSelectedParentId(value === 'none' ? null : value)}
                   
               >
-                  <SelectTrigger id="parent-goal-edit" disabled={potentialParentGoals.length === 0}>
+                  <SelectTrigger id="parent-goal-edit">
                       <SelectValue placeholder="Chọn mục tiêu cha..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -435,20 +451,9 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                               </DropdownMenuSubTrigger>
                               <DropdownMenuSubContent>
                                   {[5, 15, 30, 60].map(min => (
-                                      <NotificationDialog
-                                          key={`start-${min}`}
-                                          mode="add"
-                                          initialData={{
-                                              title: `Mục tiêu sắp bắt đầu: ${goalTitle}`,
-                                              body: `Mục tiêu "${goalTitle}" sẽ bắt đầu trong ${min} phút nữa.`,
-                                              sendAt: startDate ? new Date(startDate.getTime() - min * 60000) : new Date(),
-                                              link: { type: 'goal', id: goalId }
-                                          }}
-                                      >
-                                          <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                                              Trước {min} phút
-                                          </DropdownMenuItem>
-                                      </NotificationDialog>
+                                      <DropdownMenuItem key={`start-${min}`} onSelect={() => handleAddReminder(min, 'start')}>
+                                          Trước {min} phút
+                                      </DropdownMenuItem>
                                   ))}
                               </DropdownMenuSubContent>
                           </DropdownMenuSub>
@@ -458,20 +463,9 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                               </DropdownMenuSubTrigger>
                               <DropdownMenuSubContent>
                                   {[5, 15, 30, 60].map(min => (
-                                      <NotificationDialog
-                                          key={`end-${min}`}
-                                          mode="add"
-                                          initialData={{
-                                              title: `Mục tiêu sắp hết hạn: ${goalTitle}`,
-                                              body: `Mục tiêu "${goalTitle}" sẽ kết thúc trong ${min} phút nữa.`,
-                                              sendAt: endDate ? new Date(endDate.getTime() - min * 60000) : new Date(),
-                                              link: { type: 'goal', id: goalId }
-                                          }}
-                                      >
-                                          <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                                              Trước {min} phút
-                                          </DropdownMenuItem>
-                                      </NotificationDialog>
+                                      <DropdownMenuItem key={`end-${min}`} onSelect={() => handleAddReminder(min, 'end')}>
+                                          Trước {min} phút
+                                      </DropdownMenuItem>
                                   ))}
                               </DropdownMenuSubContent>
                           </DropdownMenuSub>

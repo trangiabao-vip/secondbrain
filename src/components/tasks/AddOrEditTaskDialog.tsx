@@ -37,7 +37,6 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import { NotificationDialog } from '@/app/notifications/NotificationDialog';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -169,7 +168,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
   const { 
       getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic, 
       duplicateTask, getGoalById, updateChannel, getChannelById, getTopicById,
-      interests, topics, getTopicBreadcrumbs 
+      interests, topics, getTopicBreadcrumbs, addNotification
     } = useAppContext();
   const { toast } = useToast();
   
@@ -430,6 +429,31 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
     setSelectedGoalId(null); // Reset goal when topic changes
   };
 
+  const handleAddReminder = (minutes: number, before: 'start' | 'end') => {
+    if (!taskId || isRecurringInstance) {
+        toast({
+            variant: "destructive",
+            title: "Lỗi",
+            description: "Không thể thêm lời nhắc cho nhiệm vụ này.",
+        });
+        return;
+    };
+    if (before === 'start' && !startDate) return;
+    if (before === 'end' && !endDate) return;
+
+    const referenceDate = before === 'start' ? startDate : endDate;
+    const sendAt = new Date(referenceDate!.getTime() - minutes * 60000);
+
+    const notificationData = {
+        title: `Nhiệm vụ sắp ${before === 'start' ? 'bắt đầu' : 'hết hạn'}: ${taskText}`,
+        body: `"${taskText}" sẽ ${before === 'start' ? 'bắt đầu' : 'kết thúc'} trong ${minutes} phút.`,
+        sendAt,
+        link: { type: 'task' as const, id: taskId }
+    };
+    
+    addNotification(notificationData);
+  };
+
   return (
     <>
       <DialogHeader>
@@ -483,9 +507,10 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                               {topicOptions.map(topic => (
                                   <CommandItem
                                       key={topic.id}
-                                      value={topic.id}
+                                      value={topic.name}
                                       onSelect={(currentValue) => {
-                                          handleTopicChange(currentValue);
+                                          const selected = topicOptions.find(t => t.name === currentValue);
+                                          handleTopicChange(selected?.id);
                                           setTopicPopoverOpen(false);
                                       }}
                                   >
@@ -546,9 +571,10 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                             {availableGoals.map(goal => (
                                 <CommandItem
                                     key={goal.id}
-                                    value={goal.id}
+                                    value={goal.title}
                                     onSelect={(currentValue) => {
-                                        setSelectedGoalId(currentValue);
+                                        const selected = availableGoals.find(g => g.title === currentValue);
+                                        setSelectedGoalId(selected?.id || null);
                                         setGoalPopoverOpen(false);
                                     }}
                                 >
@@ -680,20 +706,9 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                             </DropdownMenuSubTrigger>
                             <DropdownMenuSubContent>
                                 {[5, 15, 30, 60].map(min => (
-                                    <NotificationDialog
-                                        key={`start-${min}`}
-                                        mode="add"
-                                        initialData={{
-                                            title: `Nhiệm vụ sắp bắt đầu: ${taskText}`,
-                                            body: `"${taskText}" sẽ bắt đầu trong ${min} phút.`,
-                                            sendAt: startDate ? new Date(startDate.getTime() - min * 60000) : new Date(),
-                                            link: { type: 'task', id: taskId }
-                                        }}
-                                    >
-                                        <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                                            Trước {min} phút
-                                        </DropdownMenuItem>
-                                    </NotificationDialog>
+                                    <DropdownMenuItem key={`start-${min}`} onSelect={() => handleAddReminder(min, 'start')}>
+                                        Trước {min} phút
+                                    </DropdownMenuItem>
                                 ))}
                             </DropdownMenuSubContent>
                         </DropdownMenuSub>
@@ -703,20 +718,9 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                             </DropdownMenuSubTrigger>
                             <DropdownMenuSubContent>
                                 {[5, 15, 30, 60].map(min => (
-                                    <NotificationDialog
-                                        key={`end-${min}`}
-                                        mode="add"
-                                        initialData={{
-                                            title: `Nhiệm vụ sắp hết hạn: ${taskText}`,
-                                            body: `"${taskText}" sẽ kết thúc trong ${min} phút.`,
-                                            sendAt: endDate ? new Date(endDate.getTime() - min * 60000) : new Date(),
-                                            link: { type: 'task', id: taskId }
-                                        }}
-                                    >
-                                        <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                                            Trước {min} phút
-                                        </DropdownMenuItem>
-                                    </NotificationDialog>
+                                    <DropdownMenuItem key={`end-${min}`} onSelect={() => handleAddReminder(min, 'end')}>
+                                        Trước {min} phút
+                                    </DropdownMenuItem>
                                 ))}
                             </DropdownMenuSubContent>
                         </DropdownMenuSub>
