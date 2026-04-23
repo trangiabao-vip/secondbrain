@@ -1,8 +1,6 @@
 // This file contains the backend logic for sending notifications.
 // IMPORTANT: This code is intended to be deployed as a Google Cloud Function.
 // It will not run as part of the Next.js application.
-// You will need to set up a Cloud Functions for Firebase environment
-// and deploy this function.
 
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
