@@ -251,11 +251,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
         }
     }
-
-    if (!finalTopicId) {
-        toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể xác định chủ đề cho nhiệm vụ này.' });
-        return;
-    }
     
     const dataWithTimestamps = { ...taskData };
     if (dataWithTimestamps.startDate instanceof Date) {
@@ -268,13 +263,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const siblingTasks = (dataContext.tasks || []).filter(t => t.goalId === taskData.goalId);
     const maxOrder = siblingTasks.reduce((max, t) => Math.max(max, t.order || 0), -1);
 
-    const newTask: Omit<Task, 'id'> = {
+    const newTask: Omit<Task, 'id' | 'topicId'> & { topicId: string | null } = {
       text: taskData.text || 'Nhiệm vụ không tên',
       status: taskData.status || 'chưa bắt đầu',
       order: maxOrder + 1,
       userId: user.uid,
       createdAt: serverTimestamp(),
-      topicId: finalTopicId,
+      topicId: finalTopicId || null,
       notes: taskData.notes || '',
       difficulty: taskData.difficulty || 'Vừa',
       goalId: taskData.goalId || null,
@@ -310,13 +305,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể cập nhật mục tiêu cha.' });
             return;
         }
-    } 
-    // If goal is being explicitly removed, ensure a topicId is still present.
-    else if (updatedData.goalId === null) {
-      if (!updatedData.topicId) {
-        toast({ variant: 'destructive', title: 'Lỗi', description: 'Vui lòng chọn một chủ đề khi bỏ liên kết nhiệm vụ khỏi mục tiêu.' });
-        return;
-      }
     }
 
     if (isRecurringInstance) {

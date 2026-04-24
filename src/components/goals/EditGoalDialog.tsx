@@ -431,6 +431,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                   <SelectItem value="đang làm">Đang làm</SelectItem>
                   <SelectItem value="hoàn thành">Hoàn thành</SelectItem>
                   <SelectItem value="thất bại">Thất bại</SelectItem>
+                  <SelectItem value="hủy">Hủy</SelectItem>
                 </SelectContent>
               </Select>
             </div>

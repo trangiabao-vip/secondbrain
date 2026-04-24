@@ -119,7 +119,7 @@
         "status": {
           "type": "string",
           "description": "The current status of the goal.",
-          "enum": ["chưa bắt đầu", "đang làm", "hoàn thành", "thất bại"]
+          "enum": ["chưa bắt đầu", "đang làm", "hoàn thành", "thất bại", "hủy"]
         },
         "priority": {
           "type": "string",
@@ -167,7 +167,7 @@
           "description": "The ID of the parent goal. Optional."
         },
         "topicId": {
-          "type": "string",
+          "type": ["string", "null"],
           "description": "The ID of the parent topic. This is required."
         },
         "startDate": {
@@ -183,7 +183,7 @@
         "status": {
           "type": "string",
           "description": "The current status of the task.",
-          "enum": ["chưa bắt đầu", "đang làm", "hoàn thành", "thất bại"]
+          "enum": ["chưa bắt đầu", "đang làm", "hoàn thành", "thất bại", "hủy"]
         },
         "difficulty": {
             "type": "string",
@@ -235,7 +235,7 @@
           "description": "The ID of the user who owns this task."
         }
       },
-      "required": ["text", "status", "order", "createdAt", "userId", "topicId"]
+      "required": ["text", "status", "order", "createdAt", "userId"]
     },
     "WikiPage": {
       "title": "Wiki Page",

@@ -1,7 +1,7 @@
 
 
-export type GoalStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại';
-export type TaskStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại';
+export type GoalStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại' | 'hủy';
+export type TaskStatus = 'chưa bắt đầu' | 'đang làm' | 'hoàn thành' | 'thất bại' | 'hủy';
 export type GoalPriority = 'Thấp' | 'Vừa' | 'Cao';
 export type TaskDifficulty = 'Dễ' | 'Vừa' | 'Khó';
 export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly';
@@ -22,7 +22,7 @@ export interface Task {
   status: TaskStatus;
   difficulty?: TaskDifficulty;
   goalId?: string | null; // Optional: Link to a goal
-  topicId: string; 
+  topicId?: string | null; 
   startDate?: any; // Can be string or Firebase Timestamp
   endDate?: any; // Can be string or Firebase Timestamp
   recurrence?: RecurrenceRule | null;

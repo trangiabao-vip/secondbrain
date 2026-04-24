@@ -221,14 +221,14 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         setNotes(task.notes || '');
         setDifficulty(task.difficulty || 'Vừa');
         
-        let parentTopicId: string | undefined;
+        let parentTopicId: string | undefined | null;
         if (task.goalId) {
             const parentGoal = getGoalById(task.goalId);
             parentTopicId = parentGoal?.topicId;
         } else if (task.topicId) {
             parentTopicId = task.topicId;
         }
-        setSelectedTopicIdForTask(parentTopicId);
+        setSelectedTopicIdForTask(parentTopicId || undefined);
         
         let currentStatus = task.status;
         let sDate;
@@ -332,15 +332,6 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
       });
       return;
     }
-
-    if (!selectedTopicIdForTask) {
-        toast({
-            variant: 'destructive',
-            title: 'Lỗi',
-            description: 'Vui lòng chọn một chủ đề cho nhiệm vụ này.',
-        });
-        return;
-    }
     
     const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
     const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
@@ -364,14 +355,17 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
     };
     
     if (selectedGoalId) {
-      const parentGoal = getGoalById(selectedGoalId);
-      if(parentGoal) {
-        taskData.topicId = parentGoal.topicId;
-        taskData.goalId = selectedGoalId;
-      }
+        const parentGoal = getGoalById(selectedGoalId);
+        if (parentGoal) {
+            taskData.topicId = parentGoal.topicId; // Inherit topic from goal
+            taskData.goalId = selectedGoalId;
+        }
+    } else if (selectedTopicIdForTask) {
+        taskData.topicId = selectedTopicIdForTask;
+        taskData.goalId = null;
     } else {
-      taskData.topicId = selectedTopicIdForTask;
-      taskData.goalId = null;
+        taskData.topicId = null; // No topic selected
+        taskData.goalId = null;
     }
 
     if (mode === 'edit' && taskId) {
@@ -504,6 +498,21 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                         <CommandList>
                             <CommandEmpty>Không tìm thấy chủ đề.</CommandEmpty>
                             <CommandGroup>
+                              <CommandItem
+                                value="none"
+                                onSelect={() => {
+                                    handleTopicChange(undefined);
+                                    setTopicPopoverOpen(false);
+                                }}
+                              >
+                                <Check
+                                    className={cn(
+                                        "mr-2 h-4 w-4",
+                                        !selectedTopicIdForTask ? "opacity-100" : "opacity-0"
+                                    )}
+                                />
+                                Không có chủ đề
+                              </CommandItem>
                               {topicOptions.map(topic => (
                                   <CommandItem
                                       key={topic.id}
@@ -616,6 +625,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                   <SelectItem value="chưa bắt đầu">Chưa bắt đầu</SelectItem>
                   <SelectItem value="đang làm">Đang làm</SelectItem>
                   <SelectItem value="hoàn thành">Hoàn thành</SelectItem>
+                  <SelectItem value="hủy">Hủy</SelectItem>
                   </SelectContent>
               </Select>
               </div>
