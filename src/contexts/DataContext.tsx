@@ -40,27 +40,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const interestsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'interests'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const topicsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'topics'), where('userId', '==', user.uid)) : null, [firestore, user]);
 
+  // ALWAYS fetch all goals and tasks for the logged in user.
+  // Components will filter this data as needed. This simplifies data availability.
   const goalsQuery = useMemoFirebase(() => {
     if (!user) return null;
-    if (isGlobalView || onChannels) {
-      return query(collection(firestore, 'goals'), where('userId', '==', user.uid));
-    }
-    if (topicId) {
-      return query(collection(firestore, 'goals'), where('userId', '==', user.uid), where('topicId', '==', topicId));
-    }
-    return null;
-  }, [firestore, user, topicId, isGlobalView, onChannels]);
+    return query(collection(firestore, 'goals'), where('userId', '==', user.uid));
+  }, [firestore, user]);
   
   const tasksQuery = useMemoFirebase(() => {
     if (!user) return null;
-    if (isGlobalView || onChannels) {
-      return query(collection(firestore, 'tasks'), where('userId', '==', user.uid));
-    }
-    if (topicId) {
-      return query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('topicId', '==', topicId));
-    }
-    return null;
-  }, [firestore, user, topicId, isGlobalView, onChannels]);
+    return query(collection(firestore, 'tasks'), where('userId', '==', user.uid));
+  }, [firestore, user]);
   
   const wikiPagesQuery = useMemoFirebase(() => {
     if (!user || !topicId) return null;
