@@ -1,5 +1,3 @@
-
-
 'use client';
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
@@ -35,6 +33,11 @@ export function TopicCard({ topic, dragHandleProps }: TopicCardProps) {
   const topicTasks = tasks.filter(t => topicGoals.some(g => g.id === t.goalId) || t.topicId === topic.id);
 
   const createdAt = getDateFromFirestore(topic.createdAt);
+
+  const goalsToShow = topicGoals.slice(0, 2);
+  const tasksToShow = topicTasks.slice(0, 2);
+  const moreGoalsCount = topicGoals.length > 2 ? topicGoals.length - 2 : 0;
+  const moreTasksCount = topicTasks.length > 2 ? topicTasks.length - 2 : 0;
 
   return (
     <Card {...dragHandleProps} className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
@@ -73,24 +76,34 @@ export function TopicCard({ topic, dragHandleProps }: TopicCardProps) {
       </CardHeader>
       <CardContent className="p-4 flex-grow">
         <CardTitle className="text-lg font-bold line-clamp-2">{topic.name}</CardTitle>
-        {topic.description && <CardDescription className="mt-2 text-sm line-clamp-2">{topic.description}</CardDescription>}
-        {createdAt && (
-          <p className="text-xs text-muted-foreground mt-1">
-            Tạo lúc: {format(createdAt, "HH:mm, dd/MM/yyyy", { locale: vi })}
-          </p>
-        )}
-        <div className="text-sm text-muted-foreground mt-2 flex items-center gap-4">
-            <div className="flex items-center gap-1">
-                <Icons.goal className="h-4 w-4"/>
-                <span>{topicGoals.length} Mục tiêu</span>
+        {topic.description && <CardDescription className="mt-1 text-sm line-clamp-2">{topic.description}</CardDescription>}
+        
+        <div className="mt-3 space-y-3">
+          {topicGoals.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1.5"><Icons.goal className="h-3.5 w-3.5" /> MỤC TIÊU ({topicGoals.length})</h4>
+              <ul className="space-y-1 text-sm text-foreground">
+                {goalsToShow.map(goal => (
+                  <li key={goal.id} className="truncate ml-2">{goal.title}</li>
+                ))}
+                {moreGoalsCount > 0 && <li className="text-xs text-muted-foreground truncate ml-2">và {moreGoalsCount} mục tiêu khác...</li>}
+              </ul>
             </div>
-            <div className="flex items-center gap-1">
-                <Icons.task className="h-4 w-4"/>
-                <span>{topicTasks.length} Công việc</span>
+          )}
+          {topicTasks.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1.5"><Icons.task className="h-3.5 w-3.5" /> CÔNG VIỆC ({topicTasks.length})</h4>
+              <ul className="space-y-1 text-sm text-foreground">
+                {tasksToShow.map(task => (
+                  <li key={task.id} className="truncate ml-2">{task.text}</li>
+                ))}
+                {moreTasksCount > 0 && <li className="text-xs text-muted-foreground truncate ml-2">và {moreTasksCount} công việc khác...</li>}
+              </ul>
             </div>
+          )}
         </div>
       </CardContent>
-      <CardFooter className="p-4 pt-0">
+      <CardFooter className="p-4 pt-0 mt-auto">
         <Button onClick={() => selectTopic(topic.id)} className="w-full" variant="outline">
             Xem chi tiết
         </Button>
