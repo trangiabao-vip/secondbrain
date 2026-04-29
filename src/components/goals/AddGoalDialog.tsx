@@ -278,11 +278,13 @@ export function AddGoalDialog({ children, startDate: initialStartDate }: { child
                       placeholder="Tên thuộc tính" 
                       value={prop.key}
                       onChange={(e) => handlePropertyChange(prop.id, 'key', e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddGoal()}
                     />
                     <Input 
                       placeholder="Giá trị" 
                       value={prop.value}
                       onChange={(e) => handlePropertyChange(prop.id, 'value', e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddGoal()}
                     />
                     <Button variant="ghost" size="icon" onClick={() => handleRemoveProperty(prop.id)} className='flex-shrink-0'>
                       <Icons.delete className="h-4 w-4 text-destructive" />

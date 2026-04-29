@@ -484,11 +484,13 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                       placeholder="Tên thuộc tính" 
                       value={prop.key}
                       onChange={(e) => handlePropertyChange(prop.id, 'key', e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleUpdateGoal()}
                     />
                     <Input 
                       placeholder="Giá trị" 
                       value={prop.value}
                       onChange={(e) => handlePropertyChange(prop.id, 'value', e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleUpdateGoal()}
                     />
                     <Button variant="ghost" size="icon" onClick={() => handleRemoveProperty(prop.id)} className='flex-shrink-0'>
                       <Icons.delete className="h-4 w-4 text-destructive" />
