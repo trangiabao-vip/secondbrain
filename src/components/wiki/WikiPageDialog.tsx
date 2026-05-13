@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAppContext } from '@/contexts/AppContext';
 import { Icons } from '../icons';
-import { Textarea } from '../ui/textarea';
+import { TipTapEditor } from '../notes/TipTapEditor';
 
 interface WikiPageDialogProps {
   mode: 'add' | 'edit' | 'view';
@@ -98,18 +98,16 @@ export function WikiPageDialog({ mode, pageId, children }: WikiPageDialogProps) 
               </div>
               <div className="space-y-2">
                 <Label htmlFor="wiki-content">Nội dung</Label>
-                <Textarea
-                  id="wiki-content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Nhập nội dung của bạn ở đây. Bạn có thể sử dụng Markdown."
-                  className="min-h-[300px]"
+                <TipTapEditor
+                  content={content}
+                  onChange={setContent}
+                  placeholder="Nhập nội dung của bạn ở đây. Hỗ trợ Markdown & #tags"
                 />
               </div>
             </>
           ) : (
             <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
-              <p>{content}</p>
+              <div dangerouslySetInnerHTML={{ __html: content }} />
             </div>
           )}
         </div>

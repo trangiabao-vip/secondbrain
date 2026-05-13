@@ -1,6 +1,12 @@
 {
   "functions": {
     "source": "functions",
-    "runtime": "nodejs18"
-  }
+    "runtime": "nodejs22"
+  },
+  "apphosting": [
+    {
+      "backendId": "studio",
+      "location": "us-central1"
+    }
+  ]
 }

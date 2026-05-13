@@ -24,6 +24,7 @@ import { GoalStatus, GoalPriority, Goal } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
+import { TipTapEditor } from '../notes/TipTapEditor';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from '../ui/dropdown-menu';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -87,6 +88,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [topicPopoverOpen, setTopicPopoverOpen] = useState(false);
+  const [createdAt, setCreatedAt] = useState<Date | undefined>();
   
   const originalGoal = useMemo(() => getGoalById(goalId), [getGoalById, goalId]);
 
@@ -135,20 +137,17 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
         setSelectedParentId(originalGoal.parentId || null);
         
         const sDate = getDateFromFirestore(originalGoal.startDate);
-        setStartDate(sDate);
-        if (sDate) {
-          setStartTime(format(sDate, "HH:mm"));
-        } else {
-          setStartTime('09:00');
-        }
+        setStartDate(sDate || undefined);
+        if (sDate) setStartTime(format(sDate, "HH:mm"));
+        else setStartTime('09:00');
 
         const eDate = getDateFromFirestore(originalGoal.endDate);
-        setEndDate(eDate);
-        if (eDate) {
-          setEndTime(format(eDate, "HH:mm"));
-        } else {
-          setEndTime('10:00');
-        }
+        setEndDate(eDate || undefined);
+        if (eDate) setEndTime(format(eDate, "HH:mm"));
+        else setEndTime('10:00');
+
+        const cDate = getDateFromFirestore(originalGoal.createdAt);
+        setCreatedAt(cDate || undefined);
 
         if (originalGoal.customProperties) {
           setCustomProperties(
@@ -159,7 +158,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
         }
       }
     }
-  }, [isOpen, originalGoal]);
+  }, [isOpen]); // Only run when opening the dialog
 
    const combineDateTime = (date: Date, time: string): Date => {
     try {
@@ -189,7 +188,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
     setTopicPopoverOpen(false);
   };
 
-  const handleUpdateGoal = () => {
+  const handleUpdateGoal = async () => {
     if (goalTitle.trim()) {
       const finalStartDate = startDate ? combineDateTime(startDate, startTime) : null;
       const finalEndDate = endDate ? combineDateTime(endDate, endTime) : null;
@@ -213,7 +212,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
         parentId: selectedParentId,
       };
 
-      updateGoal(goalId, updatedData);
+      await updateGoal(goalId, updatedData);
       setIsOpen(false);
     }
   };
@@ -251,8 +250,13 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Chỉnh sửa mục tiêu</DialogTitle>
-          <DialogDescription>
-            Cập nhật chi tiết mục tiêu của bạn.
+          <DialogDescription className="flex items-center gap-2">
+            <span>Cập nhật chi tiết mục tiêu của bạn.</span>
+            {createdAt && (
+              <span className="text-xs text-muted-foreground ml-auto">
+                Đã tạo lúc {format(createdAt, "HH:mm 'ngày' dd/MM/yyyy", { locale: vi })}
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2 max-h-[80vh] overflow-y-auto pr-4">
@@ -267,11 +271,11 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
               />
             </div>
              <div className="space-y-2">
-                <Label htmlFor="goal-description-edit">Mô tả (Tùy chọn)</Label>
-                <EditableMarkdown
-                    value={description}
+                <Label htmlFor="goal-description-edit">Ghi chú & Mô tả chi tiết</Label>
+                <TipTapEditor
+                    content={description}
                     onChange={setDescription}
-                    placeholder="Mô tả chi tiết hơn về mục tiêu này. Hỗ trợ Markdown."
+                    placeholder="Ghi chú chi tiết hơn về mục tiêu này. Hỗ trợ Wikilinks [[...]], #tags..."
                 />
             </div>
             <div className="space-y-2">

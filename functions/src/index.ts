@@ -50,7 +50,7 @@ export const sendScheduledNotifications = onSchedule("every 1 minutes", async (e
             icon: '/icon.svg',
           },
           fcmOptions: notification.link ? {
-            link: `${process.env.GCLOUD_PROJECT ? `https://${process.env.GCLOUD_PROJECT}.web.app` : 'http://localhost:9002'}/interests/redirect?type=${notification.link.type}&id=${notification.link.id}`
+            link: `https://studio--studio-6571219821-5a882.us-central1.hosted.app/interests/redirect?type=${notification.link.type}&id=${notification.link.id}`
           } : undefined
         },
       };

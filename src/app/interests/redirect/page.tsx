@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAppContext } from '@/contexts/AppContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -8,7 +8,7 @@ import { Icons } from '@/components/icons';
 
 // This page acts as a router for incoming notification links.
 // It finds the correct full URL and redirects the user.
-export default function NotificationRedirector() {
+function NotificationRedirectorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isDataLoading, goals, tasks, topics, setItemToAutoOpen } = useAppContext();
@@ -73,5 +73,13 @@ export default function NotificationRedirector() {
             </div>
         </div>
     </div>
+  );
+}
+
+export default function NotificationRedirector() {
+  return (
+    <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center"><p>Đang tải...</p></div>}>
+      <NotificationRedirectorContent />
+    </Suspense>
   );
 }

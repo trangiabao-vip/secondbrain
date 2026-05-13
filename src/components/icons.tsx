@@ -59,6 +59,7 @@ import {
   Bluetooth,
   Usb,
   FileImage,
+  StickyNote,
 } from 'lucide-react';
 
 export type Icon = LucideIcon;
@@ -101,6 +102,7 @@ export const Icons = {
   channel: Radio,
   youtube: Youtube,
   notification: Bell,
+  note: StickyNote,
   database: Database,
   eye: Eye,
   move3d: Move3d,

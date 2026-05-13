@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { TaskStatus, TaskDifficulty, type Task, type RecurrenceRule, RecurrenceFrequency } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
-import { MarkdownRenderer } from '../ui/markdown-renderer';
+import { TipTapEditor } from '../notes/TipTapEditor';
 import { Switch } from '../ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from '../ui/dropdown-menu';
@@ -38,6 +38,8 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
+import { MarkdownRenderer } from '../ui/markdown-renderer';
+
 
 
 interface AddOrEditTaskDialogProps {
@@ -168,7 +170,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
   const { 
       getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic, 
       duplicateTask, getGoalById, updateChannel, getChannelById, getTopicById,
-      interests, topics, getTopicBreadcrumbs, addNotification
+      interests, topics, getTopicBreadcrumbs, addNotification, addNote
     } = useAppContext();
   const { toast } = useToast();
   
@@ -178,6 +180,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [startTime, setStartTime] = useState('09:00');
   const [endDate, setEndDate] = useState<Date | undefined>();
+  const [createdAt, setCreatedAt] = useState<Date | undefined>();
   const [endTime, setEndTime] = useState('10:00');
   const [status, setStatus] = useState<TaskStatus>('chưa bắt đầu');
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(initialGoalId || null);
@@ -248,6 +251,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
 
         setStatus(currentStatus);
         setSelectedGoalId(task.goalId || null);
+        setCreatedAt(getDateFromFirestore(task.createdAt));
         setStartDate(sDate);
         if (sDate) setStartTime(format(sDate, "HH:mm"));
         else setStartTime('09:00');
@@ -299,7 +303,8 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         setEndTime(format(defaultEndDate, "HH:mm"));
       }
     }
-  }, [taskId, mode, getTaskById, initialGoalId, isRecurringInstance, originalTaskId, initialStartDate, getGoalById, initialTopicId, selectedTopic]);
+  }, [taskId, mode, getTaskById, getGoalById, selectedTopic, initialGoalId, initialTopicId, initialStartDate, isRecurringInstance, originalTaskId]); // Run when opening the dialog or when taskId/mode changes
+
 
   const combineDateTime = (date: Date, time: string) => {
     try {
@@ -369,7 +374,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
     }
 
     if (mode === 'edit' && taskId) {
-      updateTask(taskId, taskData);
+      await updateTask(taskId, taskData);
     } else {
       const newTaskId = await addTask(taskData);
       if (newTaskId && initialChannelId) {
@@ -448,12 +453,37 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
     addNotification(notificationData);
   };
 
+  const handleCreateNoteFromTask = async () => {
+    if (!notes.trim()) {
+        toast({ title: "Thông báo", description: "Vui lòng nhập nội dung vào ghi chú trước khi tạo trang riêng." });
+        return;
+    }
+    
+    const noteId = await addNote({
+        title: taskText || "Ghi chú từ nhiệm vụ",
+        content: notes,
+        tags: ["task-link"],
+    });
+
+    if (noteId) {
+        // Add a wikilink back to the task notes
+        const wikiLink = `\n\n[[${taskText || "Ghi chú từ nhiệm vụ"}]]`;
+        setNotes(prev => prev + wikiLink);
+        toast({ title: "Đã tạo ghi chú", description: "Đã tạo một trang ghi chú riêng và liên kết vào nhiệm vụ." });
+    }
+  };
+
   return (
     <>
       <DialogHeader>
         <DialogTitle>{mode === 'edit' ? 'Chỉnh sửa nhiệm vụ' : 'Thêm nhiệm vụ mới'}</DialogTitle>
-        <DialogDescription>
-            Thêm hoặc chỉnh sửa chi tiết nhiệm vụ và chỉ định nó vào một chủ đề và mục tiêu.
+        <DialogDescription className="flex items-center gap-2">
+            <span>Thêm hoặc chỉnh sửa chi tiết nhiệm vụ và chỉ định nó vào một chủ đề và mục tiêu.</span>
+            {createdAt && (
+              <span className="text-xs text-muted-foreground ml-auto">
+                Đã tạo lúc {format(createdAt, "HH:mm 'ngày' dd/MM/yyyy", { locale: vi })}
+              </span>
+            )}
         </DialogDescription>
       </DialogHeader>
       <div className="space-y-4 py-2 max-h-[80vh] overflow-y-auto pr-4">
@@ -467,11 +497,17 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="task-notes">Ghi chú (Tùy chọn)</Label>
-            <EditableMarkdown
-                value={notes}
+            <div className="flex items-center justify-between">
+                <Label htmlFor="task-notes">Ghi chú (Rich Text)</Label>
+                <Button variant="ghost" size="sm" onClick={handleCreateNoteFromTask} className="h-7 text-xs text-muted-foreground hover:text-primary">
+                    <Icons.note className="mr-1 h-3 w-3" />
+                    Chuyển thành Ghi chú riêng
+                </Button>
+            </div>
+            <TipTapEditor
+                content={notes}
                 onChange={setNotes}
-                placeholder="Thêm ghi chú hoặc chi tiết... Hỗ trợ Markdown."
+                placeholder="Thêm ghi chú hoặc chi tiết... Hỗ trợ Markdown & #tags."
             />
           </div>
            <div className="space-y-2">
@@ -880,12 +916,24 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
   );
 }
 
-export function AddOrEditTaskDialog({ taskId, goalId: initialGoalId, topicId: initialTopicId, channelId: initialChannelId, children, mode, startDate: initialStartDate }: AddOrEditTaskDialogProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function AddOrEditTaskDialog({ 
+  taskId, 
+  goalId: initialGoalId, 
+  topicId: initialTopicId, 
+  channelId: initialChannelId, 
+  children, 
+  mode, 
+  startDate: initialStartDate,
+  open: externalOpen,
+  onOpenChange: externalOnOpenChange
+}: AddOrEditTaskDialogProps & { open?: boolean, onOpenChange?: (open: boolean) => void }) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setIsOpen = externalOnOpenChange !== undefined ? externalOnOpenChange : setInternalOpen;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
       <DialogContent className="sm:max-w-xl">
         {isOpen && <TaskDialogContent taskId={taskId} initialGoalId={initialGoalId} initialTopicId={initialTopicId} initialChannelId={initialChannelId} mode={mode} closeDialog={() => setIsOpen(false)} initialStartDate={initialStartDate} />}
       </DialogContent>

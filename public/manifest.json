@@ -1,17 +1,35 @@
 {
-  "name": "Trung tâm Sở thích",
-  "short_name": "InterestHub",
-  "description": "Quản lý sở thích, chủ đề, mục tiêu và công việc của bạn.",
-  "icons": [
-    {
-      "src": "/icon.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ],
-  "start_url": "/",
+  "name": "Second Brain - Quản lý công việc",
+  "short_name": "Second Brain",
+  "description": "Ứng dụng quản lý nhiệm vụ, mục tiêu và ghi chú thông minh",
+  "start_url": "/todo",
+  "scope": "/todo",
   "display": "standalone",
-  "theme_color": "#111827",
-  "background_color": "#111827"
+  "background_color": "#09090b",
+  "theme_color": "#7c3aed",
+  "orientation": "portrait-primary",
+  "lang": "vi",
+  "icons": [
+    { "src": "/todo/icon-72x72.png", "sizes": "72x72", "type": "image/png" },
+    { "src": "/todo/icon-96x96.png", "sizes": "96x96", "type": "image/png" },
+    { "src": "/todo/icon-128x128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "/todo/icon-144x144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "/todo/icon-152x152.png", "sizes": "152x152", "type": "image/png" },
+    { "src": "/todo/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/todo/icon-384x384.png", "sizes": "384x384", "type": "image/png" },
+    { "src": "/todo/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Lịch tuần",
+      "url": "/todo/schedule",
+      "icons": [{ "src": "/todo/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Ghi chú",
+      "url": "/todo/notes",
+      "icons": [{ "src": "/todo/icon-96x96.png", "sizes": "96x96" }]
+    }
+  ]
 }

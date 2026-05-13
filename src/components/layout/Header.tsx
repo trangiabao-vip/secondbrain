@@ -100,6 +100,9 @@ export function Header() {
     if (pathname.startsWith('/notifications')) {
         return <><Icons.right className="h-4 w-4" /><span className="text-sm font-medium">Thông báo</span></>;
     }
+    if (pathname.startsWith('/notes')) {
+        return <><Icons.right className="h-4 w-4" /><span className="text-sm font-medium">Ghi chú</span></>;
+    }
 
 
     return null;

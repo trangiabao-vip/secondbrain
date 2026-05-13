@@ -5,7 +5,7 @@
 import { createContext, useContext, useState, useMemo, ReactNode } from 'react';
 import { collection, query, where } from 'firebase/firestore';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { type Interest, type Topic, type Goal, type Task, type WikiPage, type SalesPage, type Channel, type Notification } from '@/lib/data';
+import { type Interest, type Topic, type Goal, type Task, type WikiPage, type Note, type SalesPage, type Channel, type Notification } from '@/lib/data';
 import { useUIContext } from './UIContext';
 
 export interface DataContextType {
@@ -14,6 +14,7 @@ export interface DataContextType {
   goals: Goal[];
   tasks: Task[];
   wikiPages: WikiPage[];
+  notes: Note[];
   salesPages: SalesPage[];
   channels: Channel[];
   notifications: Notification[];
@@ -33,6 +34,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const onChannels = pathname.startsWith('/channels');
   const onSalesPages = pathname.startsWith('/sales-pages');
   const onNotifications = pathname.startsWith('/notifications');
+  const onNotes = pathname.startsWith('/notes');
   const onRedirect = pathname.startsWith('/interests/redirect');
   const isGlobalView = onSchedule || onDashboard || onRedirect;
 
@@ -72,11 +74,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return query(collection(firestore, 'notifications'), where('userId', '==', user.uid));
   }, [firestore, user, onNotifications]);
 
+  const notesQuery = useMemoFirebase(() => {
+    if (!user || !onNotes) return null;
+    return query(collection(firestore, 'notes'), where('userId', '==', user.uid));
+  }, [firestore, user, onNotes]);
+
   const { data: interestsData, isLoading: interestsLoading } = useCollection<Interest>(interestsQuery);
   const { data: topicsData, isLoading: topicsLoading } = useCollection<Topic>(topicsQuery);
   const { data: goalsData, isLoading: goalsLoading } = useCollection<Goal>(goalsQuery);
   const { data: tasksData, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
   const { data: wikiPagesData, isLoading: wikiPagesLoading } = useCollection<WikiPage>(wikiPagesQuery);
+  const { data: notesData, isLoading: notesLoading } = useCollection<Note>(notesQuery);
   const { data: salesPagesData, isLoading: salesPagesLoading } = useCollection<SalesPage>(salesPagesQuery);
   const { data: channelsData, isLoading: channelsLoading } = useCollection<Channel>(channelsQuery);
   const { data: notificationsData, isLoading: notificationsLoading } = useCollection<Notification>(notificationsQuery);
@@ -84,14 +92,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [optimisticallyDeleted, setOptimisticallyDeleted] = useState<string[]>([]);
   
   const isDataLoading = useMemo(() => {
-    return isUserLoading || interestsLoading || topicsLoading || goalsLoading || tasksLoading || wikiPagesLoading || salesPagesLoading || channelsLoading || notificationsLoading;
-  }, [isUserLoading, interestsLoading, topicsLoading, goalsLoading, tasksLoading, wikiPagesLoading, salesPagesLoading, channelsLoading, notificationsLoading]);
+    return isUserLoading || interestsLoading || topicsLoading || goalsLoading || tasksLoading || wikiPagesLoading || notesLoading || salesPagesLoading || channelsLoading || notificationsLoading;
+  }, [isUserLoading, interestsLoading, topicsLoading, goalsLoading, tasksLoading, wikiPagesLoading, notesLoading, salesPagesLoading, channelsLoading, notificationsLoading]);
   
   const interests = useMemo(() => (interestsData || []).filter(i => !optimisticallyDeleted.includes(i.id)), [interestsData, optimisticallyDeleted]);
   const topics = useMemo(() => (topicsData || []).filter(t => !optimisticallyDeleted.includes(t.id)), [topicsData, optimisticallyDeleted]);
   const goals = useMemo(() => (goalsData || []).filter(g => !optimisticallyDeleted.includes(g.id)), [goalsData, optimisticallyDeleted]);
   const tasks = useMemo(() => (tasksData || []).filter(t => !optimisticallyDeleted.includes(t.id)), [tasksData, optimisticallyDeleted]);
   const wikiPages = useMemo(() => (wikiPagesData || []).filter(wp => !optimisticallyDeleted.includes(wp.id)), [wikiPagesData, optimisticallyDeleted]);
+  const notes = useMemo(() => (notesData || []).filter(n => !optimisticallyDeleted.includes(n.id)), [notesData, optimisticallyDeleted]);
   const salesPages = useMemo(() => (salesPagesData || []).filter(p => !optimisticallyDeleted.includes(p.id)), [salesPagesData, optimisticallyDeleted]);
   const channels = useMemo(() => (channelsData || []).filter(c => !optimisticallyDeleted.includes(c.id)), [channelsData, optimisticallyDeleted]);
   const notifications = useMemo(() => (notificationsData || []).filter(n => !optimisticallyDeleted.includes(n.id)), [notificationsData, optimisticallyDeleted]);
@@ -102,6 +111,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     goals,
     tasks,
     wikiPages,
+    notes,
     salesPages,
     channels,
     notifications,

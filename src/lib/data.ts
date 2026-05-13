@@ -77,6 +77,21 @@ export interface WikiPage {
   userId: string;
 }
 
+export interface Note {
+  id: string; // Firestore document ID
+  title: string;
+  content: string; // HTML content from TipTap
+  tags: string[]; // e.g. ['#work', '#idea']
+  isPinned: boolean;
+  isDaily: boolean; // true if this is a daily note
+  dailyDate?: string; // ISO date string for daily notes e.g. '2026-05-09'
+  linkedTaskIds?: string[]; // [[Task links]]
+  linkedNoteIds?: string[]; // [[Note wikilinks]]
+  userId: string;
+  createdAt: any;
+  updatedAt: any;
+}
+
 export interface Participant {
   uid: string;
   displayName: string;
@@ -206,6 +221,7 @@ export type DataType = {
   goals: Goal[];
   tasks: Task[];
   wikiPages: WikiPage[];
+  notes: Note[];
   salesPages: SalesPage[];
   channels: Channel[];
   notifications: Notification[];
@@ -219,6 +235,7 @@ export const initialData: DataType = {
   goals: [],
   tasks: [],
   wikiPages: [],
+  notes: [],
   salesPages: [],
   channels: [],
   notifications: [],

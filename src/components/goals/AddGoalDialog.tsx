@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { GoalPriority } from '@/lib/data';
 import { Separator } from '../ui/separator';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
+import { TipTapEditor } from '../notes/TipTapEditor';
 
 function EditableMarkdown({ value, onChange, placeholder }: { value: string, onChange: (value: string) => void, placeholder: string }) {
     const [isEditing, setIsEditing] = useState(true);
@@ -51,7 +52,12 @@ function EditableMarkdown({ value, onChange, placeholder }: { value: string, onC
     );
 }
 
-export function AddGoalDialog({ children, startDate: initialStartDate }: { children: ReactNode, startDate?: Date }) {
+export function AddGoalDialog({ 
+  children, 
+  startDate: initialStartDate,
+  open: externalOpen,
+  onOpenChange: externalOnOpenChange
+}: { children?: ReactNode, startDate?: Date, open?: boolean, onOpenChange?: (open: boolean) => void }) {
   const { addGoal, selectedTopic, goals } = useAppContext();
   const [goalTitle, setGoalTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -62,7 +68,10 @@ export function AddGoalDialog({ children, startDate: initialStartDate }: { child
   const [endTime, setEndTime] = useState('10:00');
   const [parentId, setParentId] = useState<string | null>(null);
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setIsOpen = externalOnOpenChange !== undefined ? externalOnOpenChange : setInternalOpen;
 
   const potentialParentGoals = useMemo(() => {
     if (!selectedTopic) return [];
@@ -140,7 +149,7 @@ export function AddGoalDialog({ children, startDate: initialStartDate }: { child
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Thêm mục tiêu mới</DialogTitle>
@@ -160,11 +169,11 @@ export function AddGoalDialog({ children, startDate: initialStartDate }: { child
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="goal-description">Mô tả (Tùy chọn)</Label>
-              <EditableMarkdown
-                  value={description}
+              <Label htmlFor="goal-description">Ghi chú & Mô tả chi tiết</Label>
+              <TipTapEditor
+                  content={description}
                   onChange={setDescription}
-                  placeholder="Mô tả chi tiết hơn về mục tiêu này. Hỗ trợ Markdown."
+                  placeholder="Ghi chú chi tiết hơn về mục tiêu này. Hỗ trợ Wikilinks [[...]], #tags..."
               />
             </div>
             <div className="space-y-2">

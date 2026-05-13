@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useMemo, useCallback } from 'react';
-import { type Interest, type Topic, type Goal, type Task, type WikiPage, type SalesPage, type Channel, type Notification } from '@/lib/data';
+import { type Interest, type Topic, type Goal, type Task, type WikiPage, type Note, type SalesPage, type Channel, type Notification } from '@/lib/data';
 import { toast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { collection, doc, serverTimestamp, writeBatch, addDoc, deleteDoc, Timestamp, getDoc, updateDoc } from 'firebase/firestore';
@@ -41,6 +41,9 @@ interface AppContextType extends DataContextType, UIContextType {
   addWikiPage: (pageData: Partial<Omit<WikiPage, 'id'>>) => void;
   updateWikiPage: (pageId: string, updatedData: Partial<Omit<WikiPage, 'id'>>) => void;
   deleteWikiPage: (pageId: string) => void;
+  addNote: (noteData: Partial<Omit<Note, 'id'>>) => Promise<string | undefined>;
+  updateNote: (noteId: string, updatedData: Partial<Omit<Note, 'id'>>) => void;
+  deleteNote: (noteId: string) => void;
   addSalesPage: (pageData: Partial<Omit<SalesPage, 'id'>>) => Promise<string | undefined>;
   updateSalesPage: (pageId: string, updatedData: Partial<Omit<SalesPage, 'id'>>) => void;
   deleteSalesPage: (pageId: string) => void;
@@ -178,7 +181,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Đã thêm mục tiêu", description: `"${newGoal.title}" đã được thêm.` });
   };
 
-  const updateGoal = (goalId: string, updatedData: Partial<Omit<Goal, 'id'>>) => {
+  const updateGoal = async (goalId: string, updatedData: Partial<Omit<Goal, 'id'>>) => {
     const originalGoal = getGoalById(goalId);
     if (!originalGoal) return;
 
@@ -228,8 +231,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     } else {
         // Normal update without topic change
-        updateDocumentNonBlocking(doc(firestore, 'goals', goalId), updatedData);
-        toast({ title: "Mục tiêu đã được cập nhật", description: `Mục tiêu đã được cập nhật.` });
+        try {
+            await updateDoc(doc(firestore, 'goals', goalId), updatedData);
+            toast({ title: "Mục tiêu đã được cập nhật", description: `Mục tiêu đã được cập nhật.` });
+        } catch (error) {
+            console.error("Error updating goal: ", error);
+            toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể cập nhật mục tiêu.' });
+        }
     }
   };
 
@@ -280,8 +288,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     
     const docRef = await addDoc(collection(firestore, 'tasks'), newTask);
+    const taskId = docRef?.id;
+    
+    if (taskId) {
+      await syncTaskNotifications(taskId, newTask.text, newTask.startDate, newTask.endDate);
+    }
+
     toast({ title: "Đã thêm nhiệm vụ", description: `"${newTask.text}" đã được thêm.` });
-    return docRef?.id;
+    return taskId;
   };
 
   const updateTask = async (taskId: string, updatedData: Partial<Task>) => {
@@ -322,6 +336,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } else {
       await updateDoc(doc(firestore, 'tasks', taskId), dataToUpdate);
     }
+
+    // Schedule notifications if dates changed
+    if (dataToUpdate.startDate || dataToUpdate.endDate || dataToUpdate.text) {
+      const currentTask = getTaskById(taskId);
+      if (currentTask) {
+        await syncTaskNotifications(
+          taskId, 
+          dataToUpdate.text || currentTask.text, 
+          dataToUpdate.startDate || currentTask.startDate, 
+          dataToUpdate.endDate || currentTask.endDate
+        );
+      }
+    }
+
     toast({ title: "Nhiệm vụ đã được cập nhật" });
   };
 
@@ -573,6 +601,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await deleteDoc(doc(firestore, 'wikiPages', pageId));
     });
   };
+
+  // --- Notes CRUD ---
+  const addNote = async (noteData: Partial<Omit<Note, 'id'>>): Promise<string | undefined> => {
+    if (!user) return;
+    const newNote: Omit<Note, 'id'> = {
+      title: noteData.title || 'Ghi chú chưa có tên',
+      content: noteData.content || '',
+      tags: noteData.tags || [],
+      isPinned: noteData.isPinned || false,
+      isDaily: noteData.isDaily || false,
+      dailyDate: noteData.dailyDate,
+      linkedTaskIds: noteData.linkedTaskIds || [],
+      linkedNoteIds: noteData.linkedNoteIds || [],
+      userId: user.uid,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    try {
+      const docRef = await addDoc(collection(firestore, 'notes'), newNote);
+      toast({ title: 'Đã tạo ghi chú', description: `"${newNote.title}" đã được tạo.` });
+      return docRef.id;
+    } catch (e) {
+      console.error('Error adding note:', e);
+      toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể tạo ghi chú.' });
+    }
+  };
+
+  const updateNote = (noteId: string, updatedData: Partial<Omit<Note, 'id'>>) => {
+    const dataWithTimestamp = { ...updatedData, updatedAt: serverTimestamp() };
+    updateDocumentNonBlocking(doc(firestore, 'notes', noteId), dataWithTimestamp);
+  };
+
+  const deleteNote = (noteId: string) => {
+    const note = (dataContext.notes || []).find((n: Note) => n.id === noteId);
+    createUndoableDelete('ghi chú', noteId, note?.title, async () => {
+      await deleteDoc(doc(firestore, 'notes', noteId));
+    });
+  };
   
   const getSalesPageById = useCallback((id: string) => dataContext.salesPages.find(p => p.id === id), [dataContext.salesPages]);
 
@@ -660,6 +726,58 @@ export function AppProvider({ children }: { children: ReactNode }) {
         toast({ variant: 'destructive', title: "Lỗi", description: 'Không thể lên lịch thông báo.' });
     }
   }, [user, firestore, toast]);
+
+  const syncTaskNotifications = useCallback(async (taskId: string, taskText: string, startDate?: any, endDate?: any) => {
+    if (!user) return;
+
+    const start = getDateFromFirestore(startDate);
+    const end = getDateFromFirestore(endDate);
+    const now = new Date();
+
+    if (start && start > now) {
+      await addNotification({
+        title: 'Bắt đầu nhiệm vụ',
+        body: `Nhiệm vụ "${taskText}" bắt đầu ngay bây giờ!`,
+        sendAt: Timestamp.fromDate(start),
+        link: { type: 'task', id: taskId }
+      });
+      
+      // Schedule local push notification if supported
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const timeToStart = start.getTime() - now.getTime();
+        if (timeToStart > 0 && timeToStart <= 24 * 60 * 60 * 1000) { // Only schedule if within next 24h
+          setTimeout(() => {
+            new Notification('Bắt đầu nhiệm vụ', {
+              body: `Nhiệm vụ "${taskText}" bắt đầu ngay bây giờ!`,
+              icon: '/todo/icon-192x192.png'
+            });
+          }, timeToStart);
+        }
+      }
+    }
+
+    if (end && end > now) {
+      await addNotification({
+        title: 'Kết thúc nhiệm vụ',
+        body: `Nhiệm vụ "${taskText}" đã đến hạn kết thúc!`,
+        sendAt: Timestamp.fromDate(end),
+        link: { type: 'task', id: taskId }
+      });
+      
+      // Schedule local push notification
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const timeToEnd = end.getTime() - now.getTime();
+        if (timeToEnd > 0 && timeToEnd <= 24 * 60 * 60 * 1000) {
+          setTimeout(() => {
+            new Notification('Kết thúc nhiệm vụ', {
+              body: `Nhiệm vụ "${taskText}" đã đến hạn kết thúc!`,
+              icon: '/todo/icon-192x192.png'
+            });
+          }, timeToEnd);
+        }
+      }
+    }
+  }, [user, addNotification]);
 
   const updateNotification = useCallback(async (notificationId: string, updatedData: Partial<Omit<Notification, 'id'>>) => {
     await updateDocumentNonBlocking(doc(firestore, 'notifications', notificationId), updatedData);
@@ -778,6 +896,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addWikiPage,
     updateWikiPage,
     deleteWikiPage,
+    addNote,
+    updateNote,
+    deleteNote,
     addSalesPage,
     updateSalesPage,
     deleteSalesPage,
@@ -805,8 +926,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteNotification, getGoalById, getInterestById, getTopicById, getWikiPageById, 
     getChannelById, getSalesPageById, getTasksByGoalId, deleteChannel, deleteInterest, deleteGoal, 
     deleteNotification, deleteSalesPage, deleteTask, deleteTopic, deleteWikiPage, duplicateGoal, duplicateTask,
-    addChannel, addGoal, addInterest, addSalesPage, addTask, addTopic, addWikiPage, handleDragEnd, logout,
-    updateChannel, updateGoal, updateInterest, updateNotification, updateSalesPage, updateTask, updateTopic, updateWikiPage
+    addChannel, addGoal, addInterest, addSalesPage, addTask, addTopic, addWikiPage, addNote, handleDragEnd, logout,
+    updateChannel, updateGoal, updateInterest, updateNotification, updateSalesPage, updateTask, updateTopic, updateWikiPage, updateNote,
+    deleteNote
   ]);
 
 

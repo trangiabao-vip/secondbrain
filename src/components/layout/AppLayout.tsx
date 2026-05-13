@@ -2,11 +2,14 @@
 import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
 import { InterestSidebar } from "@/components/interests/InterestSidebar";
 import { Header } from "./Header";
+import { QuickNotePanel } from "@/components/notes/QuickNotePanel";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { useFCMToken } from "@/hooks/useFCMToken";
 
 export function AppLayout({ children }: { children?: ReactNode }) {
   const pathname = usePathname();
+  // useFCMToken(); // Temporarily disabled to fix crash
 
   const isAuthPage = pathname === '/login' || pathname === '/signup';
   const isCardPage = pathname.startsWith('/card/');
@@ -26,6 +29,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
           <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto bg-background text-foreground">
             {children}
           </main>
+          <QuickNotePanel />
         </SidebarInset>
       </SidebarProvider>
   );

@@ -12,8 +12,9 @@ import { EditGoalDialog } from "../goals/EditGoalDialog";
 import { AddOrEditTaskDialog } from "../tasks/AddOrEditTaskDialog";
 import { Goal, Task, GoalStatus, RecurrenceRule } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger, PopoverClose } from "@/components/ui/popover";
 import { AddGoalDialog } from "../goals/AddGoalDialog";
+import { AddNoteDialog } from "../notes/AddNoteDialog";
 import { Separator } from "../ui/separator";
 import { motion, type PanInfo } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -202,6 +203,10 @@ export function GlobalScheduleView() {
   const weekDaysContainerRef = useRef<HTMLDivElement>(null);
   const justDraggedRef = useRef(false);
   const isMobile = useIsMobile();
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [selectedSlotDate, setSelectedSlotDate] = useState<Date | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -474,18 +479,42 @@ export function GlobalScheduleView() {
                             <div className="flex flex-col gap-1">
                                 <p className="text-sm font-medium text-muted-foreground px-2 py-1">Tạo lúc {format(slotDate, 'HH:mm')}</p>
                                 <Separator />
-                                <AddOrEditTaskDialog mode="add" startDate={slotDate}>
-                                <Button variant="ghost" className="w-full justify-start">
+                                <Button 
+                                    variant="ghost" 
+                                    className="w-full justify-start"
+                                    onClick={() => {
+                                        setSelectedSlotDate(slotDate);
+                                        setTaskDialogOpen(true);
+                                        setOpenPopoverKey(null);
+                                    }}
+                                >
                                     <Icons.task className="mr-2 h-4 w-4" />
-                                    Nhiệm vụ mới
+                                    Ghi chú công việc
                                 </Button>
-                                </AddOrEditTaskDialog>
-                                <AddGoalDialog startDate={slotDate}>
-                                <Button variant="ghost" className="w-full justify-start">
+                                <Button 
+                                    variant="ghost" 
+                                    className="w-full justify-start"
+                                    onClick={() => {
+                                        setSelectedSlotDate(slotDate);
+                                        setGoalDialogOpen(true);
+                                        setOpenPopoverKey(null);
+                                    }}
+                                >
                                     <Icons.goal className="mr-2 h-4 w-4" />
-                                    Mục tiêu mới
+                                    Mục tiêu chiến lược
                                 </Button>
-                                </AddGoalDialog>
+                                <Button 
+                                    variant="ghost" 
+                                    className="w-full justify-start"
+                                    onClick={() => {
+                                        setSelectedSlotDate(slotDate);
+                                        setNoteDialogOpen(true);
+                                        setOpenPopoverKey(null);
+                                    }}
+                                >
+                                    <Icons.note className="mr-2 h-4 w-4" />
+                                    Ghi chú kiến thức
+                                </Button>
                             </div>
                             </PopoverContent>
                         </Popover>
@@ -560,6 +589,24 @@ export function GlobalScheduleView() {
           </div>
         </div>
       </div>
+      
+      {/* Controlled Dialogs */}
+      <AddOrEditTaskDialog 
+        mode="add" 
+        startDate={selectedSlotDate || undefined} 
+        open={taskDialogOpen} 
+        onOpenChange={setTaskDialogOpen} 
+      />
+      <AddGoalDialog 
+        startDate={selectedSlotDate || undefined} 
+        open={goalDialogOpen} 
+        onOpenChange={setGoalDialogOpen} 
+      />
+      <AddNoteDialog 
+        defaultDate={selectedSlotDate || undefined} 
+        open={noteDialogOpen} 
+        onOpenChange={setNoteDialogOpen} 
+      />
     </div>
   );
 }

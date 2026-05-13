@@ -40,11 +40,11 @@ export function GlobalSearchDialog({ children }: { children: ReactNode }) {
     const [results, setResults] = useState<SearchResultItem[]>([]);
     const router = useRouter();
 
-    const { interests, topics, goals, tasks, wikiPages, setItemToAutoOpen } = useAppContext();
+    const { interests, topics, goals, tasks, notes, setItemToAutoOpen } = useAppContext();
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+            if ((e.key === 'k' || e.key === '/') && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
                 setOpen(true);
             }
@@ -86,10 +86,10 @@ export function GlobalSearchDialog({ children }: { children: ReactNode }) {
                 }
             });
 
-            // Search wiki pages
-            wikiPages.forEach(item => {
+            // Search notes
+            notes.forEach(item => {
                 if (item.title.toLowerCase().includes(lowerCaseQuery) || item.content.toLowerCase().includes(lowerCaseQuery)) {
-                    allResults.push({ ...item, itemType: 'Wiki' });
+                    allResults.push({ ...item, itemType: 'Ghi chú' });
                 }
             });
             
@@ -97,7 +97,7 @@ export function GlobalSearchDialog({ children }: { children: ReactNode }) {
         } else {
             setResults([]);
         }
-    }, [query, interests, topics, goals, tasks, wikiPages]);
+    }, [query, interests, topics, goals, tasks, notes]);
 
     const handleSelect = (item: SearchResultItem) => {
         const itemType = item.itemType;
@@ -134,14 +134,8 @@ export function GlobalSearchDialog({ children }: { children: ReactNode }) {
                 targetTopicId = parentTopic.id;
                 setItemToAutoOpen({ type: 'task', id: task.id, goalId: task.goalId });
             }
-        } else if (itemType === 'Wiki') {
-            const wikiPage = item as WikiPage;
-            const parentTopic = topics.find(t => t.id === wikiPage.topicId);
-            if (parentTopic) {
-                targetInterestId = parentTopic.interestId;
-                targetTopicId = parentTopic.id;
-                // Could open wiki dialog here in the future
-            }
+        } else if (itemType === 'Ghi chú') {
+            router.push(`/notes?title=${encodeURIComponent((item as any).title)}`);
         }
         
         if (targetInterestId && targetTopicId) {
@@ -159,7 +153,7 @@ export function GlobalSearchDialog({ children }: { children: ReactNode }) {
             case 'Chủ đề': return <Icons.topic className="h-5 w-5 text-muted-foreground" />;
             case 'Mục tiêu': return <Icons.goal className="h-5 w-5 text-muted-foreground" />;
             case 'Nhiệm vụ': return <Icons.task className="h-5 w-5 text-muted-foreground" />;
-            case 'Wiki': return <Icons.topic className="h-5 w-5 text-muted-foreground" />;
+            case 'Ghi chú': return <Icons.note className="h-5 w-5 text-muted-foreground" />;
             default: return null;
         }
     }

@@ -139,6 +139,18 @@ export function InterestSidebar() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/notes')}
+                tooltip="Ghi chú"
+              >
+                <Link href="/notes" onClick={handleLinkClick}>
+                  <Icons.note />
+                  <span>Ghi chú</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
              <SidebarMenuItem>
               <SidebarMenuButton
                 asChild

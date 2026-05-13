@@ -20,6 +20,11 @@ const getDateFromFirestore = (date: any): Date | null => {
   return null;
 };
 
+function stripHtml(html: string): string {
+  if (!html) return '';
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 export function WikiView() {
   const { selectedTopic, wikiPages, isDataLoading, deleteWikiPage } = useAppContext();
 
@@ -67,7 +72,7 @@ export function WikiView() {
                   )}
                 </CardHeader>
                 <CardContent className="flex-grow">
-                  <p className="text-sm text-muted-foreground line-clamp-3">{page.content}</p>
+                  <p className="text-sm text-muted-foreground line-clamp-3">{stripHtml(page.content)}</p>
                 </CardContent>
                 <CardFooter className="flex justify-between">
                     <WikiPageDialog mode="view" pageId={page.id}>

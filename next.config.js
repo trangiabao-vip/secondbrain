@@ -1,5 +1,4 @@
 /** @type {import('next').NextConfig} */
-
 const securityHeaders = [
   {
     key: 'X-DNS-Prefetch-Control',
@@ -28,6 +27,7 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  basePath: '/todo',
   async headers() {
     return [
       {
@@ -73,3 +73,4 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+
