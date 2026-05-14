@@ -27,7 +27,6 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-  basePath: '/todo',
   async headers() {
     return [
       {
