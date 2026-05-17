@@ -58,7 +58,10 @@ export function TaskList({ goalId, tasks: customTasks }: TaskListProps) {
   if (customTasks) {
     tasksToRender = customTasks;
   } else {
-    tasksToRender = allTasks.filter(task => task.goalId === goalId);
+    tasksToRender = allTasks.filter(task => {
+      if (task.goalIds?.length) return task.goalIds.includes(goalId!);
+      return task.goalId === goalId;
+    });
   }
   
   tasksToRender.sort((a, b) => a.order - b.order);

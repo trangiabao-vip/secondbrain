@@ -107,7 +107,10 @@ export function GoalsView() {
     );
   };
 
-  const topicGoals = goals.filter(goal => goal.topicId === selectedTopic.id);
+  const topicGoals = goals.filter(goal => {
+    if (goal.topicIds?.length) return goal.topicIds.includes(selectedTopic.id);
+    return goal.topicId === selectedTopic.id;
+  });
 
   const rootGoals = useMemo(() => topicGoals.filter(goal => !goal.parentId), [topicGoals]);
   const subGoalsByParent = useMemo(() => {
@@ -131,11 +134,14 @@ export function GoalsView() {
   }).sort((a,b) => a.order - b.order);
   
   const filteredStandaloneTasks = tasks.filter(task => {
-    if (task.goalId) return false;
-    if (task.topicId !== selectedTopic.id) return false;
+    // Bỏ qua task đã thuộc một goal
+    const taskGoalIds = task.goalIds?.length ? task.goalIds : (task.goalId ? [task.goalId] : []);
+    if (taskGoalIds.length > 0) return false;
+    // Lọc theo topic (hỗ trợ cả mảng topicIds và legacy topicId)
+    const taskTopicIds = task.topicIds?.length ? task.topicIds : (task.topicId ? [task.topicId] : []);
+    if (!taskTopicIds.includes(selectedTopic.id)) return false;
     if (typeFilter === 'goal') return false;
     if (statusFilters.length > 0 && !statusFilters.includes(task.status)) return false;
-    
     return true;
   });
 
@@ -156,7 +162,10 @@ export function GoalsView() {
   }
 
   const calculateProgress = (goalId: string) => {
-    const goalTasks = tasks.filter(t => t.goalId === goalId);
+    const goalTasks = tasks.filter(t => {
+      if (t.goalIds?.length) return t.goalIds.includes(goalId);
+      return t.goalId === goalId;
+    });
     if (goalTasks.length === 0) return 0;
     const completedTasks = goalTasks.filter(t => t.status === 'hoàn thành').length;
     return (completedTasks / goalTasks.length) * 100;

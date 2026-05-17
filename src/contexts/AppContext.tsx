@@ -97,9 +97,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const deleteTimeout = setTimeout(() => {
         deleteFn().catch(error => {
-            console.error(`Error permanently deleting ${'itemType'}:`, error);
+            console.error(`Error permanently deleting ${itemType}:`, error);
             dataContext.setOptimisticallyDeleted(prev => prev.filter(id => id !== itemId));
-            toast({ variant: 'destructive', title: `Lỗi xóa ${'itemType'}`, description: `Không thể xóa vĩnh viễn "${itemName}".`});
+            toast({ variant: 'destructive', title: `Lỗi xóa ${itemType}`, description: `Không thể xóa vĩnh viễn "${itemName}".`});
         });
     }, 5000); 
 
@@ -158,17 +158,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   
   const addGoal = (goalData: Partial<Omit<Goal, 'id'>>) => {
-    if (!uiContext.topicId || !user) return;
+    let finalTopicId = goalData.topicId || uiContext.topicId;
+    let finalTopicIds = goalData.topicIds ? [...goalData.topicIds] : [];
+    if (finalTopicId && !finalTopicIds.includes(finalTopicId)) {
+      finalTopicIds.unshift(finalTopicId);
+    }
+    if (finalTopicIds.length > 0 && !finalTopicId) {
+      finalTopicId = finalTopicIds[0];
+    }
+    if (!finalTopicId || !user) return;
 
     const siblingGoals = goals.filter(g => 
-        g.topicId === uiContext.topicId && 
+        (g.topicId === finalTopicId || (g.topicIds && g.topicIds.includes(finalTopicId))) && 
         g.parentId === (goalData.parentId || null)
     );
     const maxOrder = siblingGoals.reduce((max, g) => Math.max(max, g.order || 0), -1);
 
-    const newGoal: Partial<Omit<Goal, 'id'>> = {
+    const newGoal: Partial<Omit<Goal, 'id'>> & { topicIds: string[] } = {
       title: goalData.title || 'Mục tiêu không tên',
-      topicId: uiContext.topicId,
+      topicId: finalTopicId,
+      topicIds: finalTopicIds,
       status: 'chưa bắt đầu',
       userId: user.uid,
       createdAt: serverTimestamp(),
@@ -185,16 +194,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const originalGoal = getGoalById(goalId);
     if (!originalGoal) return;
 
-    // If topicId is being changed, we need to update all child tasks and sub-goals as well.
-    if (updatedData.topicId && updatedData.topicId !== originalGoal.topicId) {
-        const newTopicId = updatedData.topicId;
+    let dataToUpdate: Partial<Goal> = { ...updatedData };
+    let finalTopicIds = dataToUpdate.topicIds;
+    if (dataToUpdate.topicId !== undefined) {
+      if (dataToUpdate.topicId === null) {
+        finalTopicIds = [];
+      } else {
+        finalTopicIds = finalTopicIds || (originalGoal.topicIds || []);
+        if (!finalTopicIds.includes(dataToUpdate.topicId)) {
+          finalTopicIds = [dataToUpdate.topicId, ...finalTopicIds.filter(id => id !== dataToUpdate.topicId)];
+        }
+      }
+    }
+    if (finalTopicIds !== undefined) {
+      dataToUpdate.topicIds = finalTopicIds;
+      dataToUpdate.topicId = finalTopicIds.length > 0 ? finalTopicIds[0] : '';
+    }
+
+    const topicIdChanged = dataToUpdate.topicId && dataToUpdate.topicId !== originalGoal.topicId;
+    const topicIdsChanged = dataToUpdate.topicIds && JSON.stringify(dataToUpdate.topicIds) !== JSON.stringify(originalGoal.topicIds || []);
+
+    if (topicIdChanged || topicIdsChanged) {
+        const newTopicId = dataToUpdate.topicId || originalGoal.topicId;
+        const newTopicIds = dataToUpdate.topicIds || originalGoal.topicIds || [];
         const batch = writeBatch(firestore);
         
-        // 1. Update the goal itself
         const goalRef = doc(firestore, 'goals', goalId);
-        batch.update(goalRef, updatedData);
+        batch.update(goalRef, dataToUpdate);
 
-        // 2. Find and update all descendant goals
         const descendants = new Set<string>();
         const findDescendants = (parentId: string) => {
             goals.forEach(g => {
@@ -208,18 +235,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
         
         descendants.forEach(descendantId => {
             const descendantRef = doc(firestore, 'goals', descendantId);
-            batch.update(descendantRef, { topicId: newTopicId });
+            batch.update(descendantRef, { 
+              topicId: newTopicId,
+              topicIds: newTopicIds
+            });
         });
 
-        // 3. Find and update all tasks associated with the entire goal tree
         const allGoalIdsToUpdate = [goalId, ...Array.from(descendants)];
-        const childTasks = tasks.filter(t => t.goalId && allGoalIdsToUpdate.includes(t.goalId));
+        const childTasks = tasks.filter(t => {
+          if (t.goalId && allGoalIdsToUpdate.includes(t.goalId)) return true;
+          if (t.goalIds && t.goalIds.some(gid => allGoalIdsToUpdate.includes(gid))) return true;
+          return false;
+        });
         childTasks.forEach(task => {
             const taskRef = doc(firestore, 'tasks', task.id);
-            batch.update(taskRef, { topicId: newTopicId });
+            const existingTaskTopicIds = task.topicIds || [];
+            const mergedTopicIds = Array.from(new Set([...newTopicIds, ...existingTaskTopicIds]));
+            batch.update(taskRef, { 
+              topicId: newTopicId,
+              topicIds: mergedTopicIds
+            });
         });
         
-        // Commit the batch
         batch.commit()
             .then(() => {
                 toast({ title: "Mục tiêu đã được cập nhật", description: `Mục tiêu và các mục con đã được chuyển sang chủ đề mới.` });
@@ -230,9 +267,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             });
 
     } else {
-        // Normal update without topic change
         try {
-            await updateDoc(doc(firestore, 'goals', goalId), updatedData);
+            await updateDoc(doc(firestore, 'goals', goalId), dataToUpdate);
             toast({ title: "Mục tiêu đã được cập nhật", description: `Mục tiêu đã được cập nhật.` });
         } catch (error) {
             console.error("Error updating goal: ", error);
@@ -245,19 +281,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     
     let finalTopicId = taskData.topicId;
-
-    if (!finalTopicId) {
-        if (taskData.goalId) {
-            const goalRef = doc(firestore, 'goals', taskData.goalId);
-            try {
-                const goalSnap = await getDoc(goalRef);
-                if (goalSnap.exists()) {
-                    finalTopicId = goalSnap.data().topicId;
-                }
-            } catch (error) {
-                console.error("Error fetching parent goal: ", error);
+    let finalTopicIds = taskData.topicIds ? [...taskData.topicIds] : [];
+    let finalGoalIds = taskData.goalIds ? [...taskData.goalIds] : [];
+    if (taskData.goalId && !finalGoalIds.includes(taskData.goalId)) {
+      finalGoalIds.unshift(taskData.goalId);
+    }
+    
+    if (finalGoalIds.length > 0 && finalTopicIds.length === 0 && !finalTopicId) {
+      for (const gid of finalGoalIds) {
+        const goalRef = doc(firestore, 'goals', gid);
+        try {
+          const goalSnap = await getDoc(goalRef);
+          if (goalSnap.exists()) {
+            const gd = goalSnap.data();
+            if (gd.topicIds && Array.isArray(gd.topicIds)) {
+              gd.topicIds.forEach((tid: string) => {
+                if (!finalTopicIds.includes(tid)) finalTopicIds.push(tid);
+              });
             }
+            if (gd.topicId && !finalTopicIds.includes(gd.topicId)) {
+              finalTopicIds.push(gd.topicId);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching parent goal: ", error);
         }
+      }
+    }
+
+    if (taskData.topicId && !finalTopicIds.includes(taskData.topicId)) {
+      finalTopicIds.unshift(taskData.topicId);
+    }
+
+    if (finalTopicIds.length > 0) {
+      finalTopicId = finalTopicIds[0];
     }
     
     const dataWithTimestamps = { ...taskData };
@@ -268,19 +325,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dataWithTimestamps.endDate = Timestamp.fromDate(dataWithTimestamps.endDate);
     }
 
-    const siblingTasks = (dataContext.tasks || []).filter(t => t.goalId === taskData.goalId);
+    const primaryGoalId = finalGoalIds.length > 0 ? finalGoalIds[0] : null;
+    const siblingTasks = (dataContext.tasks || []).filter(t => t.goalId === primaryGoalId);
     const maxOrder = siblingTasks.reduce((max, t) => Math.max(max, t.order || 0), -1);
 
-    const newTask: Omit<Task, 'id' | 'topicId'> & { topicId: string | null } = {
+    const newTask: Omit<Task, 'id' | 'topicId'> & { 
+      topicId: string | null;
+      topicIds: string[];
+      goalIds: string[];
+      goalId: string | null;
+    } = {
       text: taskData.text || 'Nhiệm vụ không tên',
       status: taskData.status || 'chưa bắt đầu',
       order: maxOrder + 1,
       userId: user.uid,
       createdAt: serverTimestamp(),
       topicId: finalTopicId || null,
+      topicIds: finalTopicIds,
       notes: taskData.notes || '',
       difficulty: taskData.difficulty || 'Vừa',
-      goalId: taskData.goalId || null,
+      goalId: primaryGoalId,
+      goalIds: finalGoalIds,
       startDate: dataWithTimestamps.startDate || null,
       endDate: dataWithTimestamps.endDate || null,
       recurrence: taskData.recurrence || null,
@@ -300,26 +365,67 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateTask = async (taskId: string, updatedData: Partial<Task>) => {
     if (!user) return;
+    const currentTask = getTaskById(taskId);
+    if (!currentTask) return;
+
     const isRecurringInstance = taskId.includes('-recur-');
-    let dataToUpdate: Partial<Task> = { ...updatedData };
-  
-    // If a goalId is being set or changed, derive topicId from it.
-    if (updatedData.goalId && updatedData.goalId !== null) {
-        const goalRef = doc(firestore, 'goals', updatedData.goalId);
-        try {
-            const goalSnap = await getDoc(goalRef);
-            if (goalSnap.exists()) {
-                dataToUpdate.topicId = goalSnap.data().topicId;
-            } else {
-                 toast({ variant: 'destructive', title: 'Lỗi', description: 'Mục tiêu cha không tồn tại.' });
-                 return;
-            }
-        } catch (error) {
-            console.error("Error fetching parent goal: ", error);
-            toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể cập nhật mục tiêu cha.' });
-            return;
-        }
+
+    // 1. Determine final goalIds and primary goalId
+    let finalGoalIds: string[];
+    if ('goalIds' in updatedData) {
+      finalGoalIds = updatedData.goalIds || [];
+    } else if ('goalId' in updatedData) {
+      finalGoalIds = updatedData.goalId ? [updatedData.goalId] : [];
+    } else {
+      finalGoalIds = currentTask.goalIds || (currentTask.goalId ? [currentTask.goalId] : []);
     }
+    const primaryGoalId = finalGoalIds.length > 0 ? finalGoalIds[0] : null;
+
+    // 2. Fetch derived topics from all associated goals
+    let derivedTopicIds: string[] = [];
+    if (finalGoalIds.length > 0) {
+      for (const gid of finalGoalIds) {
+        const goalRef = doc(firestore, 'goals', gid);
+        try {
+          const goalSnap = await getDoc(goalRef);
+          if (goalSnap.exists()) {
+            const gd = goalSnap.data();
+            if (gd.topicIds && Array.isArray(gd.topicIds)) {
+              gd.topicIds.forEach((tid: string) => {
+                if (!derivedTopicIds.includes(tid)) derivedTopicIds.push(tid);
+              });
+            }
+            if (gd.topicId && !derivedTopicIds.includes(gd.topicId)) {
+              derivedTopicIds.push(gd.topicId);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching parent goal: ", error);
+        }
+      }
+    }
+
+    // 3. Determine explicit topicIds
+    let explicitTopicIds: string[];
+    if ('topicIds' in updatedData) {
+      explicitTopicIds = updatedData.topicIds || [];
+    } else if ('topicId' in updatedData) {
+      explicitTopicIds = updatedData.topicId ? [updatedData.topicId] : [];
+    } else {
+      explicitTopicIds = currentTask.topicIds || (currentTask.topicId ? [currentTask.topicId] : []);
+    }
+
+    // 4. Merge manual topicIds with derived topicIds
+    const finalTopicIds = Array.from(new Set([...explicitTopicIds, ...derivedTopicIds]));
+    const primaryTopicId = finalTopicIds.length > 0 ? finalTopicIds[0] : null;
+
+    const dataToUpdate: Partial<Task> = {
+      ...updatedData,
+      goalId: primaryGoalId,
+      goalIds: finalGoalIds,
+      topicId: primaryTopicId,
+      topicIds: finalTopicIds,
+    };
 
     if (isRecurringInstance) {
       const originalTaskId = taskId.split('-recur-')[0];
@@ -337,17 +443,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await updateDoc(doc(firestore, 'tasks', taskId), dataToUpdate);
     }
 
-    // Schedule notifications if dates changed
+    // Schedule notifications if dates changed or text changed
     if (dataToUpdate.startDate || dataToUpdate.endDate || dataToUpdate.text) {
-      const currentTask = getTaskById(taskId);
-      if (currentTask) {
-        await syncTaskNotifications(
-          taskId, 
-          dataToUpdate.text || currentTask.text, 
-          dataToUpdate.startDate || currentTask.startDate, 
-          dataToUpdate.endDate || currentTask.endDate
-        );
-      }
+      await syncTaskNotifications(
+        taskId, 
+        dataToUpdate.text || currentTask.text, 
+        dataToUpdate.startDate || currentTask.startDate, 
+        dataToUpdate.endDate || currentTask.endDate
+      );
     }
 
     toast({ title: "Nhiệm vụ đã được cập nhật" });
@@ -360,13 +463,78 @@ export function AppProvider({ children }: { children: ReactNode }) {
     createUndoableDelete('sở thích', id, interest?.name, async () => {
         const batch = writeBatch(firestore);
         const topicsToDelete = topics.filter(t => t.interestId === id);
-        const goalsToDelete = goals.filter(g => topicsToDelete.some(t => t.id === g.topicId));
-        const tasksToDelete = tasks.filter(t => goalsToDelete.some(g => g.id === t.goalId) || topicsToDelete.some(topic => topic.id === t.topicId));
+        const allTopicsToDelete = topicsToDelete.map(t => t.id);
         const wikiPagesToDelete = wikiPages.filter(p => topicsToDelete.some(t => t.id === p.topicId));
+        
+        const goalsToDelete: Goal[] = [];
+        const goalsToUpdate: { goal: Goal, nextTopicId: string, nextTopicIds: string[] }[] = [];
+
+        goals.forEach(g => {
+          const associatedTopics = g.topicIds && g.topicIds.length > 0 ? g.topicIds : [g.topicId];
+          const remainingTopics = associatedTopics.filter(tid => !allTopicsToDelete.includes(tid));
+          
+          if (remainingTopics.length === 0) {
+            goalsToDelete.push(g);
+          } else {
+            goalsToUpdate.push({
+              goal: g,
+              nextTopicId: remainingTopics[0],
+              nextTopicIds: remainingTopics
+            });
+          }
+        });
+
+        const tasksToDelete: Task[] = [];
+        const tasksToUpdate: { task: Task, nextTopicId: string | null, nextTopicIds: string[], nextGoalId: string | null, nextGoalIds: string[] }[] = [];
+
+        tasks.forEach(t => {
+          const associatedTopics = t.topicIds && t.topicIds.length > 0 ? t.topicIds : (t.topicId ? [t.topicId] : []);
+          const associatedGoals = t.goalIds && t.goalIds.length > 0 ? t.goalIds : (t.goalId ? [t.goalId] : []);
+
+          const remainingTopics = associatedTopics.filter(tid => !allTopicsToDelete.includes(tid));
+          const remainingGoals = associatedGoals.filter(gid => !goalsToDelete.some(dg => dg.id === gid));
+
+          const hasNoRemainingTopics = remainingTopics.length === 0;
+          const hasNoRemainingGoals = associatedGoals.length === 0 || remainingGoals.length === 0;
+
+          if (hasNoRemainingTopics && hasNoRemainingGoals) {
+            tasksToDelete.push(t);
+          } else {
+            const nextTopicId = remainingTopics.length > 0 ? remainingTopics[0] : null;
+            const nextGoalId = remainingGoals.length > 0 ? remainingGoals[0] : null;
+            
+            const topicsChanged = JSON.stringify(associatedTopics) !== JSON.stringify(remainingTopics);
+            const goalsChanged = JSON.stringify(associatedGoals) !== JSON.stringify(remainingGoals);
+            
+            if (topicsChanged || goalsChanged) {
+              tasksToUpdate.push({
+                task: t,
+                nextTopicId,
+                nextTopicIds: remainingTopics,
+                nextGoalId,
+                nextGoalIds: remainingGoals
+              });
+            }
+          }
+        });
         
         wikiPagesToDelete.forEach(p => batch.delete(doc(firestore, 'wikiPages', p.id)));
         tasksToDelete.forEach(t => batch.delete(doc(firestore, 'tasks', t.id)));
+        tasksToUpdate.forEach(({ task, nextTopicId, nextTopicIds, nextGoalId, nextGoalIds }) => {
+          batch.update(doc(firestore, 'tasks', task.id), {
+            topicId: nextTopicId,
+            topicIds: nextTopicIds,
+            goalId: nextGoalId,
+            goalIds: nextGoalIds
+          });
+        });
         goalsToDelete.forEach(g => batch.delete(doc(firestore, 'goals', g.id)));
+        goalsToUpdate.forEach(({ goal, nextTopicId, nextTopicIds }) => {
+          batch.update(doc(firestore, 'goals', goal.id), {
+            topicId: nextTopicId,
+            topicIds: nextTopicIds
+          });
+        });
         topicsToDelete.forEach(t => batch.delete(doc(firestore, 'topics', t.id)));
         batch.delete(doc(firestore, 'interests', id));
         
@@ -393,14 +561,77 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
         findDescendants(id);
         const allTopicsToDelete = [id, ...Array.from(descendants)];
-        
-        const goalsToDelete = goals.filter(g => allTopicsToDelete.includes(g.topicId));
-        const tasksToDelete = tasks.filter(t => goalsToDelete.some(g => g.id === t.goalId) || allTopicsToDelete.includes(t.topicId!));
         const wikiPagesToDelete = wikiPages.filter(p => allTopicsToDelete.includes(p.topicId));
+        
+        const goalsToDelete: Goal[] = [];
+        const goalsToUpdate: { goal: Goal, nextTopicId: string, nextTopicIds: string[] }[] = [];
+
+        goals.forEach(g => {
+          const associatedTopics = g.topicIds && g.topicIds.length > 0 ? g.topicIds : [g.topicId];
+          const remainingTopics = associatedTopics.filter(tid => !allTopicsToDelete.includes(tid));
+          
+          if (remainingTopics.length === 0) {
+            goalsToDelete.push(g);
+          } else {
+            goalsToUpdate.push({
+              goal: g,
+              nextTopicId: remainingTopics[0],
+              nextTopicIds: remainingTopics
+            });
+          }
+        });
+
+        const tasksToDelete: Task[] = [];
+        const tasksToUpdate: { task: Task, nextTopicId: string | null, nextTopicIds: string[], nextGoalId: string | null, nextGoalIds: string[] }[] = [];
+
+        tasks.forEach(t => {
+          const associatedTopics = t.topicIds && t.topicIds.length > 0 ? t.topicIds : (t.topicId ? [t.topicId] : []);
+          const associatedGoals = t.goalIds && t.goalIds.length > 0 ? t.goalIds : (t.goalId ? [t.goalId] : []);
+
+          const remainingTopics = associatedTopics.filter(tid => !allTopicsToDelete.includes(tid));
+          const remainingGoals = associatedGoals.filter(gid => !goalsToDelete.some(dg => dg.id === gid));
+
+          const hasNoRemainingTopics = remainingTopics.length === 0;
+          const hasNoRemainingGoals = associatedGoals.length === 0 || remainingGoals.length === 0;
+
+          if (hasNoRemainingTopics && hasNoRemainingGoals) {
+            tasksToDelete.push(t);
+          } else {
+            const nextTopicId = remainingTopics.length > 0 ? remainingTopics[0] : null;
+            const nextGoalId = remainingGoals.length > 0 ? remainingGoals[0] : null;
+            
+            const topicsChanged = JSON.stringify(associatedTopics) !== JSON.stringify(remainingTopics);
+            const goalsChanged = JSON.stringify(associatedGoals) !== JSON.stringify(remainingGoals);
+            
+            if (topicsChanged || goalsChanged) {
+              tasksToUpdate.push({
+                task: t,
+                nextTopicId,
+                nextTopicIds: remainingTopics,
+                nextGoalId,
+                nextGoalIds: remainingGoals
+              });
+            }
+          }
+        });
         
         wikiPagesToDelete.forEach(p => batch.delete(doc(firestore, 'wikiPages', p.id)));
         tasksToDelete.forEach(t => batch.delete(doc(firestore, 'tasks', t.id)));
+        tasksToUpdate.forEach(({ task, nextTopicId, nextTopicIds, nextGoalId, nextGoalIds }) => {
+          batch.update(doc(firestore, 'tasks', task.id), {
+            topicId: nextTopicId,
+            topicIds: nextTopicIds,
+            goalId: nextGoalId,
+            goalIds: nextGoalIds
+          });
+        });
         goalsToDelete.forEach(g => batch.delete(doc(firestore, 'goals', g.id)));
+        goalsToUpdate.forEach(({ goal, nextTopicId, nextTopicIds }) => {
+          batch.update(doc(firestore, 'goals', goal.id), {
+            topicId: nextTopicId,
+            topicIds: nextTopicIds
+          });
+        });
         allTopicsToDelete.forEach(topicId => batch.delete(doc(firestore, 'topics', topicId)));
 
         await batch.commit();
@@ -416,8 +647,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const goal = getGoalById(id);
     createUndoableDelete('mục tiêu', id, goal?.title, async () => {
         const batch = writeBatch(firestore);
-        const tasksToDelete = tasks.filter(t => t.goalId === id);
+        
+        const tasksToDelete: Task[] = [];
+        const tasksToUpdate: { task: Task, nextGoalId: string | null, nextGoalIds: string[] }[] = [];
+
+        tasks.forEach(t => {
+          const associatedGoals = t.goalIds && t.goalIds.length > 0 ? t.goalIds : (t.goalId ? [t.goalId] : []);
+          if (associatedGoals.includes(id)) {
+            const remainingGoals = associatedGoals.filter(gid => gid !== id);
+            if (remainingGoals.length === 0) {
+              tasksToDelete.push(t);
+            } else {
+              tasksToUpdate.push({
+                task: t,
+                nextGoalId: remainingGoals[0],
+                nextGoalIds: remainingGoals
+              });
+            }
+          }
+        });
+
         tasksToDelete.forEach(t => batch.delete(doc(firestore, 'tasks', t.id)));
+        tasksToUpdate.forEach(({ task, nextGoalId, nextGoalIds }) => {
+          batch.update(doc(firestore, 'tasks', task.id), {
+            goalId: nextGoalId,
+            goalIds: nextGoalIds
+          });
+        });
+
         batch.delete(doc(firestore, 'goals', id));
         await batch.commit();
     });

@@ -22,7 +22,9 @@ export interface Task {
   status: TaskStatus;
   difficulty?: TaskDifficulty;
   goalId?: string | null; // Optional: Link to a goal
+  goalIds?: string[] | null; // Support multiple goals
   topicId?: string | null; 
+  topicIds?: string[] | null; // Support multiple topics
   startDate?: any; // Can be string or Firebase Timestamp
   endDate?: any; // Can be string or Firebase Timestamp
   recurrence?: RecurrenceRule | null;
@@ -37,6 +39,7 @@ export interface Goal {
   title: string;
   description?: string;
   topicId: string;
+  topicIds?: string[] | null; // Support multiple topics
   parentId?: string | null;
   status: GoalStatus;
   priority?: GoalPriority;

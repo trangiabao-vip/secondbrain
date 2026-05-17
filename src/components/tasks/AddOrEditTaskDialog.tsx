@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { TaskStatus, TaskDifficulty, type Task, type RecurrenceRule, RecurrenceFrequency } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
-import { TipTapEditor } from '../notes/TipTapEditor';
+import { BlockNoteEditorComponent as BlockNoteEditor } from '../notes/BlockNoteEditor';
 import { Switch } from '../ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from '../ui/dropdown-menu';
@@ -183,8 +183,8 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
   const [createdAt, setCreatedAt] = useState<Date | undefined>();
   const [endTime, setEndTime] = useState('10:00');
   const [status, setStatus] = useState<TaskStatus>('chưa bắt đầu');
-  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(initialGoalId || null);
-  const [selectedTopicIdForTask, setSelectedTopicIdForTask] = useState<string | undefined>();
+  const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
+  const [selectedTopicIdsForTask, setSelectedTopicIdsForTask] = useState<string[]>([]);
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule>({
@@ -209,9 +209,12 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
   }, [topics, getTopicBreadcrumbs]);
 
   const availableGoals = useMemo(() => {
-    if (!selectedTopicIdForTask) return [];
-    return goals.filter(g => g.topicId === selectedTopicIdForTask);
-  }, [goals, selectedTopicIdForTask]);
+    if (selectedTopicIdsForTask.length === 0) return goals;
+    return goals.filter(g => {
+      const gTopicIds = g.topicIds && g.topicIds.length > 0 ? g.topicIds : (g.topicId ? [g.topicId] : []);
+      return gTopicIds.some(tid => selectedTopicIdsForTask.includes(tid));
+    });
+  }, [goals, selectedTopicIdsForTask]);
 
   const isRecurringInstance = taskId?.includes('-recur-');
   const originalTaskId = isRecurringInstance ? taskId.split('-recur-')[0] : taskId;
@@ -224,14 +227,17 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         setNotes(task.notes || '');
         setDifficulty(task.difficulty || 'Vừa');
         
-        let parentTopicId: string | undefined | null;
-        if (task.goalId) {
-            const parentGoal = getGoalById(task.goalId);
-            parentTopicId = parentGoal?.topicId;
-        } else if (task.topicId) {
-            parentTopicId = task.topicId;
+        let taskGoalIds: string[] = task.goalIds || [];
+        if (taskGoalIds.length === 0 && task.goalId) {
+          taskGoalIds = [task.goalId];
         }
-        setSelectedTopicIdForTask(parentTopicId || undefined);
+        setSelectedGoalIds(taskGoalIds);
+
+        let taskTopicIds: string[] = task.topicIds || [];
+        if (taskTopicIds.length === 0 && task.topicId) {
+          taskTopicIds = [task.topicId];
+        }
+        setSelectedTopicIdsForTask(taskTopicIds);
         
         let currentStatus = task.status;
         let sDate;
@@ -250,7 +256,6 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         }
 
         setStatus(currentStatus);
-        setSelectedGoalId(task.goalId || null);
         setCreatedAt(getDateFromFirestore(task.createdAt));
         setStartDate(sDate);
         if (sDate) setStartTime(format(sDate, "HH:mm"));
@@ -287,12 +292,17 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         }
       }
     } else { // ADD mode
-      setSelectedGoalId(initialGoalId || null);
-      if(initialGoalId) {
+      const initGoalIds = initialGoalId ? [initialGoalId] : [];
+      setSelectedGoalIds(initGoalIds);
+      if (initialGoalId) {
         const parentGoal = getGoalById(initialGoalId);
-        setSelectedTopicIdForTask(parentGoal?.topicId);
+        const goalTopicIds = parentGoal?.topicIds && parentGoal.topicIds.length > 0
+          ? parentGoal.topicIds
+          : (parentGoal?.topicId ? [parentGoal.topicId] : []);
+        setSelectedTopicIdsForTask(goalTopicIds);
       } else {
-        setSelectedTopicIdForTask(initialTopicId || selectedTopic?.id);
+        const initTopicId = initialTopicId || selectedTopic?.id;
+        setSelectedTopicIdsForTask(initTopicId ? [initTopicId] : []);
       }
 
       if (initialStartDate) {
@@ -348,7 +358,12 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
         return acc;
       }, {} as { [key: string]: string });
     
-    const taskData: Partial<Omit<Task, 'id'>> = {
+    const taskData: Partial<Omit<Task, 'id'>> & {
+      topicId?: string | null;
+      topicIds?: string[];
+      goalId?: string | null;
+      goalIds?: string[];
+    } = {
       text: taskText.trim(),
       notes: notes,
       difficulty: difficulty,
@@ -357,21 +372,11 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
       endDate: finalEndDate,
       recurrence: isRecurring && !isRecurringInstance ? recurrenceRule : null,
       customProperties: customPropsObject,
+      goalIds: selectedGoalIds,
+      goalId: selectedGoalIds.length > 0 ? selectedGoalIds[0] : null,
+      topicIds: selectedTopicIdsForTask,
+      topicId: selectedTopicIdsForTask.length > 0 ? selectedTopicIdsForTask[0] : null,
     };
-    
-    if (selectedGoalId) {
-        const parentGoal = getGoalById(selectedGoalId);
-        if (parentGoal) {
-            taskData.topicId = parentGoal.topicId; // Inherit topic from goal
-            taskData.goalId = selectedGoalId;
-        }
-    } else if (selectedTopicIdForTask) {
-        taskData.topicId = selectedTopicIdForTask;
-        taskData.goalId = null;
-    } else {
-        taskData.topicId = null; // No topic selected
-        taskData.goalId = null;
-    }
 
     if (mode === 'edit' && taskId) {
       await updateTask(taskId, taskData);
@@ -423,9 +428,28 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
     { id: 'SA', label: 'T7' },
   ] as const;
 
-  const handleTopicChange = (topicId: string | undefined) => {
-    setSelectedTopicIdForTask(topicId);
-    setSelectedGoalId(null); // Reset goal when topic changes
+  const handleToggleTopic = (topicId: string) => {
+    setSelectedTopicIdsForTask(prev => {
+      if (prev.includes(topicId)) {
+        // Remove topic; also remove goals that are no longer associated
+        const newTopics = prev.filter(id => id !== topicId);
+        setSelectedGoalIds(gIds => gIds.filter(gId => {
+          const g = goals.find(goal => goal.id === gId);
+          if (!g) return false;
+          const gTopicIds = g.topicIds?.length ? g.topicIds : (g.topicId ? [g.topicId] : []);
+          return gTopicIds.some(tid => newTopics.includes(tid));
+        }));
+        return newTopics;
+      } else {
+        return [...prev, topicId];
+      }
+    });
+  };
+
+  const handleToggleGoal = (goalId: string) => {
+    setSelectedGoalIds(prev =>
+      prev.includes(goalId) ? prev.filter(id => id !== goalId) : [...prev, goalId]
+    );
   };
 
   const handleAddReminder = (minutes: number, before: 'start' | 'end') => {
@@ -504,14 +528,29 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                     Chuyển thành Ghi chú riêng
                 </Button>
             </div>
-            <TipTapEditor
+            <BlockNoteEditor
                 content={notes}
                 onChange={setNotes}
-                placeholder="Thêm ghi chú hoặc chi tiết... Hỗ trợ Markdown & #tags."
+                placeholder="Thêm ghi chú hoặc chi tiết... Nhấn / để dùng lệnh."
             />
           </div>
            <div className="space-y-2">
-            <Label htmlFor="task-topic">Chủ đề</Label>
+            <Label>Chủ đề (có thể chọn nhiều)</Label>
+            {selectedTopicIdsForTask.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-1">
+                {selectedTopicIdsForTask.map(tid => {
+                  const t = topicOptions.find(o => o.id === tid);
+                  return t ? (
+                    <span key={tid} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-xs px-2 py-0.5 font-medium">
+                      {t.name}
+                      <button type="button" onClick={() => handleToggleTopic(tid)} className="ml-0.5 hover:text-destructive" aria-label={`Bỏ chọn ${t.name}`}>
+                        <Icons.close className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ) : null;
+                })}
+              </div>
+            )}
             <Popover open={topicPopoverOpen} onOpenChange={setTopicPopoverOpen} modal={true}>
                 <PopoverTrigger asChild>
                     <Button
@@ -520,10 +559,8 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                         aria-expanded={topicPopoverOpen}
                         className="w-full justify-between"
                     >
-                        <span className="truncate">
-                          {selectedTopicIdForTask
-                              ? topicOptions.find(topic => topic.id === selectedTopicIdForTask)?.name
-                              : "Chọn một chủ đề..."}
+                        <span className="text-muted-foreground">
+                          {selectedTopicIdsForTask.length > 0 ? `${selectedTopicIdsForTask.length} chủ đề đã chọn` : "Chọn chủ đề..."}
                         </span>
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -534,35 +571,16 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                         <CommandList>
                             <CommandEmpty>Không tìm thấy chủ đề.</CommandEmpty>
                             <CommandGroup>
-                              <CommandItem
-                                value="none"
-                                onSelect={() => {
-                                    handleTopicChange(undefined);
-                                    setTopicPopoverOpen(false);
-                                }}
-                              >
-                                <Check
-                                    className={cn(
-                                        "mr-2 h-4 w-4",
-                                        !selectedTopicIdForTask ? "opacity-100" : "opacity-0"
-                                    )}
-                                />
-                                Không có chủ đề
-                              </CommandItem>
                               {topicOptions.map(topic => (
                                   <CommandItem
                                       key={topic.id}
                                       value={topic.name}
-                                      onSelect={(currentValue) => {
-                                          const selected = topicOptions.find(t => t.name === currentValue);
-                                          handleTopicChange(selected?.id);
-                                          setTopicPopoverOpen(false);
-                                      }}
+                                      onSelect={() => handleToggleTopic(topic.id)}
                                   >
                                       <Check
                                           className={cn(
                                               "mr-2 h-4 w-4",
-                                              selectedTopicIdForTask === topic.id ? "opacity-100" : "opacity-0"
+                                              selectedTopicIdsForTask.includes(topic.id) ? "opacity-100" : "opacity-0"
                                           )}
                                       />
                                       <span className="truncate">{topic.name}</span>
@@ -575,7 +593,22 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
             </Popover>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="task-goal">Mục tiêu (Tùy chọn)</Label>
+            <Label>Mục tiêu (Tùy chọn, có thể chọn nhiều)</Label>
+            {selectedGoalIds.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-1">
+                {selectedGoalIds.map(gid => {
+                  const g = availableGoals.find(o => o.id === gid) || goals.find(o => o.id === gid);
+                  return g ? (
+                    <span key={gid} className="inline-flex items-center gap-1 rounded-full bg-secondary text-secondary-foreground text-xs px-2 py-0.5 font-medium">
+                      {g.title}
+                      <button type="button" onClick={() => handleToggleGoal(gid)} className="ml-0.5 hover:text-destructive" aria-label={`Bỏ chọn ${g.title}`}>
+                        <Icons.close className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ) : null;
+                })}
+              </div>
+            )}
             <Popover open={goalPopoverOpen} onOpenChange={setGoalPopoverOpen} modal={true}>
                 <PopoverTrigger asChild>
                     <Button
@@ -583,12 +616,9 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                         role="combobox"
                         aria-expanded={goalPopoverOpen}
                         className="w-full justify-between"
-                        disabled={!selectedTopicIdForTask}
                     >
-                        <span className="truncate">
-                          {selectedGoalId
-                            ? availableGoals.find(goal => goal.id === selectedGoalId)?.title
-                            : "Chọn một mục tiêu..."}
+                        <span className="text-muted-foreground">
+                          {selectedGoalIds.length > 0 ? `${selectedGoalIds.length} mục tiêu đã chọn` : "Chọn mục tiêu..."}
                         </span>
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -601,37 +631,35 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                             <CommandItem
                                 value="none"
                                 onSelect={() => {
-                                    setSelectedGoalId(null);
+                                    setSelectedGoalIds([]);
                                     setGoalPopoverOpen(false);
                                 }}
                             >
                                 <Check
                                     className={cn(
                                         "mr-2 h-4 w-4",
-                                        !selectedGoalId ? "opacity-100" : "opacity-0"
+                                        selectedGoalIds.length === 0 ? "opacity-100" : "opacity-0"
                                     )}
                                 />
                                 Không có mục tiêu (nhiệm vụ độc lập)
                             </CommandItem>
-                            {availableGoals.map(goal => (
-                                <CommandItem
-                                    key={goal.id}
-                                    value={goal.title}
-                                    onSelect={(currentValue) => {
-                                        const selected = availableGoals.find(g => g.title === currentValue);
-                                        setSelectedGoalId(selected?.id || null);
-                                        setGoalPopoverOpen(false);
-                                    }}
-                                >
-                                    <Check
-                                        className={cn(
-                                            "mr-2 h-4 w-4",
-                                            selectedGoalId === goal.id ? "opacity-100" : "opacity-0"
-                                        )}
-                                    />
-                                    {goal.title}
-                                </CommandItem>
-                            ))}
+                            <CommandGroup>
+                              {availableGoals.map(goal => (
+                                  <CommandItem
+                                      key={goal.id}
+                                      value={goal.title}
+                                      onSelect={() => handleToggleGoal(goal.id)}
+                                  >
+                                      <Check
+                                          className={cn(
+                                              "mr-2 h-4 w-4",
+                                              selectedGoalIds.includes(goal.id) ? "opacity-100" : "opacity-0"
+                                          )}
+                                      />
+                                      <span className="truncate">{goal.title}</span>
+                                  </CommandItem>
+                              ))}
+                            </CommandGroup>
                         </CommandList>
                     </Command>
                 </PopoverContent>
@@ -640,7 +668,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
           <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
               <Label htmlFor="difficulty-edit">Độ khó</Label>
-              <Select value={difficulty} onValueChange={(value: TaskDifficulty) => setDifficulty(value)} modal={false}>
+              <Select value={difficulty} onValueChange={(value: TaskDifficulty) => setDifficulty(value)}>
                   <SelectTrigger id="difficulty-edit">
                   <SelectValue placeholder="Chọn độ khó" />
                   </SelectTrigger>
@@ -653,7 +681,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
               </div>
               <div className="space-y-2">
               <Label htmlFor="status-edit-task">Trạng thái</Label>
-              <Select value={status} onValueChange={(value: TaskStatus) => setStatus(value)} modal={false}>
+              <Select value={status} onValueChange={(value: TaskStatus) => setStatus(value)}>
                   <SelectTrigger id="status-edit-task">
                   <SelectValue placeholder="Chọn trạng thái" />
                   </SelectTrigger>
@@ -792,7 +820,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                               onChange={e => handleRecurrenceChange('interval', parseInt(e.target.value) || 1)}
                               min="1"
                           />
-                          <Select value={recurrenceRule.frequency} onValueChange={(v: RecurrenceFrequency) => handleRecurrenceChange('frequency', v)} modal={false}>
+                          <Select value={recurrenceRule.frequency} onValueChange={(v: RecurrenceFrequency) => handleRecurrenceChange('frequency', v)}>
                               <SelectTrigger className="w-32">
                                   <SelectValue />
                               </SelectTrigger>

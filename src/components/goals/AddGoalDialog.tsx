@@ -15,6 +15,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useAppContext } from '@/contexts/AppContext';
 import { Icons } from '../icons';
 import { format, setHours, setMinutes, addMinutes } from "date-fns";
@@ -24,7 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { GoalPriority } from '@/lib/data';
 import { Separator } from '../ui/separator';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
-import { TipTapEditor } from '../notes/TipTapEditor';
+import { BlockNoteEditorComponent } from '../notes/BlockNoteEditor';
 
 function EditableMarkdown({ value, onChange, placeholder }: { value: string, onChange: (value: string) => void, placeholder: string }) {
     const [isEditing, setIsEditing] = useState(true);
@@ -58,7 +61,7 @@ export function AddGoalDialog({
   open: externalOpen,
   onOpenChange: externalOnOpenChange
 }: { children?: ReactNode, startDate?: Date, open?: boolean, onOpenChange?: (open: boolean) => void }) {
-  const { addGoal, selectedTopic, goals } = useAppContext();
+  const { addGoal, selectedTopic, goals, topics, getTopicBreadcrumbs } = useAppContext();
   const [goalTitle, setGoalTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<GoalPriority>('Vừa');
@@ -68,18 +71,41 @@ export function AddGoalDialog({
   const [endTime, setEndTime] = useState('10:00');
   const [parentId, setParentId] = useState<string | null>(null);
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
+  const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
+  const [topicPopoverOpen, setTopicPopoverOpen] = useState(false);
   const [internalOpen, setInternalOpen] = useState(false);
   
   const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
   const setIsOpen = externalOnOpenChange !== undefined ? externalOnOpenChange : setInternalOpen;
 
+  const topicOptions = useMemo(() => {
+    return topics.map(topic => {
+      const breadcrumbs = getTopicBreadcrumbs(topic.id);
+      const name = breadcrumbs.map(b => b.name).join(' / ');
+      return { id: topic.id, name };
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  }, [topics, getTopicBreadcrumbs]);
+
   const potentialParentGoals = useMemo(() => {
-    if (!selectedTopic) return [];
-    return goals.filter(g => g.topicId === selectedTopic.id && !g.parentId);
-  }, [goals, selectedTopic]);
+    const filterTopics = selectedTopicIds.length > 0 ? selectedTopicIds : (selectedTopic ? [selectedTopic.id] : []);
+    return goals.filter(g => {
+      const gTopicIds = g.topicIds?.length ? g.topicIds : (g.topicId ? [g.topicId] : []);
+      return gTopicIds.some(tid => filterTopics.includes(tid)) && !g.parentId;
+    });
+  }, [goals, selectedTopicIds, selectedTopic]);
+
+  const handleToggleTopic = (topicId: string) => {
+    setSelectedTopicIds(prev =>
+      prev.includes(topicId) ? prev.filter(id => id !== topicId) : [...prev, topicId]
+    );
+  };
 
   useEffect(() => {
     if (isOpen) {
+      // Pre-fill topic from selectedTopic context
+      if (selectedTopic) {
+        setSelectedTopicIds([selectedTopic.id]);
+      }
       if (initialStartDate) {
         setStartDate(initialStartDate);
         setStartTime(format(initialStartDate, "HH:mm"));
@@ -97,8 +123,9 @@ export function AddGoalDialog({
       setEndTime('10:00');
       setParentId(null);
       setCustomProperties([]);
+      setSelectedTopicIds([]);
     }
-  }, [isOpen, initialStartDate]);
+  }, [isOpen, initialStartDate, selectedTopic]);
 
   const combineDateTime = (date: Date, time: string): Date => {
     try {
@@ -134,6 +161,11 @@ export function AddGoalDialog({
           return acc;
         }, {} as { [key: string]: string });
 
+      // Merge selectedTopicIds with selectedTopic context (fallback)
+      const finalTopicIds = selectedTopicIds.length > 0
+        ? selectedTopicIds
+        : (selectedTopic ? [selectedTopic.id] : []);
+
       addGoal({
         title: goalTitle.trim(),
         description,
@@ -142,6 +174,8 @@ export function AddGoalDialog({
         endDate: finalEndDate,
         customProperties: customPropsObject,
         parentId,
+        topicIds: finalTopicIds,
+        topicId: finalTopicIds[0] || null,
       });
       setIsOpen(false);
     }
@@ -154,7 +188,7 @@ export function AddGoalDialog({
         <DialogHeader>
           <DialogTitle>Thêm mục tiêu mới</DialogTitle>
           <DialogDescription>
-            Đặt mục tiêu mới cho chủ đề của bạn: "{selectedTopic?.name}"
+            Đặt mục tiêu mới, có thể thuộc nhiều chủ đề.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2 max-h-[80vh] overflow-y-auto pr-4">
@@ -170,11 +204,55 @@ export function AddGoalDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="goal-description">Ghi chú & Mô tả chi tiết</Label>
-              <TipTapEditor
+              <BlockNoteEditorComponent
                   content={description}
                   onChange={setDescription}
                   placeholder="Ghi chú chi tiết hơn về mục tiêu này. Hỗ trợ Wikilinks [[...]], #tags..."
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Chủ đề (có thể chọn nhiều)</Label>
+              {selectedTopicIds.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-1">
+                  {selectedTopicIds.map(tid => {
+                    const t = topicOptions.find(o => o.id === tid);
+                    return t ? (
+                      <span key={tid} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-xs px-2 py-0.5 font-medium">
+                        {t.name}
+                        <button type="button" onClick={() => handleToggleTopic(tid)} className="ml-0.5 hover:text-destructive" aria-label={`Bỏ chọn ${t.name}`}>
+                          <Icons.close className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ) : null;
+                  })}
+                </div>
+              )}
+              <Popover open={topicPopoverOpen} onOpenChange={setTopicPopoverOpen} modal={true}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" aria-expanded={topicPopoverOpen} className="w-full justify-between">
+                    <span className="text-muted-foreground">
+                      {selectedTopicIds.length > 0 ? `${selectedTopicIds.length} chủ đề đã chọn` : "Chọn chủ đề..."}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                  <Command>
+                    <CommandInput placeholder="Tìm chủ đề..." />
+                    <CommandList>
+                      <CommandEmpty>Không tìm thấy chủ đề.</CommandEmpty>
+                      <CommandGroup>
+                        {topicOptions.map(topic => (
+                          <CommandItem key={topic.id} value={topic.name} onSelect={() => handleToggleTopic(topic.id)}>
+                            <Check className={cn("mr-2 h-4 w-4", selectedTopicIds.includes(topic.id) ? "opacity-100" : "opacity-0")} />
+                            <span className="truncate">{topic.name}</span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
               <Label htmlFor="parent-goal-add">Mục tiêu cha (Tùy chọn)</Label>

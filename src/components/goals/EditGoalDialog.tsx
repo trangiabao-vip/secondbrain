@@ -24,7 +24,7 @@ import { GoalStatus, GoalPriority, Goal } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
-import { TipTapEditor } from '../notes/TipTapEditor';
+import { BlockNoteEditorComponent } from '../notes/BlockNoteEditor';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from '../ui/dropdown-menu';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -83,7 +83,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [endTime, setEndTime] = useState('10:00');
   const [status, setStatus] = useState<GoalStatus>('chưa bắt đầu');
-  const [selectedTopicId, setSelectedTopicId] = useState<string | undefined>();
+  const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
   const [customProperties, setCustomProperties] = useState<Array<{id: number, key: string, value: string}>>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -105,8 +105,6 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
   }, [topics, getTopicBreadcrumbs]);
 
   const potentialParentGoals = useMemo(() => {
-    if (!selectedTopicId) return [];
-    
     const descendants = new Set<string>();
     const findDescendants = (parentId: string) => {
         goals.forEach(g => {
@@ -118,12 +116,13 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
     };
     findDescendants(goalId);
 
-    return goals.filter(g => 
-        g.topicId === selectedTopicId && 
-        g.id !== goalId &&
-        !descendants.has(g.id)
-    );
-  }, [goals, selectedTopicId, goalId]);
+    return goals.filter(g => {
+      if (g.id === goalId || descendants.has(g.id)) return false;
+      if (selectedTopicIds.length === 0) return true;
+      const gTopicIds = g.topicIds?.length ? g.topicIds : (g.topicId ? [g.topicId] : []);
+      return gTopicIds.some(tid => selectedTopicIds.includes(tid));
+    });
+  }, [goals, selectedTopicIds, goalId]);
 
 
   useEffect(() => {
@@ -133,7 +132,11 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
         setDescription(originalGoal.description || '');
         setStatus(originalGoal.status);
         setPriority(originalGoal.priority || 'Vừa');
-        setSelectedTopicId(originalGoal.topicId);
+        // Load topicIds array with fallback to singular topicId
+        const loadedTopicIds = originalGoal.topicIds?.length
+          ? originalGoal.topicIds
+          : (originalGoal.topicId ? [originalGoal.topicId] : []);
+        setSelectedTopicIds(loadedTopicIds);
         setSelectedParentId(originalGoal.parentId || null);
         
         const sDate = getDateFromFirestore(originalGoal.startDate);
@@ -182,9 +185,10 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
     setCustomProperties(customProperties.map(p => p.id === id ? { ...p, [field]: text } : p));
   };
   
-  const handleTopicChange = (topicId: string) => {
-    setSelectedTopicId(topicId);
-    setSelectedParentId(null);
+  const handleToggleTopic = (topicId: string) => {
+    setSelectedTopicIds(prev =>
+      prev.includes(topicId) ? prev.filter(id => id !== topicId) : [...prev, topicId]
+    );
     setTopicPopoverOpen(false);
   };
 
@@ -200,7 +204,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
           return acc;
         }, {} as { [key: string]: string });
 
-      const updatedData: Partial<Omit<Goal, 'id'>> = {
+      const updatedData: Partial<Omit<Goal, 'id'>> & { topicIds?: string[] } = {
         title: goalTitle.trim(),
         description: description,
         priority: priority,
@@ -208,7 +212,8 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
         endDate: finalEndDate,
         status: status,
         customProperties: customPropsObject,
-        topicId: selectedTopicId,
+        topicIds: selectedTopicIds,
+        topicId: selectedTopicIds[0] || null,
         parentId: selectedParentId,
       };
 
@@ -272,14 +277,29 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             </div>
              <div className="space-y-2">
                 <Label htmlFor="goal-description-edit">Ghi chú & Mô tả chi tiết</Label>
-                <TipTapEditor
+                <BlockNoteEditorComponent
                     content={description}
                     onChange={setDescription}
                     placeholder="Ghi chú chi tiết hơn về mục tiêu này. Hỗ trợ Wikilinks [[...]], #tags..."
                 />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="goal-topic">Chủ đề</Label>
+              <Label>Chủ đề (có thể chọn nhiều)</Label>
+              {selectedTopicIds.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-1">
+                  {selectedTopicIds.map(tid => {
+                    const t = topicOptions.find(o => o.id === tid);
+                    return t ? (
+                      <span key={tid} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-xs px-2 py-0.5 font-medium">
+                        {t.name}
+                        <button type="button" onClick={() => handleToggleTopic(tid)} className="ml-0.5 hover:text-destructive" aria-label={`Bỏ chọn ${t.name}`}>
+                          <Icons.close className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ) : null;
+                  })}
+                </div>
+              )}
               <Popover open={topicPopoverOpen} onOpenChange={setTopicPopoverOpen} modal={true}>
                 <PopoverTrigger asChild>
                     <Button
@@ -288,15 +308,13 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                         aria-expanded={topicPopoverOpen}
                         className="w-full justify-between"
                     >
-                        <span className="truncate">
-                          {selectedTopicId
-                              ? topicOptions.find(topic => topic.id === selectedTopicId)?.name
-                              : "Chọn một chủ đề..."}
+                        <span className="text-muted-foreground">
+                          {selectedTopicIds.length > 0 ? `${selectedTopicIds.length} chủ đề đã chọn` : "Chọn chủ đề..."}
                         </span>
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width)] p-0">
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                     <Command>
                         <CommandInput placeholder="Tìm chủ đề..." />
                         <CommandList>
@@ -306,12 +324,12 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
                                   <CommandItem
                                       key={topic.id}
                                       value={topic.name}
-                                      onSelect={() => handleTopicChange(topic.id)}
+                                      onSelect={() => handleToggleTopic(topic.id)}
                                   >
                                       <Check
                                           className={cn(
                                               "mr-2 h-4 w-4",
-                                              selectedTopicId === topic.id ? "opacity-100" : "opacity-0"
+                                              selectedTopicIds.includes(topic.id) ? "opacity-100" : "opacity-0"
                                           )}
                                       />
                                       <span className="truncate">{topic.name}</span>
@@ -345,7 +363,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             </div>
             <div className="space-y-2">
               <Label htmlFor="priority-edit">Mức độ ưu tiên</Label>
-              <Select value={priority} onValueChange={(value: GoalPriority) => setPriority(value)} modal={false}>
+              <Select value={priority} onValueChange={(value: GoalPriority) => setPriority(value)}>
                 <SelectTrigger id="priority-edit">
                   <SelectValue placeholder="Chọn mức độ ưu tiên" />
                 </SelectTrigger>
@@ -426,7 +444,7 @@ export function EditGoalDialog({ goalId, children }: { goalId: string, children:
             </div>
             <div className="space-y-2">
               <Label htmlFor="status-edit">Trạng thái</Label>
-              <Select value={status} onValueChange={(value: GoalStatus) => setStatus(value)} modal={false}>
+              <Select value={status} onValueChange={(value: GoalStatus) => setStatus(value)}>
                 <SelectTrigger id="status-edit">
                   <SelectValue placeholder="Chọn trạng thái" />
                 </SelectTrigger>
