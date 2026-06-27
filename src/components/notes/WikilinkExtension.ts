@@ -25,6 +25,17 @@ export const Wikilink = Mark.create<WikilinkOptions>({
     ];
   },
 
+  addAttributes() {
+    return {
+      href: {
+        default: null,
+      },
+      title: {
+        default: null,
+      },
+    };
+  },
+
   renderHTML({ HTMLAttributes }) {
     return ['a', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { 'data-type': 'wikilink' }), 0];
   },

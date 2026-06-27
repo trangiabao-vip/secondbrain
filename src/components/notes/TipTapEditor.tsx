@@ -79,6 +79,19 @@ export function TipTapEditor({
           '[&_.ProseMirror-trailingBreak]:hidden',
         ),
       },
+      handleClick: (view, pos, event) => {
+        const target = event.target as HTMLElement;
+        const anchor = target.closest('a');
+        if (anchor) {
+          const href = anchor.getAttribute('href');
+          if (href && (href.startsWith('/todo/notes') || href.startsWith('/notes'))) {
+            event.preventDefault();
+            router.push(href);
+            return true;
+          }
+        }
+        return false;
+      },
     },
     immediatelyRender: false,
   });

@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { TaskStatus, TaskDifficulty, type Task, type RecurrenceRule, RecurrenceFrequency } from '@/lib/data';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
-import { BlockNoteEditorComponent as BlockNoteEditor } from '../notes/BlockNoteEditor';
+import { TipTapEditor } from '../notes/TipTapEditor';
 import { Switch } from '../ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from '../ui/dropdown-menu';
@@ -170,12 +170,15 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
   const { 
       getTaskById, updateTask, deleteTask, addTask, goals, selectedTopic, 
       duplicateTask, getGoalById, updateChannel, getChannelById, getTopicById,
-      interests, topics, getTopicBreadcrumbs, addNotification, addNote
+      interests, topics, getTopicBreadcrumbs, addNotification, addNote,
+      addTopic, addGoal
     } = useAppContext();
   const { toast } = useToast();
   
   const [taskText, setTaskText] = useState('');
   const [notes, setNotes] = useState('');
+  const [searchTopic, setSearchTopic] = useState('');
+  const [searchGoal, setSearchGoal] = useState('');
   const [difficulty, setDifficulty] = useState<TaskDifficulty>('Vừa');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [startTime, setStartTime] = useState('09:00');
@@ -528,10 +531,10 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                     Chuyển thành Ghi chú riêng
                 </Button>
             </div>
-            <BlockNoteEditor
+            <TipTapEditor
                 content={notes}
                 onChange={setNotes}
-                placeholder="Thêm ghi chú hoặc chi tiết... Nhấn / để dùng lệnh."
+                placeholder="Thêm ghi chú hoặc chi tiết... Hỗ trợ Markdown & [[wikilinks]]"
             />
           </div>
            <div className="space-y-2">
@@ -567,7 +570,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                 </PopoverTrigger>
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                     <Command>
-                        <CommandInput placeholder="Tìm chủ đề..." />
+                        <CommandInput placeholder="Tìm chủ đề..." value={searchTopic} onValueChange={setSearchTopic} />
                         <CommandList>
                             <CommandEmpty>Không tìm thấy chủ đề.</CommandEmpty>
                             <CommandGroup>
@@ -587,6 +590,20 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                                   </CommandItem>
                               ))}
                             </CommandGroup>
+                            {searchTopic.trim() !== '' && !topicOptions.some(t => t.name.toLowerCase() === searchTopic.trim().toLowerCase()) && (
+                                <CommandGroup>
+                                    <CommandItem
+                                        value={searchTopic}
+                                        onSelect={() => {
+                                            addTopic(searchTopic.trim(), 'topic-default');
+                                            setSearchTopic('');
+                                        }}
+                                    >
+                                        <Icons.add className="mr-2 h-4 w-4" />
+                                        Tạo chủ đề "{searchTopic}"
+                                    </CommandItem>
+                                </CommandGroup>
+                            )}
                         </CommandList>
                     </Command>
                 </PopoverContent>
@@ -625,7 +642,7 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                 </PopoverTrigger>
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                     <Command>
-                        <CommandInput placeholder="Tìm mục tiêu..." />
+                        <CommandInput placeholder="Tìm mục tiêu..." value={searchGoal} onValueChange={setSearchGoal} />
                         <CommandList>
                             <CommandEmpty>Không có mục tiêu nào.</CommandEmpty>
                             <CommandItem
@@ -660,6 +677,24 @@ function TaskDialogContent({ taskId, initialGoalId, initialTopicId, initialChann
                                   </CommandItem>
                               ))}
                             </CommandGroup>
+                            {searchGoal.trim() !== '' && !availableGoals.some(g => g.title.toLowerCase() === searchGoal.trim().toLowerCase()) && (
+                                <CommandGroup>
+                                    <CommandItem
+                                        value={searchGoal}
+                                        onSelect={() => {
+                                            addGoal({
+                                                title: searchGoal.trim(),
+                                                topicIds: selectedTopicIdsForTask.length > 0 ? selectedTopicIdsForTask : [],
+                                                topicId: selectedTopicIdsForTask.length > 0 ? selectedTopicIdsForTask[0] : null,
+                                            });
+                                            setSearchGoal('');
+                                        }}
+                                    >
+                                        <Icons.add className="mr-2 h-4 w-4" />
+                                        Tạo mục tiêu "{searchGoal}"
+                                    </CommandItem>
+                                </CommandGroup>
+                            )}
                         </CommandList>
                     </Command>
                 </PopoverContent>
